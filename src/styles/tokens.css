@@ -1,0 +1,134 @@
+/*
+ * Tokens de diseño — identidad «Istmo» (docs/decisions/0011).
+ * Los colores se declaran SOLO aquí: la prueba tests/unit/design/contrast.test.ts lee este archivo
+ * y comprueba WCAG 2.2 AA sobre los pares declarados (texto 4,5:1; componentes/gráficos 3:1).
+ * Tema claro por defecto; oscuro con prefers-color-scheme.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Superficies */
+  --color-paper: #f4efe4;
+  --color-surface: #fffcf5;
+  --color-sunken: #e9e2d2;
+
+  /* Texto */
+  --color-ink: #13232a;
+  --color-ink-muted: #46585f;
+
+  /* Acento: turquesa caribeño */
+  --color-accent: #0b6b66;
+  --color-accent-strong: #07514d;
+  --color-on-accent: #ffffff;
+
+  /* Línea de componentes (campos, separadores esenciales): ≥ 3:1 */
+  --color-line-strong: #6e7f85;
+  --color-line-soft: #cfc6b3;
+
+  /* Foco: doble anillo (color + halo de superficie) */
+  --color-focus: #0b3c5d;
+  --color-focus-halo: #ffffff;
+
+  /* Estados informativos: texto + fondo, siempre acompañados de icono y palabra */
+  --color-verified-fg: #1d5c34;
+  --color-verified-bg: #dcefe2;
+  --color-partial-fg: #5e4300;
+  --color-partial-bg: #fbe9b7;
+  --color-unavailable-fg: #8a2b20;
+  --color-unavailable-bg: #f9dcd6;
+  --color-unknown-fg: #3b474d;
+  --color-unknown-bg: #e1e6e8;
+  --color-error-fg: #7a1f55;
+  --color-error-bg: #f5dcec;
+
+  --color-notice-fg: #5a3b00;
+  --color-notice-bg: #fff1cf;
+
+  /* Tipografía (autoalojada: @fontsource-variable, OFL-1.1) */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --font-text: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --text-s: 0.875rem;
+  --text-m: 1rem;
+  --text-l: clamp(1.125rem, 1.05rem + 0.4vw, 1.3rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem);
+  --text-2xl: clamp(2rem, 1.3rem + 3.2vw, 3.8rem);
+  --leading-tight: 1.15;
+  --leading-body: 1.55;
+
+  /* Espaciado y forma */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --radius-s: 0.375rem;
+  --radius-m: 0.75rem;
+  --radius-l: 1.25rem;
+  --measure: 66ch;
+  --target-min: 2.75rem; /* ≥ 24×24 px (WCAG 2.5.8); holgura táctil */
+
+  /* Capas */
+  --z-header: 30;
+  --z-popover: 40;
+  --z-sheet: 20;
+
+  /* Maquetación mapa primero: ≈ 70 % mapa / 30 % panel en escritorio */
+  --header-height: 3.5rem;
+  --panel-width: 30%;
+  --panel-min: 22rem;
+
+  /* Movimiento contenido */
+  --motion-fast: 120ms;
+  --motion-medium: 240ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  --shadow-raised: 0 1px 2px rgb(19 35 42 / 12%), 0 6px 18px rgb(19 35 42 / 10%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #0d1a20;
+    --color-surface: #13242c;
+    --color-sunken: #0a1317;
+
+    --color-ink: #e8f0f1;
+    --color-ink-muted: #a9bcc2;
+
+    --color-accent: #5fd0c8;
+    --color-accent-strong: #8fe3dc;
+    --color-on-accent: #06201e;
+
+    --color-line-strong: #7f9399;
+    --color-line-soft: #2a3d45;
+
+    --color-focus: #ffd166;
+    --color-focus-halo: #0d1a20;
+
+    --color-verified-fg: #9be0b2;
+    --color-verified-bg: #16372a;
+    --color-partial-fg: #f4d27a;
+    --color-partial-bg: #3d3010;
+    --color-unavailable-fg: #f5a89d;
+    --color-unavailable-bg: #46201b;
+    --color-unknown-fg: #b9c7cc;
+    --color-unknown-bg: #22333a;
+    --color-error-fg: #f0a9d2;
+    --color-error-bg: #44193a;
+
+    --color-notice-fg: #f4d27a;
+    --color-notice-bg: #3a2d0e;
+
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 18px rgb(0 0 0 / 35%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0.01ms;
+    --motion-medium: 0.01ms;
+  }
+}

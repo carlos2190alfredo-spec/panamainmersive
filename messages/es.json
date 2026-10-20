@@ -1,0 +1,228 @@
+{
+  "Meta": {
+    "home": {
+      "title": "{siteName}: explora Panamá con datos abiertos y verificables",
+      "description": "Mapa, relieve y fuentes con procedencia visible para descubrir y organizar viajes por Panamá. Versión de desarrollo."
+    },
+    "explore": {
+      "title": "Explorar Panamá",
+      "description": "Mapa de Panamá con los nueve destinos iniciales y la lista equivalente en texto."
+    },
+    "destinations": {
+      "title": "Destinos",
+      "description": "Los nueve destinos iniciales de {siteName} y el estado de sus datos."
+    },
+    "destination": {
+      "title": "{name}",
+      "description": "Estado de los datos geográficos de {name}, en Panamá: fuentes, procedencia y cobertura."
+    },
+    "sources": {
+      "title": "Fuentes y atribuciones",
+      "description": "De dónde proceden los datos de {siteName}, con su licencia y su estado de verificación."
+    },
+    "accessibility": {
+      "title": "Accesibilidad",
+      "description": "Declaración de accesibilidad: qué funciona, qué no y cómo vamos a mejorar."
+    },
+    "notFound": {
+      "title": "Página no encontrada"
+    }
+  },
+  "Common": {
+    "skipToContent": "Saltar al contenido principal",
+    "loading": "Cargando…",
+    "close": "Cerrar",
+    "backToDestinations": "Volver a destinos",
+    "opensInNewTab": "(se abre en una pestaña nueva)",
+    "notAvailable": "No disponible"
+  },
+  "Nav": {
+    "main": "Navegación principal",
+    "footer": "Información del sitio",
+    "home": "{siteName}, ir al inicio",
+    "explore": "Explorar",
+    "destinations": "Destinos",
+    "sources": "Fuentes",
+    "accessibility": "Accesibilidad"
+  },
+  "Language": {
+    "label": "Idioma",
+    "menu": "Seleccionar idioma",
+    "current": "Idioma actual: {name}",
+    "help": "Cambiar de idioma conserva el destino, el mapa y los filtros."
+  },
+  "Home": {
+    "eyebrow": "Versión de desarrollo",
+    "title": "Panamá, explorada con mapas y datos que se pueden verificar",
+    "lead": "Una plataforma para descubrir, comprender y organizar viajes por Panamá. Se apoya en fuentes abiertas y muestra siempre de dónde sale cada dato.",
+    "ctaExplore": "Abrir el mapa",
+    "ctaDestinations": "Ver los nueve destinos",
+    "principlesHeading": "Cómo trabajamos",
+    "principles": {
+      "map": {
+        "title": "El mapa primero",
+        "body": "La experiencia empieza en el territorio: relieve, costa y áreas reales, con una lista equivalente para quien no usa el mapa."
+      },
+      "provenance": {
+        "title": "Cada dato, con su procedencia",
+        "body": "Indicamos la fuente, la licencia y cuándo se comprobó. Si algo no está verificado, lo decimos."
+      },
+      "languages": {
+        "title": "Cinco idiomas",
+        "body": "Español, inglés, portugués, francés y alemán. Cambiar de idioma conserva lo que estabas viendo."
+      }
+    },
+    "statusHeading": "Estado actual",
+    "statusBody": "Esta es una versión de desarrollo. Las fichas de los destinos están en preparación y las traducciones están pendientes de revisión humana."
+  },
+  "Explore": {
+    "title": "Explorar Panamá",
+    "mapLabel": "Mapa de Panamá",
+    "panelLabel": "Información del mapa",
+    "listHeading": "Destinos",
+    "listDescription": "Esta lista es la alternativa en texto del mapa: contiene los mismos destinos.",
+    "count": "{count, plural, one {# destino} other {# destinos}}",
+    "mapPendingTitle": "El mapa interactivo todavía no está disponible",
+    "mapPendingBody": "Se está preparando la integración del mapa. Mientras tanto, usa la lista de destinos."
+  },
+  "Destinations": {
+    "indexTitle": "Los nueve destinos",
+    "indexLead": "Estos son los destinos iniciales. Para cada uno mostramos qué datos existen y cuáles no se han podido comprobar.",
+    "kindLabel": "Tipo",
+    "viewOnMap": "Ver en el mapa",
+    "dataStatusHeading": "Estado de los datos",
+    "contentHeading": "Contenido editorial",
+    "contentPending": "La ficha editorial de este destino todavía no está redactada. No mostramos descripciones sin una fuente verificable.",
+    "evidenceNote": "Evaluación del {date}. Caduca el {expires}; después el estado vuelve a «Desconocida».",
+    "capabilityColumn": "Capacidad",
+    "statusColumn": "Estado",
+    "observationColumn": "Observación",
+    "notesHeading": "Antes de seguir",
+    "notes": {
+      "homonymBaru": "No es el distrito de Barú: son entidades distintas.",
+      "homonymSantaCatalina": "Existen otras localidades y un distrito con este nombre. Aquí nos referimos a la localidad costera de Veraguas.",
+      "bocasAmbiguous": "«Bocas del Toro» designa a la vez una provincia, un distrito y una localidad. El alcance exacto del destino está pendiente de definición editorial.",
+      "cascoNoBoundary": "En las fuentes abiertas consultadas no existe un límite oficial del distrito histórico."
+    }
+  },
+  "DestinationKind": {
+    "city": "Ciudad",
+    "historic_district": "Distrito histórico",
+    "infrastructure": "Infraestructura",
+    "locality": "Localidad",
+    "volcano": "Volcán",
+    "archipelago": "Archipiélago",
+    "island": "Isla"
+  },
+  "Capability": {
+    "geometry": "Geometría (Overture/OpenStreetMap)",
+    "terrain": "Relieve (terreno AWS)",
+    "google3d": "Google 3D fotorrealista",
+    "streetView": "Street View",
+    "streetImagery": "Fotos y panoramas de calle (Mapillary/KartaView)",
+    "openSatellite": "Imagen satelital abierta",
+    "officialGeometry": "Geometría oficial (IGN/ANATI, MiAmbiente, UNESCO)"
+  },
+  "Coverage": {
+    "status": {
+      "UNKNOWN": "Desconocida",
+      "VERIFIED": "Verificada",
+      "PARTIAL": "Parcial",
+      "UNAVAILABLE": "No disponible",
+      "ERROR": "Error al comprobar"
+    },
+    "observation": {
+      "geoCounty": "Límite de distrito derivado de OpenStreetMap, no oficial.",
+      "geoRegionCountyLocality": "Provincia, distrito y localidad: tres entidades distintas, derivadas de OpenStreetMap.",
+      "geoLocality": "Límite de localidad derivado de OpenStreetMap, no oficial.",
+      "geoProtectedArea": "Polígono de área protegida derivado de OpenStreetMap, no oficial.",
+      "geoProtectedIsland": "Polígonos de isla y de parque derivados de OpenStreetMap, no oficiales.",
+      "geoCanalLines": "Líneas y polígonos de agua (canal, lago, esclusas) derivados de OpenStreetMap; no hay zona oficial del Canal.",
+      "geoPointOnly": "Solo hay un punto de volcán y cerros; no hay polígono de la localidad.",
+      "geoNoPolygon": "No hay límite del distrito histórico en la fuente consultada.",
+      "terrainLand": "Relieve disponible en tierra (fuente SRTM).",
+      "terrainLandNoBathymetry": "Relieve en tierra; sin batimetría a zoom alto.",
+      "reasonNoCredential": "Sin credencial para comprobarlo.",
+      "reasonBlockedHost": "Fuente no accesible desde el entorno de trabajo.",
+      "reasonNotEvaluated": "Aún no evaluada."
+    }
+  },
+  "Geometry": {
+    "sourceClass": {
+      "official": "Oficial",
+      "osm_derived": "Derivada de OpenStreetMap (no oficial)",
+      "editorial": "Editorial (no oficial)"
+    }
+  },
+  "Editorial": {
+    "status": {
+      "draft": "Borrador",
+      "machine_translated": "Traducción automática, sin revisión humana",
+      "reviewed": "Revisado",
+      "published": "Publicado",
+      "outdated": "Desactualizado"
+    },
+    "fallbackNotice": "Este contenido solo está disponible en {language}.",
+    "machineTranslatedNotice": "Traducción automática pendiente de revisión humana.",
+    "outdatedNotice": "El texto original cambió; esta traducción puede estar desactualizada."
+  },
+  "Sources": {
+    "title": "Fuentes y atribuciones",
+    "lead": "Toda la información geográfica de esta versión procede de las fuentes siguientes. Las licencias marcadas como provisionales todavía no se han leído en su fuente primaria.",
+    "usedHeading": "Fuentes en uso",
+    "blockedHeading": "Fuentes oficiales aún no accesibles",
+    "blockedLead": "No se han podido consultar desde el entorno de desarrollo. Hasta tener acceso y licencia, ningún límite se presenta como oficial.",
+    "columns": {
+      "source": "Fuente",
+      "use": "Uso",
+      "license": "Licencia",
+      "rights": "Estado del derecho",
+      "attribution": "Atribución"
+    },
+    "rights": {
+      "verified": "Verificado",
+      "provisional": "Provisional: no verificado en la fuente primaria"
+    },
+    "use": {
+      "overture": "Divisiones administrativas, áreas protegidas, agua y costa, derivadas de OpenStreetMap.",
+      "naturalEarth": "Contexto nacional a zoom bajo.",
+      "awsTerrain": "Relieve y sombreado del terreno en tierra.",
+      "anati": "Límites administrativos oficiales.",
+      "miambiente": "Límites oficiales de áreas protegidas.",
+      "atp": "Información turística oficial.",
+      "unesco": "Límites de los sitios del Patrimonio Mundial."
+    },
+    "pendingAccess": "Pendiente de acceso y licencia."
+  },
+  "Accessibility": {
+    "title": "Declaración de accesibilidad",
+    "lead": "Nuestro objetivo es cumplir WCAG 2.2 nivel AA. Esta declaración describe el estado real, incluidas las limitaciones conocidas.",
+    "keyboardHeading": "Teclado",
+    "keyboardBody": "Toda la navegación y el selector de idioma se pueden usar solo con teclado, y el foco siempre es visible.",
+    "textAlternativeHeading": "Alternativa al mapa",
+    "textAlternativeBody": "El mapa es un lienzo gráfico. La lista de destinos contiene la misma información y es su equivalente accesible.",
+    "motionHeading": "Movimiento",
+    "motionBody": "Respetamos la preferencia del sistema de reducir las animaciones.",
+    "languagesHeading": "Idiomas",
+    "languagesBody": "Español, inglés, portugués, francés y alemán. Las traducciones están pendientes de revisión humana.",
+    "limitationsHeading": "Limitaciones conocidas",
+    "limitations": {
+      "map": "El mapa interactivo todavía no está integrado en esta versión.",
+      "testing": "Las pruebas automáticas no sustituyen una evaluación con personas usuarias, que aún no se ha realizado.",
+      "screenReaders": "No se ha probado con lectores de pantalla reales."
+    },
+    "contactHeading": "Contacto",
+    "contactBody": "El canal para enviar comentarios sobre accesibilidad está pendiente de definir."
+  },
+  "Footer": {
+    "development": "Versión de desarrollo.",
+    "sourcesLink": "Ver todas las fuentes y atribuciones",
+    "dataLabel": "Datos"
+  },
+  "NotFound": {
+    "title": "Página no encontrada",
+    "body": "No hemos encontrado lo que buscas. Puede que el enlace haya cambiado.",
+    "home": "Ir al inicio",
+    "destinations": "Ver los destinos"
+  }
+}

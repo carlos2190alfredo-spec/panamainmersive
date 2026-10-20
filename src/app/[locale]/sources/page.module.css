@@ -1,0 +1,21 @@
+.table {
+  min-inline-size: 44rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+}
+
+.table th,
+.table td {
+  padding: var(--space-3);
+  text-align: start;
+  vertical-align: top;
+  border-block-end: 1px solid var(--color-line-soft);
+}
+
+.table thead th {
+  background: var(--color-sunken);
+}
+
+.blocked {
+  margin-block-start: var(--space-7);
+}

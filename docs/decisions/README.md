@@ -13,7 +13,7 @@ Un ADR registra **una** decisión, su contexto, las alternativas descartadas y c
 | [0007](0007-proveedores-y-derechos.md) | Proveedores por capacidad; derechos y cobertura deny-by-default | Aceptada |
 | [0008](0008-traducciones-editoriales.md) | Entidades separadas de traducciones tipadas con estado editorial | Aceptada |
 | [0009](0009-etl-python.md) | Pipeline ETL en Python, separado de la aplicación | Aceptada |
-| [0010](0010-csp-y-cabeceras.md) | Estrategia de CSP y cabeceras | **Propuesta — validar en Fase 1** |
+| [0010](0010-csp-y-cabeceras.md) | CSP con `script-src 'self' 'unsafe-inline'` + controles compensatorios (SRI y nonce descartados con evidencia) | Aceptada |
 | [0011](0011-estilos-y-tipografia.md) | CSS Modules + tokens + propiedades lógicas; tipografías autoalojadas | Aceptada |
 | [0012](0012-herramientas.md) | pnpm, ESLint 9, Vitest 5, Playwright | Aceptada |
 

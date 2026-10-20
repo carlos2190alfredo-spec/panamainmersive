@@ -1,0 +1,17 @@
+.skip {
+  position: absolute;
+  inset-inline-start: var(--space-3);
+  inset-block-start: var(--space-3);
+  z-index: calc(var(--z-header) + 10);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-radius: var(--radius-m);
+  font-weight: 600;
+  /* Oculto fuera de pantalla hasta recibir foco por teclado */
+  transform: translateY(-300%);
+}
+
+.skip:focus {
+  transform: none;
+}

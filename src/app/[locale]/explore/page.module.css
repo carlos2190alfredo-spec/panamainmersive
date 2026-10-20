@@ -1,0 +1,49 @@
+/* Mapa primero: ≈ 70 % mapa / 30 % panel en escritorio; en móvil, mapa arriba y panel debajo. */
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(40dvh, 50dvh) auto;
+  min-block-size: calc(100dvh - var(--header-height));
+}
+
+@media (min-width: 56rem) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr) minmax(var(--panel-min), var(--panel-width));
+    grid-template-rows: none;
+    block-size: calc(100dvh - var(--header-height));
+  }
+}
+
+.map {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--color-sunken);
+  overflow: hidden;
+}
+
+.panel {
+  padding: var(--space-5) var(--space-4);
+  background: var(--color-paper);
+  border-inline-start: 1px solid var(--color-line-soft);
+  overflow-y: auto;
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.listHeading {
+  font-size: var(--text-l);
+  margin-block-start: var(--space-4);
+}
+
+.count {
+  color: var(--color-ink-muted);
+  font-family: var(--font-text);
+  font-weight: 500;
+}
+
+.help {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}

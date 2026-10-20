@@ -1,0 +1,228 @@
+{
+  "Meta": {
+    "home": {
+      "title": "{siteName}\u00a0: explorez le Panama avec des données ouvertes et vérifiables",
+      "description": "Carte, relief et sources dont la provenance est visible pour découvrir et organiser des voyages au Panama. Version de développement."
+    },
+    "explore": {
+      "title": "Explorer le Panama",
+      "description": "Carte du Panama avec les neuf destinations initiales et la liste équivalente en texte."
+    },
+    "destinations": {
+      "title": "Destinations",
+      "description": "Les neuf destinations initiales de {siteName} et l’état de leurs données."
+    },
+    "destination": {
+      "title": "{name}",
+      "description": "État des données géographiques de {name}, au Panama\u00a0: sources, provenance et couverture."
+    },
+    "sources": {
+      "title": "Sources et attributions",
+      "description": "D’où viennent les données de {siteName}, avec leur licence et leur état de vérification."
+    },
+    "accessibility": {
+      "title": "Accessibilité",
+      "description": "Déclaration d’accessibilité\u00a0: ce qui fonctionne, ce qui ne fonctionne pas et comment nous allons nous améliorer."
+    },
+    "notFound": {
+      "title": "Page introuvable"
+    }
+  },
+  "Common": {
+    "skipToContent": "Aller au contenu principal",
+    "loading": "Chargement…",
+    "close": "Fermer",
+    "backToDestinations": "Retour aux destinations",
+    "opensInNewTab": "(s’ouvre dans un nouvel onglet)",
+    "notAvailable": "Indisponible"
+  },
+  "Nav": {
+    "main": "Navigation principale",
+    "footer": "Informations sur le site",
+    "home": "{siteName}, aller à l’accueil",
+    "explore": "Explorer",
+    "destinations": "Destinations",
+    "sources": "Sources",
+    "accessibility": "Accessibilité"
+  },
+  "Language": {
+    "label": "Langue",
+    "menu": "Choisir la langue",
+    "current": "Langue actuelle\u00a0: {name}",
+    "help": "Changer de langue conserve la destination, la carte et les filtres."
+  },
+  "Home": {
+    "eyebrow": "Version de développement",
+    "title": "Le Panama, exploré avec des cartes et des données vérifiables",
+    "lead": "Une plateforme pour découvrir, comprendre et organiser des voyages au Panama. Elle s’appuie sur des sources ouvertes et montre toujours d’où vient chaque donnée.",
+    "ctaExplore": "Ouvrir la carte",
+    "ctaDestinations": "Voir les neuf destinations",
+    "principlesHeading": "Notre façon de travailler",
+    "principles": {
+      "map": {
+        "title": "La carte d’abord",
+        "body": "L’expérience commence par le territoire\u00a0: relief, côte et zones réelles, avec une liste équivalente pour qui n’utilise pas la carte."
+      },
+      "provenance": {
+        "title": "Chaque donnée, avec sa provenance",
+        "body": "Nous indiquons la source, la licence et la date de vérification. Si quelque chose n’est pas vérifié, nous le disons."
+      },
+      "languages": {
+        "title": "Cinq langues",
+        "body": "Espagnol, anglais, portugais, français et allemand. Changer de langue conserve ce que vous regardiez."
+      }
+    },
+    "statusHeading": "État actuel",
+    "statusBody": "Ceci est une version de développement. Les fiches des destinations sont en préparation et les traductions attendent une relecture humaine."
+  },
+  "Explore": {
+    "title": "Explorer le Panama",
+    "mapLabel": "Carte du Panama",
+    "panelLabel": "Informations de la carte",
+    "listHeading": "Destinations",
+    "listDescription": "Cette liste est l’alternative textuelle à la carte\u00a0: elle contient les mêmes destinations.",
+    "count": "{count, plural, one {# destination} other {# destinations}}",
+    "mapPendingTitle": "La carte interactive n’est pas encore disponible",
+    "mapPendingBody": "L’intégration de la carte est en préparation. En attendant, utilisez la liste des destinations."
+  },
+  "Destinations": {
+    "indexTitle": "Les neuf destinations",
+    "indexLead": "Voici les destinations initiales. Pour chacune, nous montrons quelles données existent et lesquelles n’ont pas pu être vérifiées.",
+    "kindLabel": "Type",
+    "viewOnMap": "Voir sur la carte",
+    "dataStatusHeading": "État des données",
+    "contentHeading": "Contenu éditorial",
+    "contentPending": "La fiche éditoriale de cette destination n’est pas encore rédigée. Nous n’affichons pas de descriptions sans source vérifiable.",
+    "evidenceNote": "Évaluation du {date}. Elle expire le {expires}\u00a0; ensuite l’état redevient «\u00a0Inconnue\u00a0».",
+    "capabilityColumn": "Capacité",
+    "statusColumn": "État",
+    "observationColumn": "Observation",
+    "notesHeading": "Avant de continuer",
+    "notes": {
+      "homonymBaru": "Ce n’est pas le district de Barú\u00a0: ce sont des entités distinctes.",
+      "homonymSantaCatalina": "D’autres localités et un district portent ce nom. Ici, il s’agit de la localité côtière de Veraguas.",
+      "bocasAmbiguous": "«\u00a0Bocas del Toro\u00a0» désigne à la fois une province, un district et une localité. La portée exacte de la destination reste à définir par la rédaction.",
+      "cascoNoBoundary": "Les sources ouvertes consultées ne contiennent aucune limite officielle du quartier historique."
+    }
+  },
+  "DestinationKind": {
+    "city": "Ville",
+    "historic_district": "Quartier historique",
+    "infrastructure": "Infrastructure",
+    "locality": "Localité",
+    "volcano": "Volcan",
+    "archipelago": "Archipel",
+    "island": "Île"
+  },
+  "Capability": {
+    "geometry": "Géométrie (Overture/OpenStreetMap)",
+    "terrain": "Relief (terrain AWS)",
+    "google3d": "Google 3D photoréaliste",
+    "streetView": "Street View",
+    "streetImagery": "Photos et panoramas de rue (Mapillary/KartaView)",
+    "openSatellite": "Imagerie satellite ouverte",
+    "officialGeometry": "Géométrie officielle (IGN/ANATI, MiAmbiente, UNESCO)"
+  },
+  "Coverage": {
+    "status": {
+      "UNKNOWN": "Inconnue",
+      "VERIFIED": "Vérifiée",
+      "PARTIAL": "Partielle",
+      "UNAVAILABLE": "Indisponible",
+      "ERROR": "Erreur de vérification"
+    },
+    "observation": {
+      "geoCounty": "Limite de district dérivée d’OpenStreetMap, non officielle.",
+      "geoRegionCountyLocality": "Province, district et localité\u00a0: trois entités distinctes, dérivées d’OpenStreetMap.",
+      "geoLocality": "Limite de localité dérivée d’OpenStreetMap, non officielle.",
+      "geoProtectedArea": "Polygone d’aire protégée dérivé d’OpenStreetMap, non officiel.",
+      "geoProtectedIsland": "Polygones d’île et de parc dérivés d’OpenStreetMap, non officiels.",
+      "geoCanalLines": "Lignes et polygones d’eau (canal, lac, écluses) dérivés d’OpenStreetMap\u00a0; il n’existe pas de zone officielle du Canal.",
+      "geoPointOnly": "Il n’existe qu’un point de volcan et des collines\u00a0; il n’y a pas de polygone de la localité.",
+      "geoNoPolygon": "Il n’y a pas de limite du quartier historique dans la source consultée.",
+      "terrainLand": "Relief disponible sur terre (source SRTM).",
+      "terrainLandNoBathymetry": "Relief sur terre\u00a0; pas de bathymétrie à fort zoom.",
+      "reasonNoCredential": "Aucun identifiant pour la vérifier.",
+      "reasonBlockedHost": "Source inaccessible depuis l’environnement de travail.",
+      "reasonNotEvaluated": "Pas encore évaluée."
+    }
+  },
+  "Geometry": {
+    "sourceClass": {
+      "official": "Officielle",
+      "osm_derived": "Dérivée d’OpenStreetMap (non officielle)",
+      "editorial": "Éditoriale (non officielle)"
+    }
+  },
+  "Editorial": {
+    "status": {
+      "draft": "Brouillon",
+      "machine_translated": "Traduction automatique, sans relecture humaine",
+      "reviewed": "Relu",
+      "published": "Publié",
+      "outdated": "Obsolète"
+    },
+    "fallbackNotice": "Ce contenu n’est disponible qu’en {language}.",
+    "machineTranslatedNotice": "Traduction automatique en attente de relecture humaine.",
+    "outdatedNotice": "Le texte original a changé\u00a0; cette traduction peut être obsolète."
+  },
+  "Sources": {
+    "title": "Sources et attributions",
+    "lead": "Toutes les informations géographiques de cette version proviennent des sources ci-dessous. Les licences marquées comme provisoires n’ont pas encore été lues à leur source primaire.",
+    "usedHeading": "Sources utilisées",
+    "blockedHeading": "Sources officielles pas encore accessibles",
+    "blockedLead": "Elles n’ont pas pu être consultées depuis l’environnement de développement. Tant qu’il n’y a ni accès ni licence, aucune limite n’est présentée comme officielle.",
+    "columns": {
+      "source": "Source",
+      "use": "Usage",
+      "license": "Licence",
+      "rights": "État du droit",
+      "attribution": "Attribution"
+    },
+    "rights": {
+      "verified": "Vérifié",
+      "provisional": "Provisoire\u00a0: non vérifié à la source primaire"
+    },
+    "use": {
+      "overture": "Divisions administratives, aires protégées, eau et côte, dérivées d’OpenStreetMap.",
+      "naturalEarth": "Contexte national à faible zoom.",
+      "awsTerrain": "Relief et ombrage du terrain sur terre.",
+      "anati": "Limites administratives officielles.",
+      "miambiente": "Limites officielles des aires protégées.",
+      "atp": "Informations touristiques officielles.",
+      "unesco": "Limites des sites du patrimoine mondial."
+    },
+    "pendingAccess": "En attente d’accès et de licence."
+  },
+  "Accessibility": {
+    "title": "Déclaration d’accessibilité",
+    "lead": "Notre objectif est de respecter les WCAG 2.2 niveau AA. Cette déclaration décrit l’état réel, y compris les limites connues.",
+    "keyboardHeading": "Clavier",
+    "keyboardBody": "Toute la navigation et le sélecteur de langue s’utilisent au clavier seul, et le focus est toujours visible.",
+    "textAlternativeHeading": "Alternative à la carte",
+    "textAlternativeBody": "La carte est un canevas graphique. La liste des destinations contient les mêmes informations et en est l’équivalent accessible.",
+    "motionHeading": "Mouvement",
+    "motionBody": "Nous respectons la préférence du système pour réduire les animations.",
+    "languagesHeading": "Langues",
+    "languagesBody": "Espagnol, anglais, portugais, français et allemand. Les traductions attendent une relecture humaine.",
+    "limitationsHeading": "Limites connues",
+    "limitations": {
+      "map": "La carte interactive n’est pas encore intégrée dans cette version.",
+      "testing": "Les tests automatiques ne remplacent pas une évaluation avec des utilisateurs, qui n’a pas encore été réalisée.",
+      "screenReaders": "Elle n’a pas été testée avec de vrais lecteurs d’écran."
+    },
+    "contactHeading": "Contact",
+    "contactBody": "Le canal pour envoyer des retours sur l’accessibilité reste à définir."
+  },
+  "Footer": {
+    "development": "Version de développement.",
+    "sourcesLink": "Voir toutes les sources et attributions",
+    "dataLabel": "Données"
+  },
+  "NotFound": {
+    "title": "Page introuvable",
+    "body": "Nous n’avons pas trouvé ce que vous cherchiez. Le lien a peut-être changé.",
+    "home": "Aller à l’accueil",
+    "destinations": "Voir les destinations"
+  }
+}

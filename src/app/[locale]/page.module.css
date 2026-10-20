@@ -1,0 +1,42 @@
+.hero {
+  padding-block: var(--space-7) var(--space-6);
+  max-inline-size: 48rem;
+}
+
+.eyebrow {
+  margin-block-end: var(--space-3);
+  color: var(--color-accent-strong);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: var(--text-s);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+
+.principles {
+  padding-block: var(--space-6);
+}
+
+.principleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space-5);
+}
+
+.principle {
+  padding-block-start: var(--space-3);
+  border-block-start: 3px solid var(--color-accent);
+}
+
+.principle p {
+  margin-block-end: 0;
+}

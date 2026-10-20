@@ -1,0 +1,60 @@
+.header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  min-block-size: var(--header-height);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border-block-end: 1px solid var(--color-line-soft);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  color: var(--color-ink);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-l);
+}
+
+/* Marca provisional: dos mares separados por un istmo (no es un logotipo definitivo) */
+.mark {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--color-accent) 0 42%, var(--color-ink) 42% 58%, var(--color-accent-strong) 58%);
+}
+
+.nav {
+  flex: 1 1 auto;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-1);
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.link[aria-current='page'] {
+  color: var(--color-accent-strong);
+  font-weight: 700;
+}

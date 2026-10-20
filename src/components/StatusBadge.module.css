@@ -1,0 +1,36 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2);
+  border-radius: var(--radius-s);
+  font-size: var(--text-s);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.symbol {
+  font-family: var(--font-text);
+  font-weight: 800;
+}
+
+.VERIFIED {
+  background: var(--color-verified-bg);
+  color: var(--color-verified-fg);
+}
+.PARTIAL {
+  background: var(--color-partial-bg);
+  color: var(--color-partial-fg);
+}
+.UNAVAILABLE {
+  background: var(--color-unavailable-bg);
+  color: var(--color-unavailable-fg);
+}
+.UNKNOWN {
+  background: var(--color-unknown-bg);
+  color: var(--color-unknown-fg);
+}
+.ERROR {
+  background: var(--color-error-bg);
+  color: var(--color-error-fg);
+}
