@@ -110,5 +110,7 @@ export function formatElevation(locale: Locale, meters: number, unitSystem: Unit
 }
 
 export function formatList(locale: Locale, items: readonly string[]): string {
-  return new Intl.ListFormat(formatTag(locale), { style: 'long', type: 'conjunction' }).format(items);
+  return new Intl.ListFormat(formatTag(locale), { style: 'long', type: 'conjunction' }).format(
+    items,
+  );
 }

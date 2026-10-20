@@ -43,7 +43,9 @@ function LocaleLinks({ query }: { query: Query | undefined }) {
 
 function QueryAwareLinks() {
   const searchParams = useSearchParams();
-  return <LocaleLinks query={queryFromSearchParams(new URLSearchParams(searchParams.toString()))} />;
+  return (
+    <LocaleLinks query={queryFromSearchParams(new URLSearchParams(searchParams.toString()))} />
+  );
 }
 
 export function LocaleSwitcher() {

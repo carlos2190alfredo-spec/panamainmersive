@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
@@ -6,9 +7,13 @@ const PORT = Number(process.env.E2E_PORT ?? 3100);
 // entran en bucle 307. No es un defecto de la aplicación (ver docs/testing.md).
 const baseURL = `http://localhost:${PORT}`;
 
-// Chromium preinstalado en el entorno (no se descarga). PLAYWRIGHT_CHROMIUM_EXECUTABLE lo sobreescribe.
+// Chromium: PLAYWRIGHT_CHROMIUM_EXECUTABLE lo fija; si no, se usa el preinstalado de este entorno cloud
+// (no se descarga) y, si tampoco existe (CI, máquina local), el que gestiona Playwright
+// (`pnpm exec playwright install chromium`).
+const PREINSTALLED = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const executablePath =
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ??
+  (existsSync(PREINSTALLED) ? PREINSTALLED : undefined);
 
 export default defineConfig({
   testDir: 'e2e',
@@ -20,12 +25,15 @@ export default defineConfig({
     baseURL,
     trace: 'retain-on-failure',
     launchOptions: {
-      executablePath,
+      ...(executablePath ? { executablePath } : {}),
       args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
     },
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
+    },
     {
       name: 'mobile',
       use: { ...devices['Pixel 5'] },

@@ -11,7 +11,7 @@ const directive = (csp: string, name: string) =>
     ?.slice(name.length + 1);
 
 describe('CSP (ADR-0010)', () => {
-  it('producción: script-src es exactamente \'self\' \'unsafe-inline\', sin eval', () => {
+  it("producción: script-src es exactamente 'self' 'unsafe-inline', sin eval", () => {
     const csp = buildCsp(prod);
     expect(directive(csp, 'script-src')).toBe("'self' 'unsafe-inline'");
     expect(csp).not.toContain('unsafe-eval');
@@ -42,9 +42,9 @@ describe('CSP (ADR-0010)', () => {
   });
 
   it('imágenes: self, data: y blob: más los orígenes declarados', () => {
-    expect(directive(buildCsp({ ...prod, imgOrigins: ['https://img.example.org'] }), 'img-src')).toBe(
-      "'self' data: blob: https://img.example.org",
-    );
+    expect(
+      directive(buildCsp({ ...prod, imgOrigins: ['https://img.example.org'] }), 'img-src'),
+    ).toBe("'self' data: blob: https://img.example.org");
   });
 
   it('upgrade-insecure-requests solo en producción', () => {

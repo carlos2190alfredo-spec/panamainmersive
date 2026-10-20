@@ -4,45 +4,45 @@
 
 ## Presupuestos iniciales (del documento rector)
 
-| Métrica | Presupuesto | Qué incluye la medición |
-| --- | --- | --- |
-| LCP público, p75 | ≤ 2,5 s | Página pública (home/destino) en dispositivo y red de referencia |
-| INP, p75 | ≤ 200 ms | Interacciones del panel y selector de idioma |
-| CLS | ≤ 0,1 | Carga inicial, incluido el reservado del mapa |
-| Mapa 2D utilizable | ≤ 3 s | Hasta que se puede arrastrar/acercar con capa base visible |
-| Primera vista 3D útil | ≤ 6 s | Solo si se activa 3D (hoy: relieve MapLibre) |
-| Respuesta visual a una acción | ≤ 200 ms | Clic/tecla → cambio visible |
-| Nueva vista de destino | 2–4 s | Vuelo + datos del destino |
-| Fluidez escritorio / móvil | 60 FPS / ≥ 30 FPS estables | Durante pan/zoom |
-| API búsqueda/detalle, p95 | ≤ 500 ms | En servidor, sin red cliente |
-| Routing (servicio caliente), p95 | ≤ 1,5 s | Cuando exista |
+| Métrica                          | Presupuesto                | Qué incluye la medición                                          |
+| -------------------------------- | -------------------------- | ---------------------------------------------------------------- |
+| LCP público, p75                 | ≤ 2,5 s                    | Página pública (home/destino) en dispositivo y red de referencia |
+| INP, p75                         | ≤ 200 ms                   | Interacciones del panel y selector de idioma                     |
+| CLS                              | ≤ 0,1                      | Carga inicial, incluido el reservado del mapa                    |
+| Mapa 2D utilizable               | ≤ 3 s                      | Hasta que se puede arrastrar/acercar con capa base visible       |
+| Primera vista 3D útil            | ≤ 6 s                      | Solo si se activa 3D (hoy: relieve MapLibre)                     |
+| Respuesta visual a una acción    | ≤ 200 ms                   | Clic/tecla → cambio visible                                      |
+| Nueva vista de destino           | 2–4 s                      | Vuelo + datos del destino                                        |
+| Fluidez escritorio / móvil       | 60 FPS / ≥ 30 FPS estables | Durante pan/zoom                                                 |
+| API búsqueda/detalle, p95        | ≤ 500 ms                   | En servidor, sin red cliente                                     |
+| Routing (servicio caliente), p95 | ≤ 1,5 s                    | Cuando exista                                                    |
 
 ### Dispositivo y red de referencia [propuesta, a confirmar]
 
-- **Móvil de referencia**: un Android de gama media de ~2021 (emulado con *CPU throttling* 4× en Chromium hasta tener hardware real).
-- **Red**: 10 Mbps, 100 ms RTT (perfil de Lighthouse/Playwright *slow 4G* ajustado).
+- **Móvil de referencia**: un Android de gama media de ~2021 (emulado con _CPU throttling_ 4× en Chromium hasta tener hardware real).
+- **Red**: 10 Mbps, 100 ms RTT (perfil de Lighthouse/Playwright _slow 4G_ ajustado).
 - Resultados con hardware **real** pendientes; hasta entonces se etiquetan «emulado».
 
 ### Presupuestos de transferencia por modo
 
-| Modo | Primer recorrido útil | Notas |
-| --- | --- | --- |
-| **Ligero** (MVP) | ≈ **1,5 MB** (JS + CSS + fuentes + primeras teselas) | Punto de partida del documento rector; se ajusta con evidencia |
-| **3D** | ≈ **6 MB** | **No verificado como realista** con Cesium completo (ver architecture A5) |
+| Modo             | Primer recorrido útil                                | Notas                                                                     |
+| ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Ligero** (MVP) | ≈ **1,5 MB** (JS + CSS + fuentes + primeras teselas) | Punto de partida del documento rector; se ajusta con evidencia            |
+| **3D**           | ≈ **6 MB**                                           | **No verificado como realista** con Cesium completo (ver architecture A5) |
 
 Descargas posteriores (más teselas, medios) **no se esconden**: se miden y se declaran por separado.
 
 ## Cómo se medirá
 
-| Qué | Cómo |
-| --- | --- |
-| Bundle JS por ruta | Salida de `next build` + analizador; **falla** si una ruta pública excede el presupuesto (prueba) |
-| Transferencia del primer recorrido | Playwright + CDP (`Network.loadingFinished`) con red limitada |
-| Mapa utilizable | Marca `performance.mark` desde navegación hasta primer `idle` del mapa con capa base |
-| Frame time / FPS | `requestAnimationFrame` muestreado durante un recorrido guionizado |
-| Errores de teselas, pérdida de contexto GL, *fallbacks* | Eventos del mapa → contadores locales (sin PII) |
-| Memoria | **No** se depende de `performance.memory` (no universal); se observan errores y pérdida de contexto |
-| Descargas / coste por sesión | Agregado de bytes por origen en el recorrido de prueba |
+| Qué                                                     | Cómo                                                                                                |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Bundle JS por ruta                                      | Salida de `next build` + analizador; **falla** si una ruta pública excede el presupuesto (prueba)   |
+| Transferencia del primer recorrido                      | Playwright + CDP (`Network.loadingFinished`) con red limitada                                       |
+| Mapa utilizable                                         | Marca `performance.mark` desde navegación hasta primer `idle` del mapa con capa base                |
+| Frame time / FPS                                        | `requestAnimationFrame` muestreado durante un recorrido guionizado                                  |
+| Errores de teselas, pérdida de contexto GL, _fallbacks_ | Eventos del mapa → contadores locales (sin PII)                                                     |
+| Memoria                                                 | **No** se depende de `performance.memory` (no universal); se observan errores y pérdida de contexto |
+| Descargas / coste por sesión                            | Agregado de bytes por origen en el recorrido de prueba                                              |
 
 ## Técnicas obligatorias
 
@@ -54,4 +54,18 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 
 ## Mediciones
 
-*(vacío — se rellena con fecha, commit, dispositivo emulado/real, red, y qué incluye cada medición)*
+### M-01 · JS y CSS de la primera carga (2026-10-20)
+
+- **Qué mide**: bytes **gzip** de los `<script src>` y hojas de estilo que referencia el HTML prerrenderizado de cada página, sumando los ficheros de `.next/` (`pnpm check:bundle`). **No** incluye fuentes (se cargan bajo demanda por `unicode-range`), imágenes ni teselas, ni la red real: es una **medida estática**, no un LCP.
+- **Entorno**: build de producción de Next 16.4.2 (Turbopack), commit de la Foundation.
+
+| Página           |  JS gzip | CSS gzip | Ficheros JS |
+| ---------------- | -------: | -------: | ----------: |
+| Inicio (es / de) | 190,5 KB |   4,0 KB |           9 |
+| Explorar         | 190,5 KB |   4,3 KB |           9 |
+| Destinos         | 190,5 KB |   3,1 KB |           9 |
+| Ficha de destino | 190,5 KB |   4,0 KB |           9 |
+| Fuentes          | 190,5 KB |   4,0 KB |           9 |
+
+- **Lectura**: el JS es **idéntico en todas las páginas** (190,5 KB): es el coste base de React 19 + Next App Router + `next-intl` cliente. Es una **línea base**, no un logro: el presupuesto del script (210 KB) se fijó como línea base + ≈10 % **después de medir** (una primera suposición de 160 KB resultó incorrecta). Cuando se integre MapLibre se medirá de nuevo y se declarará el coste del mapa por separado.
+- **Sin medir todavía**: LCP, INP, CLS, FPS, memoria, tiempo de mapa utilizable, transferencia total real. Requieren dispositivo y red de referencia.

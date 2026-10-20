@@ -5,7 +5,13 @@ import type { DestinationKey } from './destinations';
  * Los estados son POR FUENTE Y VERSIÓN, no una afirmación general.
  * `UNKNOWN` y `ERROR` no equivalen a ausencia (ADR-0007).
  */
-export const COVERAGE_STATUSES = ['UNKNOWN', 'VERIFIED', 'PARTIAL', 'UNAVAILABLE', 'ERROR'] as const;
+export const COVERAGE_STATUSES = [
+  'UNKNOWN',
+  'VERIFIED',
+  'PARTIAL',
+  'UNAVAILABLE',
+  'ERROR',
+] as const;
 export type CoverageStatus = (typeof COVERAGE_STATUSES)[number];
 
 export const CAPABILITIES = [

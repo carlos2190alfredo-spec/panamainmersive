@@ -2,11 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { buildAlternates, type LocaleVariant } from '@/domains/editorial/alternates';
 import { LOCALE_INFO, LOCALES, type Locale } from '@/i18n/locales';
 
-const options = { defaultLocale: 'es' as const, htmlLangOf: (l: Locale) => LOCALE_INFO[l].htmlLang };
+const options = {
+  defaultLocale: 'es' as const,
+  htmlLangOf: (l: Locale) => LOCALE_INFO[l].htmlLang,
+};
 const url = (l: Locale) => `https://example.org/${l}/x`;
 
 function variants(indexable: Partial<Record<Locale, boolean>>): LocaleVariant[] {
-  return LOCALES.map((locale) => ({ locale, url: url(locale), indexable: indexable[locale] ?? false }));
+  return LOCALES.map((locale) => ({
+    locale,
+    url: url(locale),
+    indexable: indexable[locale] ?? false,
+  }));
 }
 
 describe('hreflang y canonical desde variantes publicadas', () => {

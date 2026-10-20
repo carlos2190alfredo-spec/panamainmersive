@@ -7,7 +7,9 @@ import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
 type Tree = { [key: string]: string | Tree };
 
 function load(locale: Locale): Tree {
-  return JSON.parse(readFileSync(join(process.cwd(), 'messages', `${locale}.json`), 'utf8')) as Tree;
+  return JSON.parse(
+    readFileSync(join(process.cwd(), 'messages', `${locale}.json`), 'utf8'),
+  ) as Tree;
 }
 
 function flatten(tree: Tree, prefix = ''): Map<string, string> {
@@ -96,7 +98,10 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
       const messages = flatten(load(locale));
       const allowed = IDENTICAL_TO_SPANISH_ALLOWED[locale] ?? [];
       const untranslated = [...messages]
-        .filter(([path, text]) => source.get(path) === text && text.length > 24 && !allowed.includes(path))
+        .filter(
+          ([path, text]) =>
+            source.get(path) === text && text.length > 24 && !allowed.includes(path),
+        )
         .map(([path]) => path);
       expect(untranslated).toEqual([]);
     },

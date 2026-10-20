@@ -11,7 +11,14 @@ import { describe, expect, it } from 'vitest';
  *  - `{'texto'}` como hijo.
  */
 const SRC = join(process.cwd(), 'src');
-const TEXT_ATTRIBUTES = new Set(['alt', 'aria-label', 'aria-description', 'title', 'placeholder', 'aria-roledescription']);
+const TEXT_ATTRIBUTES = new Set([
+  'alt',
+  'aria-label',
+  'aria-description',
+  'title',
+  'placeholder',
+  'aria-roledescription',
+]);
 // Solo símbolos y puntuación (separadores, viñetas) no son texto traducible.
 const SYMBOLS_ONLY = /^[\s\p{P}\p{S}\d]*$/u;
 
@@ -35,7 +42,11 @@ function violationsIn(file: string): string[] {
       const t = node.getText().trim();
       if (t && !SYMBOLS_ONLY.test(t)) out.push(`${where(node)} texto literal «${t}»`);
     }
-    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && TEXT_ATTRIBUTES.has(node.name.text)) {
+    if (
+      ts.isJsxAttribute(node) &&
+      ts.isIdentifier(node.name) &&
+      TEXT_ATTRIBUTES.has(node.name.text)
+    ) {
       const init = node.initializer;
       if (init && ts.isStringLiteral(init) && !SYMBOLS_ONLY.test(init.text)) {
         out.push(`${where(node)} atributo ${node.name.text}="${init.text}"`);
@@ -43,7 +54,8 @@ function violationsIn(file: string): string[] {
     }
     if (ts.isJsxExpression(node) && node.expression && ts.isStringLiteralLike(node.expression)) {
       if (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent)) {
-        if (!SYMBOLS_ONLY.test(node.expression.text)) out.push(`${where(node)} {'${node.expression.text}'}`);
+        if (!SYMBOLS_ONLY.test(node.expression.text))
+          out.push(`${where(node)} {'${node.expression.text}'}`);
       }
     }
     ts.forEachChild(node, visit);

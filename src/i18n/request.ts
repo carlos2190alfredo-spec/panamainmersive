@@ -20,8 +20,9 @@ export default getRequestConfig(async ({ locale }) => {
   return {
     locale,
     // Solo se carga el archivo del idioma activo: cada locale es su propio chunk.
-    messages: ((await import(`../../messages/${locale}.json`)) as { default: Record<string, unknown> })
-      .default,
+    messages: (
+      (await import(`../../messages/${locale}.json`)) as { default: Record<string, unknown> }
+    ).default,
     // Los horarios y eventos locales usan America/Panama, no la zona del visitante.
     timeZone: PANAMA_TIME_ZONE,
     onError(error) {

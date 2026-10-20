@@ -3,12 +3,24 @@ import type { Page } from '@playwright/test';
 export const LOCALES = ['es', 'en', 'pt', 'fr', 'de'] as const;
 export type Locale = (typeof LOCALES)[number];
 
-export const HTML_LANG: Record<Locale, string> = { es: 'es', en: 'en', pt: 'pt', fr: 'fr', de: 'de' };
+export const HTML_LANG: Record<Locale, string> = {
+  es: 'es',
+  en: 'en',
+  pt: 'pt',
+  fr: 'fr',
+  de: 'de',
+};
 
 /** Ruta pública de cada página estructural por idioma (docs/i18n.md §2). */
 export const PATHS = {
   home: { es: '/es', en: '/en', pt: '/pt', fr: '/fr', de: '/de' },
-  explore: { es: '/es/explorar', en: '/en/explore', pt: '/pt/explorar', fr: '/fr/explorer', de: '/de/entdecken' },
+  explore: {
+    es: '/es/explorar',
+    en: '/en/explore',
+    pt: '/pt/explorar',
+    fr: '/fr/explorer',
+    de: '/de/entdecken',
+  },
   destinations: {
     es: '/es/destinos',
     en: '/en/destinations',
@@ -23,7 +35,13 @@ export const PATHS = {
     fr: '/fr/destinations/volcan-baru',
     de: '/de/reiseziele/vulkan-baru',
   },
-  sources: { es: '/es/fuentes', en: '/en/sources', pt: '/pt/fontes', fr: '/fr/sources', de: '/de/quellen' },
+  sources: {
+    es: '/es/fuentes',
+    en: '/en/sources',
+    pt: '/pt/fontes',
+    fr: '/fr/sources',
+    de: '/de/quellen',
+  },
   accessibility: {
     es: '/es/accesibilidad',
     en: '/en/accessibility',
@@ -61,7 +79,9 @@ export function watchPage(page: Page, options: { expectNotFound?: boolean } = {}
   void page.addInitScript(() => {
     document.addEventListener('securitypolicyviolation', (e) => {
       (window as unknown as { __csp: string[] }).__csp ??= [];
-      (window as unknown as { __csp: string[] }).__csp.push(`${e.violatedDirective} ${e.blockedURI}`);
+      (window as unknown as { __csp: string[] }).__csp.push(
+        `${e.violatedDirective} ${e.blockedURI}`,
+      );
     });
   });
   return {

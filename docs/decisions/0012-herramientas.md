@@ -1,11 +1,11 @@
 # 0012 — pnpm, ESLint 9, Vitest 5, Playwright
 
-- Estado: Aceptada
+- Estado: Aceptada (la parte «ESLint 9» fue reemplazada por [0013](0013-eslint-10.md))
 - Fecha: 2026-10-20
 
 ## Contexto
 
-`pnpm 10.28` está instalado; `pnpm` bloquea por defecto los *scripts* de instalación de dependencias, lo que es deseable. `eslint-plugin-jsx-a11y@6.10.2` declara compatibilidad hasta ESLint `^9` (E-05); `eslint@10.13.0` existe. `vitest@5.0.5` requiere `vite ^6.4 || ^7 || ^8`.
+`pnpm 10.28` está instalado; `pnpm` bloquea por defecto los _scripts_ de instalación de dependencias, lo que es deseable. `eslint-plugin-jsx-a11y@6.10.2` declara compatibilidad hasta ESLint `^9` (E-05); `eslint@10.13.0` existe. `vitest@5.0.5` requiere `vite ^6.4 || ^7 || ^8`.
 
 ## Decisión
 

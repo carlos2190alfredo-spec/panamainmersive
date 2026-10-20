@@ -1,0 +1,79 @@
+# Panamá Immersive
+
+Plataforma turística geoespacial, multilingüe y honesta con sus datos, para explorar Panamá con mapas, relieve y fuentes verificables. Nombre **provisional** (centralizado en `src/config/site.ts`).
+
+> **Estado:** Fase 0 (Discovery) y Fase 1 (Foundation) completadas; Fase 2 (mapa real) en curso. Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
+> Documento rector del proyecto: [`docs/PROMPT-MAESTRO.md`](docs/PROMPT-MAESTRO.md) (copia literal).
+
+## Qué funciona hoy
+
+- Navegación y contenido en **cinco idiomas** (`es` por defecto, `en`, `pt`, `fr`, `de`) con rutas localizadas, slugs por registro con redirecciones 308 y selector de idioma que conserva el contexto.
+- Interfaz **mapa primero** con diseño accesible (WCAG 2.2 AA verificado con axe en los cinco idiomas, tema claro/oscuro, 320 px).
+- Registro de los **nueve destinos** con identidad estable y evidencia de cobertura con caducidad.
+- SEO: canonical por idioma, hreflang/sitemap **solo de variantes publicadas**; todo `noindex` fuera de producción.
+- Base de datos PostgreSQL/PostGIS con migraciones, **RLS en todas las tablas** y auditoría inmutable, probadas contra un PostgreSQL real.
+
+**Lo que NO existe todavía** (no hay que darlo por hecho): mapa interactivo, datos turísticos editoriales, imágenes, 3D, rutas, IA, offline. Detalle y motivos en [`docs/progress.md`](docs/progress.md) y [`docs/backlog.md`](docs/backlog.md).
+
+## Requisitos
+
+- Node ≥ 22.12 (`.nvmrc`), pnpm 10 (`corepack enable`).
+- Para las pruebas de integración: PostgreSQL 16 y PostGIS 3.4 (binarios; las pruebas levantan su propio clúster temporal).
+- Para las pruebas E2E: Chromium (`pnpm exec playwright install chromium`, o el preinstalado del entorno).
+- Para el pipeline de datos (Fase 3): Python ≥ 3.12, `tippecanoe`, GDAL (ver `docs/setup.md`).
+
+## Puesta en marcha
+
+```bash
+pnpm install
+cp .env.example .env.local        # sin secretos reales; todo tiene valores por defecto seguros
+pnpm dev                          # http://localhost:3000  (usa «localhost», no 127.0.0.1)
+```
+
+Producción local (lo que prueban los E2E):
+
+```bash
+SITE_ENV=development pnpm build
+pnpm start                        # NO añadir -H 127.0.0.1 (ver docs/testing.md)
+```
+
+## Comandos
+
+| Comando                                        | Qué hace                                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Tipos (TS 6, estricto), ESLint (incl. a11y y fronteras de dominio), Prettier       |
+| `pnpm test`                                    | Unitarias (Vitest): i18n, dominio, configuración, contraste WCAG, SEO              |
+| `pnpm test:integration`                        | PostgreSQL+PostGIS reales: migraciones, RLS por rol, restricciones, GIS, auditoría |
+| `pnpm build && pnpm check:bundle`              | Compilación + escaneo de secretos en el bundle + presupuesto de JS por página      |
+| `pnpm test:e2e`                                | Playwright contra el build de producción (escritorio y móvil, axe, CSP)            |
+| `pnpm db:migrate`                              | Aplica `db/migrations` a `DATABASE_URL` (rechaza bases remotas sin confirmación)   |
+
+## Estructura
+
+```
+src/app/[locale]/…     rutas (SSR/estático), un layout raíz por idioma
+src/domains/…          lógica pura por dominio (sin UI ni framework): editorial, tourism, geography
+src/components/        componentes accesibles (CSS Modules + tokens)
+src/i18n/              registro de idiomas, rutas, navegación, formatos (Intl)
+src/config/            entorno validado (zod), marca, cabeceras de seguridad
+messages/              textos de interfaz por idioma (ICU)
+db/migrations/         SQL versionado con checksum (PostGIS, RLS, auditoría)
+pipelines/             ETL en Python y sondeos de Fase 0 (spikes)
+e2e/ tests/            Playwright · Vitest (unit e integration)
+docs/                  arquitectura, ADR, cobertura, derechos, i18n, GIS, seguridad, costes, progreso
+```
+
+## Documentación
+
+Empieza por [`docs/architecture.md`](docs/architecture.md) y [`docs/decisions/`](docs/decisions/README.md). Datos y licencias: [`docs/data-sources.md`](docs/data-sources.md), [`docs/provider-rights.md`](docs/provider-rights.md), [`docs/coverage.md`](docs/coverage.md). Cuentas y credenciales pendientes: [`docs/setup.md`](docs/setup.md).
+
+## Principios que no se negocian
+
+1. **No se inventan datos**: ni geometrías, ni cobertura, ni imágenes, ni verificaciones. Lo no comprobado es `UNKNOWN`, nunca «no existe».
+2. **Procedencia visible**: cada dato dice su fuente, licencia y fecha. Lo derivado de OpenStreetMap se etiqueta como **no oficial**.
+3. **Nada se publica sin derechos leídos en la fuente primaria** (política de derechos `deny-by-default`).
+4. **Una máquina nunca figura como revisora** de una traducción; solo se indexa lo `published`.
+
+## Licencia
+
+Código: sin licencia aún (`UNLICENSED`, decisión pendiente). Los datos de terceros conservan sus licencias (ver `docs/data-sources.md`).

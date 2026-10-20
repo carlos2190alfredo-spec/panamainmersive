@@ -33,10 +33,7 @@ export type DestinationKind = (typeof DESTINATION_KINDS)[number];
 
 /** Avisos sobre homonimia o ambigüedad (mensajes en `Destinations.notes`). */
 export type DestinationNoteKey =
-  | 'homonymBaru'
-  | 'homonymSantaCatalina'
-  | 'bocasAmbiguous'
-  | 'cascoNoBoundary';
+  'homonymBaru' | 'homonymSantaCatalina' | 'bocasAmbiguous' | 'cascoNoBoundary';
 
 export interface DestinationName {
   readonly name: string;

@@ -29,7 +29,7 @@ Prueba con `script-src 'self'` + `experimental.sri` en Chromium (`e2e/security.s
 
 ## Alternativas descartadas
 
-- **Nonce por petición** (plan B): fuerza render dinámico en todas las páginas públicas (sin caché de CDN, más invocaciones de función, peor TTFB). **No descartado para el futuro**: se reevaluará con *Cache Components*/PPR o cuando el riesgo lo justifique.
+- **Nonce por petición** (plan B): fuerza render dinámico en todas las páginas públicas (sin caché de CDN, más invocaciones de función, peor TTFB). **No descartado para el futuro**: se reevaluará con _Cache Components_/PPR o cuando el riesgo lo justifique.
 - **Hashes por página**: inviable (ver evidencia 4).
 - **CSP por `<meta>`**: no admite `frame-ancestors` y no resuelve los hashes.
 
@@ -41,5 +41,5 @@ La mitigación de XSS depende **de no introducir** HTML sin escapar (lint + revi
 
 - Se renderice contenido de usuarios o de IA (Fase 6/9).
 - `experimental.sri` o Next cubran todos los scripts (incluidos los inline) con hashes por build.
-- Se adopte *Cache Components*/PPR y el coste del render dinámico con nonce sea aceptable.
+- Se adopte _Cache Components_/PPR y el coste del render dinámico con nonce sea aceptable.
 - Cada vez que se añada un origen externo (entrada explícita en la lista y su derecho en `provider-rights.md`).

@@ -25,19 +25,26 @@ test.describe('idiomas y rutas', () => {
       await expect(page.getByRole('heading', { level: 1 })).not.toBeEmpty();
       // noindex en los 404: puede haber más de una etiqueta (la del sitio y la que inyecta Next);
       // todas deben ser restrictivas.
-      const robots = await page.locator('meta[name="robots"]').evaluateAll((els) => els.map((e) => e.getAttribute('content') ?? ''));
+      const robots = await page
+        .locator('meta[name="robots"]')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('content') ?? ''));
       expect(robots.length).toBeGreaterThan(0);
       for (const r of robots) expect(r).toMatch(/noindex/);
     });
   }
 
-  test('la ruta interna redirige a la localizada (una sola URL pública por página)', async ({ request }) => {
+  test('la ruta interna redirige a la localizada (una sola URL pública por página)', async ({
+    request,
+  }) => {
     const res = await request.get('/es/explore', { maxRedirects: 0 });
     expect(res.status()).toBe(307);
     expect(res.headers()['location']).toMatch(/\/es\/explorar$/);
   });
 
-  test('negociación en «/»: cookie > Accept-Language > español; nunca geolocalización', async ({ playwright, baseURL }) => {
+  test('negociación en «/»: cookie > Accept-Language > español; nunca geolocalización', async ({
+    playwright,
+    baseURL,
+  }) => {
     // Un contexto NUEVO por petición: el `request` de Playwright conserva cookies entre llamadas y la
     // primera redirección fija NEXT_LOCALE, lo que ya demuestra que la cookie gana al Accept-Language.
     const go = async (headers: Record<string, string>) => {
@@ -54,11 +61,16 @@ test.describe('idiomas y rutas', () => {
     expect(await go({ 'Accept-Language': 'de', Cookie: 'NEXT_LOCALE=pt' })).toMatch(/\/pt$/);
   });
 
-  test('una cookie fijada por una visita anterior se respeta en la siguiente', async ({ request }) => {
+  test('una cookie fijada por una visita anterior se respeta en la siguiente', async ({
+    request,
+  }) => {
     const first = await request.get('/', { headers: { 'Accept-Language': 'fr' }, maxRedirects: 0 });
     expect(first.headers()['location']).toMatch(/\/fr$/);
     await request.get('/fr'); // la visita fija NEXT_LOCALE=fr
-    const second = await request.get('/', { headers: { 'Accept-Language': 'de' }, maxRedirects: 0 });
+    const second = await request.get('/', {
+      headers: { 'Accept-Language': 'de' },
+      maxRedirects: 0,
+    });
     expect(second.headers()['location']).toMatch(/\/fr$/); // gana la cookie, no el navegador
   });
 
@@ -72,7 +84,9 @@ test.describe('idiomas y rutas', () => {
 
   test.describe('prefijo de idioma desconocido', () => {
     test.use({ locale: 'es-ES' });
-    test('no se asume ningún idioma: se trata como ruta sin prefijo y acaba en 404 localizado', async ({ page }) => {
+    test('no se asume ningún idioma: se trata como ruta sin prefijo y acaba en 404 localizado', async ({
+      page,
+    }) => {
       const res = await page.goto('/xx/foo');
       expect(res?.status()).toBe(404);
       expect(page.url()).toMatch(/\/es\/xx\/foo$/); // el navegador pide español
@@ -103,9 +117,15 @@ test.describe('slugs de destino', () => {
 });
 
 test.describe('cambiar de idioma conserva el contexto', () => {
-  test('ficha de destino + query → misma entidad en otro idioma, con su slug y su query', async ({ page }) => {
+  test('ficha de destino + query → misma entidad en otro idioma, con su slug y su query', async ({
+    page,
+  }) => {
     await page.goto('/en/destinations/panama-city?d=panama-city&layers=admin&cam=-79.5,8.98,9');
-    await page.getByRole('group').first().waitFor({ state: 'attached' }).catch(() => undefined);
+    await page
+      .getByRole('group')
+      .first()
+      .waitFor({ state: 'attached' })
+      .catch(() => undefined);
     await page.locator('summary').first().click();
     await page.getByRole('link', { name: 'Deutsch' }).click();
     await expect(page).toHaveURL(/\/de\/reiseziele\/panama-stadt\?/);
@@ -118,7 +138,13 @@ test.describe('cambiar de idioma conserva el contexto', () => {
   });
 
   test('la página es la misma entidad en los cinco idiomas', async ({ page }) => {
-    const slugs = { es: 'ciudad-de-panama', en: 'panama-city', pt: 'cidade-do-panama', fr: 'ville-de-panama', de: 'panama-stadt' } as const;
+    const slugs = {
+      es: 'ciudad-de-panama',
+      en: 'panama-city',
+      pt: 'cidade-do-panama',
+      fr: 'ville-de-panama',
+      de: 'panama-stadt',
+    } as const;
     await page.goto('/es/destinos/ciudad-de-panama');
     for (const next of ['en', 'pt', 'fr', 'de', 'es'] as const) {
       await page.locator('summary').first().click();
@@ -127,7 +153,9 @@ test.describe('cambiar de idioma conserva el contexto', () => {
     }
   });
 
-  test('si el destino no se puede resolver no se inventa un slug: se vuelve al índice', async ({ page }) => {
+  test('si el destino no se puede resolver no se inventa un slug: se vuelve al índice', async ({
+    page,
+  }) => {
     // `casco-antiguo` es válido en todos los idiomas; con un slug inválido el selector no debe fabricar uno.
     await page.goto('/es/destinos');
     await page.locator('summary').first().click();
@@ -135,7 +163,9 @@ test.describe('cambiar de idioma conserva el contexto', () => {
     await expect(page).toHaveURL(/\/fr\/destinations$/);
   });
 
-  test('el selector muestra nombres de idioma, no banderas, y marca el actual', async ({ page }) => {
+  test('el selector muestra nombres de idioma, no banderas, y marca el actual', async ({
+    page,
+  }) => {
     await page.goto('/pt/explorar');
     await page.locator('summary').first().click();
     const links = page.locator('a[hreflang]');
@@ -165,7 +195,9 @@ test.describe('SEO (fuera de producción todo es noindex)', () => {
     }
   });
 
-  test('sin hreflang mientras ninguna variante esté publicada (no se indexan traducciones pendientes)', async ({ page }) => {
+  test('sin hreflang mientras ninguna variante esté publicada (no se indexan traducciones pendientes)', async ({
+    page,
+  }) => {
     await page.goto(PATHS.home.en);
     await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0);
   });

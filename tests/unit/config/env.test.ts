@@ -32,10 +32,12 @@ describe('configuración validada', () => {
 
   it('producción exige https y rechaza localhost', () => {
     expect(() => parseEnv({ SITE_ENV: 'production' })).toThrow(/https|localhost/);
-    expect(() => parseEnv({ SITE_ENV: 'production', NEXT_PUBLIC_SITE_URL: 'http://example.org' })).toThrow(/https/);
-    expect(parseEnv({ SITE_ENV: 'production', NEXT_PUBLIC_SITE_URL: 'https://example.org' }).SITE_ENV).toBe(
-      'production',
-    );
+    expect(() =>
+      parseEnv({ SITE_ENV: 'production', NEXT_PUBLIC_SITE_URL: 'http://example.org' }),
+    ).toThrow(/https/);
+    expect(
+      parseEnv({ SITE_ENV: 'production', NEXT_PUBLIC_SITE_URL: 'https://example.org' }).SITE_ENV,
+    ).toBe('production');
   });
 
   it('un secreto con prefijo NEXT_PUBLIC_ se rechaza (se expondría al navegador)', () => {
@@ -52,7 +54,9 @@ describe('configuración validada', () => {
 
   it('las claves públicas de mapas en la lista blanca sí se permiten con prefijo', () => {
     expect(findPublicSecrets({ NEXT_PUBLIC_GOOGLE_MAPS_KEY: 'k' })).toEqual([]);
-    expect(findPublicSecrets({ NEXT_PUBLIC_SITE_URL: 'https://x', NEXT_PUBLIC_TILES_BASE_URL: '/data' })).toEqual([]);
+    expect(
+      findPublicSecrets({ NEXT_PUBLIC_SITE_URL: 'https://x', NEXT_PUBLIC_TILES_BASE_URL: '/data' }),
+    ).toEqual([]);
   });
 
   it('.env.example no contiene secretos con prefijo público ni valores reales', () => {
@@ -61,7 +65,9 @@ describe('configuración validada', () => {
     expect(findPublicSecrets(Object.fromEntries(names.map((n) => [n, 'x'])))).toEqual([]);
     // Toda credencial está comentada y vacía en la plantilla.
     for (const line of text.split('\n')) {
-      if (/^(GOOGLE_MAPS_API_KEY|CESIUM_ION_TOKEN|MAPILLARY_ACCESS_TOKEN|DATABASE_URL)/.test(line)) {
+      if (
+        /^(GOOGLE_MAPS_API_KEY|CESIUM_ION_TOKEN|MAPILLARY_ACCESS_TOKEN|DATABASE_URL)/.test(line)
+      ) {
         throw new Error(`Credencial sin comentar en .env.example: ${line}`);
       }
     }

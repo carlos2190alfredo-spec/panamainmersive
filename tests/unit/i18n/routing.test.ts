@@ -48,7 +48,9 @@ describe('rutas localizadas', () => {
     for (const locale of LOCALES) {
       expect(pathFor('/destinations/[slug]', locale)).toMatch(/\/\[slug\]$/);
       // La base de la ficha coincide con la del índice de destinos.
-      expect(pathFor('/destinations/[slug]', locale)).toBe(`${pathFor('/destinations', locale)}/[slug]`);
+      expect(pathFor('/destinations/[slug]', locale)).toBe(
+        `${pathFor('/destinations', locale)}/[slug]`,
+      );
     }
   });
 

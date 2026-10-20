@@ -32,7 +32,9 @@ test.describe('cabeceras de seguridad (ADR-0010)', () => {
 
 test.describe('CSP sin violaciones y con hidratación real', () => {
   for (const name of PAGE_NAMES) {
-    test(`${name}: ninguna violación de CSP ni error de consola en los 5 idiomas`, async ({ page }) => {
+    test(`${name}: ninguna violación de CSP ni error de consola en los 5 idiomas`, async ({
+      page,
+    }) => {
       const watch = watchPage(page, { expectNotFound: name === 'notFound' });
       for (const locale of LOCALES) {
         await page.goto(PATHS[name][locale]);
@@ -43,7 +45,9 @@ test.describe('CSP sin violaciones y con hidratación real', () => {
     });
   }
 
-  test('la hidratación funciona bajo CSP: Escape cierra el menú de idioma (requiere JS)', async ({ page }) => {
+  test('la hidratación funciona bajo CSP: Escape cierra el menú de idioma (requiere JS)', async ({
+    page,
+  }) => {
     const watch = watchPage(page);
     await page.goto(PATHS.explore.en);
     await page.waitForLoadState('networkidle');
@@ -56,10 +60,15 @@ test.describe('CSP sin violaciones y con hidratación real', () => {
     expect(await watch.violations()).toEqual([]);
   });
 
-  test('los scripts externos solo se cargan del propio origen (ningún <script src> de terceros)', async ({ page, baseURL }) => {
+  test('los scripts externos solo se cargan del propio origen (ningún <script src> de terceros)', async ({
+    page,
+    baseURL,
+  }) => {
     for (const locale of LOCALES) {
       await page.goto(PATHS.home[locale]);
-      const srcs = await page.locator('script[src]').evaluateAll((els) => els.map((e) => (e as HTMLScriptElement).src));
+      const srcs = await page
+        .locator('script[src]')
+        .evaluateAll((els) => els.map((e) => (e as HTMLScriptElement).src));
       expect(srcs.length).toBeGreaterThan(0);
       for (const src of srcs) expect(new URL(src).origin, src).toBe(new URL(baseURL ?? '').origin);
     }

@@ -8,39 +8,39 @@ Cada escenario parte de **usuarios activos mensuales (MAU)** y de **unidades fac
 
 ### Hipótesis (todas **supuestos** hasta que se midan)
 
-| Parámetro | Valor | Nota |
-| --- | --- | --- |
-| Sesiones por MAU al mes | 2,0 | Turismo: uso episódico |
-| Minutos de exploración por sesión | ~6 | Informativo; el coste se modela por bytes y peticiones |
-| Proporción de sesiones con 3D de Google | **0 %** en el MVP | Sin cobertura verificada ni clave. Sensibilidad al 15 % más abajo |
-| Lecturas Range de PMTiles por sesión | 180 | A medir en Fase 2 |
-| Transferencia de teselas por sesión | 2,5 MB | A medir; servida por CDN/R2 |
-| Transferencia de la app por sesión | 1,2 MB | JS/HTML/medios |
-| Peticiones al host de la app por sesión | 40 | Cada acierto de CDN cuenta |
-| Invocaciones de función por sesión | 12 | SSR/API |
-| Cálculos de ruta por MAU y mes | 1 | Autoalojado |
-| Cache hit ratio de teselas | 90 % | Solo los fallos son operaciones Clase B |
-| Almacenamiento (PMTiles + paquetes + medios) | 8 GB | |
+| Parámetro                                    | Valor             | Nota                                                              |
+| -------------------------------------------- | ----------------- | ----------------------------------------------------------------- |
+| Sesiones por MAU al mes                      | 2,0               | Turismo: uso episódico                                            |
+| Minutos de exploración por sesión            | ~6                | Informativo; el coste se modela por bytes y peticiones            |
+| Proporción de sesiones con 3D de Google      | **0 %** en el MVP | Sin cobertura verificada ni clave. Sensibilidad al 15 % más abajo |
+| Lecturas Range de PMTiles por sesión         | 180               | A medir en Fase 2                                                 |
+| Transferencia de teselas por sesión          | 2,5 MB            | A medir; servida por CDN/R2                                       |
+| Transferencia de la app por sesión           | 1,2 MB            | JS/HTML/medios                                                    |
+| Peticiones al host de la app por sesión      | 40                | Cada acierto de CDN cuenta                                        |
+| Invocaciones de función por sesión           | 12                | SSR/API                                                           |
+| Cálculos de ruta por MAU y mes               | 1                 | Autoalojado                                                       |
+| Cache hit ratio de teselas                   | 90 %              | Solo los fallos son operaciones Clase B                           |
+| Almacenamiento (PMTiles + paquetes + medios) | 8 GB              |                                                                   |
 
 ### Precios usados (secundarios, sin verificar)
 
-| Servicio | Precio usado | Fuente / conflicto |
-| --- | --- | --- |
-| Vercel Pro | 20 USD/puesto; 1 TB transferencia y 10 M peticiones edge incluidos; 0,15 USD/GB extra; 2 USD/M peticiones extra; 0,60 USD/M invocaciones | makerkit; **fuentes en conflicto** sobre funciones/CPU |
-| Supabase Pro | 25 USD/mes (+10 USD de crédito de cómputo, 8 GB BD, 250 GB egress); cómputo adicional **supuesto**: 0 / 0 / 60 / 410 USD según escala | makerkit; **conflicto** en MAU incluidos |
-| Cloudflare R2 | 0,015 USD/GB-mes; Clase B 0,36 USD/M; egress gratis | semaphore/spendbase |
-| Google Photorealistic 3D | 6 USD/1 000 solicitudes de tile raíz | **Conflicto** (foro Cesium vs blog); SKU Enterprise; tramo gratuito no confirmado |
-| Routing (Valhalla autoalojado) | 40 USD/mes de VM (×3 a 1 M MAU) | **Supuesto** |
-| Cesium ion | Community gratis / Commercial 149–524 / Premium 499–874 | cesium.com (fragmento) |
+| Servicio                       | Precio usado                                                                                                                             | Fuente / conflicto                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Vercel Pro                     | 20 USD/puesto; 1 TB transferencia y 10 M peticiones edge incluidos; 0,15 USD/GB extra; 2 USD/M peticiones extra; 0,60 USD/M invocaciones | makerkit; **fuentes en conflicto** sobre funciones/CPU                            |
+| Supabase Pro                   | 25 USD/mes (+10 USD de crédito de cómputo, 8 GB BD, 250 GB egress); cómputo adicional **supuesto**: 0 / 0 / 60 / 410 USD según escala    | makerkit; **conflicto** en MAU incluidos                                          |
+| Cloudflare R2                  | 0,015 USD/GB-mes; Clase B 0,36 USD/M; egress gratis                                                                                      | semaphore/spendbase                                                               |
+| Google Photorealistic 3D       | 6 USD/1 000 solicitudes de tile raíz                                                                                                     | **Conflicto** (foro Cesium vs blog); SKU Enterprise; tramo gratuito no confirmado |
+| Routing (Valhalla autoalojado) | 40 USD/mes de VM (×3 a 1 M MAU)                                                                                                          | **Supuesto**                                                                      |
+| Cesium ion                     | Community gratis / Commercial 149–524 / Premium 499–874                                                                                  | cesium.com (fragmento)                                                            |
 
 ## 2. Escenarios (MVP: 2D + relieve, sin Google 3D)
 
-| MAU | Sesiones/mes | Transf. app (GB) | Transf. teselas CDN (GB) | Vercel | R2 | Supabase | Google 3D | Routing | **Total/mes** |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 000 | 2 000 | 2,3 | 4,9 | 20,01 | 0,13 | 25,00 | 0 | 40 | **≈ 85** |
-| 10 000 | 20 000 | 23,4 | 48,8 | 20,14 | 0,25 | 25,00 | 0 | 40 | **≈ 85** |
-| 100 000 | 200 000 | 234 | 488 | 21,44 | 1,42 | 85,00 | 0 | 40 | **≈ 148** |
-| 1 000 000 | 2 000 000 | 2 344 | 4 883 | 375,96 | 13,08 | 435,00 | 0 | 120 | **≈ 944** |
+|       MAU | Sesiones/mes | Transf. app (GB) | Transf. teselas CDN (GB) | Vercel |    R2 | Supabase | Google 3D | Routing | **Total/mes** |
+| --------: | -----------: | ---------------: | -----------------------: | -----: | ----: | -------: | --------: | ------: | ------------: |
+|     1 000 |        2 000 |              2,3 |                      4,9 |  20,01 |  0,13 |    25,00 |         0 |      40 |      **≈ 85** |
+|    10 000 |       20 000 |             23,4 |                     48,8 |  20,14 |  0,25 |    25,00 |         0 |      40 |      **≈ 85** |
+|   100 000 |      200 000 |              234 |                      488 |  21,44 |  1,42 |    85,00 |         0 |      40 |     **≈ 148** |
+| 1 000 000 |    2 000 000 |            2 344 |                    4 883 | 375,96 | 13,08 |   435,00 |         0 |     120 |     **≈ 944** |
 
 **Sensibilidad A — Google 3D al 15 % de las sesiones** (si se verificara cobertura y se activara): +1,8 / +18 / +180 / +1 800 USD → totales ≈ **87 / 103 / 328 / 2 744**. Es el único rubro que domina el coste.
 
@@ -50,18 +50,18 @@ Cada escenario parte de **usuarios activos mensuales (MAU)** y de **unidades fac
 
 1. **La infraestructura es barata** con este diseño (PMTiles estáticos, egress gratis en R2). El riesgo económico está en otro sitio.
 2. **El coste dominante es humano**: curaduría de contenido, **revisión lingüística en cinco idiomas** y **verificación de empresas** (ver §4). No aparece en la tabla anterior.
-3. **Google 3D** (si se activa) escala linealmente con las sesiones 3D; hace falta cuota y *circuit-breaker* **antes** de activarlo (§5).
-4. Estas cifras **no** incluyen: dominio, correo transaccional, IA (ver §3), observabilidad de pago, copias de seguridad adicionales ni *staging*.
+3. **Google 3D** (si se activa) escala linealmente con las sesiones 3D; hace falta cuota y _circuit-breaker_ **antes** de activarlo (§5).
+4. Estas cifras **no** incluyen: dominio, correo transaccional, IA (ver §3), observabilidad de pago, copias de seguridad adicionales ni _staging_.
 
 ## 3. Rubros que el modelo aún **no** cuantifica (a rellenar con datos)
 
-| Rubro | Qué falta saber |
-| --- | --- |
-| **IA** (concierge, traducción, embeddings) | Precio por millón de tokens del modelo elegido (no verificado hoy), tokens por conversación, conversaciones por MAU. Fórmula: `conversaciones × (tokens_entrada·p_in + tokens_salida·p_out)`. Se acota por límites duros por conversación. |
-| **Satélite/terreno de otros proveedores** | No hay proveedor elegido (el terreno AWS es gratuito, términos sin leer). |
-| **Cesium ion** | Solo si se activa Cesium (ADR-0004). |
-| **Observabilidad** (Sentry, OpenTelemetry) | Se difiere hasta conocer el despliegue. |
-| **Copias, *staging*, transferencia entre nubes** | Depende de la arquitectura de despliegue elegida. |
+| Rubro                                            | Qué falta saber                                                                                                                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **IA** (concierge, traducción, embeddings)       | Precio por millón de tokens del modelo elegido (no verificado hoy), tokens por conversación, conversaciones por MAU. Fórmula: `conversaciones × (tokens_entrada·p_in + tokens_salida·p_out)`. Se acota por límites duros por conversación. |
+| **Satélite/terreno de otros proveedores**        | No hay proveedor elegido (el terreno AWS es gratuito, términos sin leer).                                                                                                                                                                  |
+| **Cesium ion**                                   | Solo si se activa Cesium (ADR-0004).                                                                                                                                                                                                       |
+| **Observabilidad** (Sentry, OpenTelemetry)       | Se difiere hasta conocer el despliegue.                                                                                                                                                                                                    |
+| **Copias, _staging_, transferencia entre nubes** | Depende de la arquitectura de despliegue elegida.                                                                                                                                                                                          |
 
 ## 4. Trabajo editorial, verificación y revisión lingüística (costos operativos distintos)
 
@@ -75,7 +75,7 @@ Ejemplo ilustrativo **(solo para mostrar la estructura, valores supuestos)**: 9 
 
 ## 5. Control de gasto (diseño)
 
-Presupuestos por proveedor y por operación; **reservas de gasto** cuando sea viable (`budget_reservations`); cuotas; alarmas; **margen por facturación retrasada** (los proveedores facturan con retraso: la cuota local debe cortar antes del límite contractual); *circuit-breakers* con *fallback* (el *Experience Resolver* degrada a relieve/2D). **Una alerta de presupuesto no es un límite duro de gasto.** Fase 9/10.
+Presupuestos por proveedor y por operación; **reservas de gasto** cuando sea viable (`budget_reservations`); cuotas; alarmas; **margen por facturación retrasada** (los proveedores facturan con retraso: la cuota local debe cortar antes del límite contractual); _circuit-breakers_ con _fallback_ (el _Experience Resolver_ degrada a relieve/2D). **Una alerta de presupuesto no es un límite duro de gasto.** Fase 9/10.
 
 ## 6. Qué revisar antes de comprar nada
 

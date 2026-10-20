@@ -26,7 +26,9 @@ export function buildCsp(opts: SecurityHeadersOptions): string {
     // nonce obliga a render dinámico (sin páginas estáticas). SRI experimental cubre solo 6 de 9 scripts.
     // Por eso `'unsafe-inline'` en script-src; se compensa con el resto de directivas estrictas y con
     // la prohibición (lint) de `dangerouslySetInnerHTML`. `'unsafe-eval'` solo en desarrollo (HMR).
-    'script-src': opts.development ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self' 'unsafe-inline'",
+    'script-src': opts.development
+      ? "'self' 'unsafe-inline' 'unsafe-eval'"
+      : "'self' 'unsafe-inline'",
     'style-src': opts.development ? "'self' 'unsafe-inline'" : "'self'",
     'img-src': img,
     'font-src': "'self'",
@@ -63,7 +65,10 @@ export function securityHeaders(opts: SecurityHeadersOptions): HeaderEntry[] {
     { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   ];
   if (opts.production) {
-    headers.push({ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' });
+    headers.push({
+      key: 'Strict-Transport-Security',
+      value: 'max-age=31536000; includeSubDomains',
+    });
   }
   return headers;
 }

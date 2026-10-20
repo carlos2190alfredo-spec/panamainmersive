@@ -29,7 +29,10 @@ export function DestinationList({
         return (
           <li key={d.key} className={styles.item} data-destination={d.key}>
             <Link
-              href={{ pathname: '/destinations/[slug]', params: { slug: destinationSlug(d, locale) } }}
+              href={{
+                pathname: '/destinations/[slug]',
+                params: { slug: destinationSlug(d, locale) },
+              }}
               className={styles.link}
             >
               <span className={styles.name}>{name}</span>

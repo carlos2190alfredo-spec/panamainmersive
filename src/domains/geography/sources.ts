@@ -6,13 +6,7 @@
 export type RightsStatus = 'verified' | 'provisional';
 
 export type SourceUseKey =
-  | 'overture'
-  | 'naturalEarth'
-  | 'awsTerrain'
-  | 'anati'
-  | 'miambiente'
-  | 'atp'
-  | 'unesco';
+  'overture' | 'naturalEarth' | 'awsTerrain' | 'anati' | 'miambiente' | 'atp' | 'unesco';
 
 export interface UsedSource {
   readonly id: string;

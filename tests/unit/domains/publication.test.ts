@@ -21,12 +21,17 @@ describe('política de publicación (docs/i18n.md §6)', () => {
 
   it('fuera de producción NADA es indexable, ni siquiera lo publicado', () => {
     for (const siteEnv of ['development', 'staging'] as const) {
-      expect(decideIndexing({ ...ok, siteEnv })).toEqual({ indexable: false, reason: 'not_production' });
+      expect(decideIndexing({ ...ok, siteEnv })).toEqual({
+        indexable: false,
+        reason: 'not_production',
+      });
     }
   });
 
   it('no se indexan páginas vacías', () => {
-    expect(decideIndexing({ ...ok, hasRequiredFields: false }).reason).toBe('missing_required_fields');
+    expect(decideIndexing({ ...ok, hasRequiredFields: false }).reason).toBe(
+      'missing_required_fields',
+    );
   });
 
   it('una traducción automática no es indexable por defecto', () => {
@@ -38,7 +43,8 @@ describe('política de publicación (docs/i18n.md §6)', () => {
 
   it('la excepción para traducción automática solo vale para contenido NO sensible', () => {
     expect(
-      decideIndexing({ ...ok, status: 'machine_translated', allowMachineTranslatedGeneral: true }).indexable,
+      decideIndexing({ ...ok, status: 'machine_translated', allowMachineTranslatedGeneral: true })
+        .indexable,
     ).toBe(true);
     for (const sensitivity of ['safety', 'restrictions', 'legal'] as const) {
       const d = decideIndexing({
@@ -47,7 +53,10 @@ describe('política de publicación (docs/i18n.md §6)', () => {
         sensitivity,
         allowMachineTranslatedGeneral: true,
       });
-      expect(d, sensitivity).toEqual({ indexable: false, reason: 'sensitive_requires_human_review' });
+      expect(d, sensitivity).toEqual({
+        indexable: false,
+        reason: 'sensitive_requires_human_review',
+      });
     }
   });
 
@@ -56,7 +65,8 @@ describe('política de publicación (docs/i18n.md §6)', () => {
       expect(requiresHumanReview(sensitivity)).toBe(true);
       for (const status of ['draft', 'machine_translated', 'outdated'] as const) {
         expect(
-          decideIndexing({ ...ok, status, sensitivity, allowMachineTranslatedGeneral: true }).indexable,
+          decideIndexing({ ...ok, status, sensitivity, allowMachineTranslatedGeneral: true })
+            .indexable,
           `${sensitivity}/${status}`,
         ).toBe(false);
       }
@@ -70,7 +80,9 @@ describe('política de publicación (docs/i18n.md §6)', () => {
   });
 
   it('`reviewed` solo se indexa si la política del sitio lo declara', () => {
-    expect(decideIndexing({ ...ok, status: 'reviewed' }).reason).toBe('reviewed_not_indexed_by_policy');
+    expect(decideIndexing({ ...ok, status: 'reviewed' }).reason).toBe(
+      'reviewed_not_indexed_by_policy',
+    );
     expect(decideIndexing({ ...ok, status: 'reviewed', indexReviewed: true }).indexable).toBe(true);
   });
 

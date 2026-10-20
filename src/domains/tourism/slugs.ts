@@ -26,7 +26,9 @@ export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export interface SluggedEntry {
   readonly key: string;
-  readonly slugs: Readonly<Record<Locale, { readonly current: string; readonly aliases: readonly string[] }>>;
+  readonly slugs: Readonly<
+    Record<Locale, { readonly current: string; readonly aliases: readonly string[] }>
+  >;
 }
 
 export type SlugResolution =

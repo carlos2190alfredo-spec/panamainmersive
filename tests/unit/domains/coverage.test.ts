@@ -43,7 +43,13 @@ describe('evidencia de cobertura', () => {
   });
 
   it('lo que no se pudo comprobar es UNKNOWN con motivo, nunca UNAVAILABLE', () => {
-    const external = ['google3d', 'streetView', 'streetImagery', 'openSatellite', 'officialGeometry'];
+    const external = [
+      'google3d',
+      'streetView',
+      'streetImagery',
+      'openSatellite',
+      'officialGeometry',
+    ];
     for (const key of DESTINATION_KEYS) {
       for (const c of COVERAGE[key].filter((x) => external.includes(x.capability))) {
         expect(c.status, `${key}/${c.capability}`).toBe('UNKNOWN');

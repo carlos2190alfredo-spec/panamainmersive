@@ -1,4 +1,8 @@
-import { destinationSlug, getDestination, resolveDestinationSlug } from '@/domains/tourism/destinations';
+import {
+  destinationSlug,
+  getDestination,
+  resolveDestinationSlug,
+} from '@/domains/tourism/destinations';
 import type { Locale } from '@/i18n/locales';
 import type { InternalRoute } from '@/i18n/route-table';
 
@@ -28,7 +32,8 @@ export function switchTarget(
 
   if (pathname === '/destinations/[slug]') {
     const resolved = params.slug ? resolveDestinationSlug(current, params.slug) : undefined;
-    const entry = resolved && resolved.kind !== 'not_found' ? getDestination(resolved.key) : undefined;
+    const entry =
+      resolved && resolved.kind !== 'not_found' ? getDestination(resolved.key) : undefined;
     if (entry) {
       return { pathname, params: { slug: destinationSlug(entry, target) }, ...withQuery };
     }

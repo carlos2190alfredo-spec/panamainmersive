@@ -1,0 +1,69 @@
+# CI de Panamá Immersive. ESTADO: IMPLEMENTED, no VERIFIED: este flujo no se ha podido ejecutar fuera
+# del entorno de desarrollo. Los MISMOS comandos sí se ejecutan en local (ver docs/testing.md).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Tipos, lint, formato y pruebas unitarias
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format
+      - run: pnpm test
+
+  integration:
+    name: Integración (PostgreSQL 16 + PostGIS, RLS y migraciones)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Las pruebas levantan su propio clúster temporal (sin servicios): solo necesitan los binarios.
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-16 postgresql-16-postgis-3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+
+  e2e:
+    name: Compilación, presupuesto de bundle, E2E y accesibilidad
+    runs-on: ubuntu-24.04
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+        env:
+          SITE_ENV: development
+      - run: pnpm check:bundle
+      - run: pnpm test:e2e
+        env:
+          CI: 'true'
+          SITE_ENV: development

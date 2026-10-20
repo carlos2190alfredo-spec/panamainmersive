@@ -2,6 +2,16 @@
 
 PostgreSQL 16 + PostGIS 3.4 (ADR-0006). Migraciones SQL en `db/migrations/` (versionadas, con checksum). Las tablas se crean **por fase**; este documento distingue lo que **ya existe** (`IMPLEMENTADO`) de lo **planificado**.
 
+## Esquemas y portabilidad
+
+| Esquema      | Contenido                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `public`     | Tablas de la aplicación (todas con RLS). Es el esquema que expone la API de Supabase                                   |
+| `app`        | Funciones auxiliares (`current_user_id`, `has_role`, `is_editor`…), _triggers_ y `schema_migrations`. **No** se expone |
+| `extensions` | PostGIS, `pg_trgm`, `unaccent` (así `spatial_ref_sys` no cuelga de `public`)                                           |
+
+Las migraciones (`db/migrations/0001…0005`) son SQL puro con checksum; la identidad sale de los claims JWT (`request.jwt.claims`), no de `auth.uid()`, de modo que son aplicables a PostgreSQL local y a Supabase. El `search_path` de la API debe incluir `extensions` (Supabase ya lo hace).
+
 ## Principios
 
 1. **Identidad separada de contenido**: una entidad tiene un `id` y una geometría; el texto vive en tablas de traducción **tipadas** (no EAV).
@@ -31,21 +41,21 @@ erDiagram
   profiles ||--o{ destination_translations : "reviewed_by"
 ```
 
-| Tabla | Propósito | Notas clave |
-| --- | --- | --- |
-| `supported_locales` | Registro de idiomas con integridad referencial | 5 filas semilla; las FK de traducciones y slugs apuntan aquí |
-| `profiles`, `user_roles` | Usuarios y roles (`editor`, `reviewer`, `admin`, `business_owner`) | Los roles **solo** los escribe `admin`; un usuario no puede cambiar los suyos |
-| `data_sources`, `source_versions` | Fuentes y versiones con licencia, atribución, hash, fecha de consulta | Lectura pública (atribución) |
-| `geographic_areas` | Entidad geográfica (`kind`, `source_class`: `official` · `osm_derived` · `editorial`) | `is_public` controla la visibilidad anónima |
-| `geometry_versions` | **Original** versionado (`geometry(Geometry,4326)`), validación, `area_m2` (método `geography`) | Índice GiST; `ST_IsValid` registrado, **no reparado en silencio** |
-| `geographic_relations` | `administrative` · `contains` · `near` · `access_via` con evidencia | Sin autorrelaciones; **no es un árbol** |
-| `destinations` | Concepto turístico con `key` inmutable, `kind`, `status`, `version` | `key` ≠ nombre; `version` sube con cambios editoriales |
-| `destination_areas` | Vincula destino ↔ área con **rol** (`primary`/`context`/`access`) | Nunca por nombre |
-| `destination_slugs` | Slugs por idioma con alias | `UNIQUE(locale, slug)`; un único `is_current` por destino+idioma |
-| `destination_translations` | Traducción tipada con estado editorial | Ver reglas abajo |
-| `visual_coverage` | Evidencia de cobertura por destino/capacidad/proveedor | Vista `current_visual_coverage` **deriva** `UNKNOWN` al caducar |
-| `rights_policies` | Política de derechos con estado `verified`/`provisional` y acciones permitidas | Alimenta el evaluador (ADR-0007) |
-| `audit_events` | Registro inmutable de cambios | Solo se inserta por *trigger*; lectura solo `admin` |
+| Tabla                             | Propósito                                                                                       | Notas clave                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `supported_locales`               | Registro de idiomas con integridad referencial                                                  | 5 filas semilla; las FK de traducciones y slugs apuntan aquí                  |
+| `profiles`, `user_roles`          | Usuarios y roles (`editor`, `reviewer`, `admin`, `business_owner`)                              | Los roles **solo** los escribe `admin`; un usuario no puede cambiar los suyos |
+| `data_sources`, `source_versions` | Fuentes y versiones con licencia, atribución, hash, fecha de consulta                           | Lectura pública (atribución)                                                  |
+| `geographic_areas`                | Entidad geográfica (`kind`, `source_class`: `official` · `osm_derived` · `editorial`)           | `is_public` controla la visibilidad anónima                                   |
+| `geometry_versions`               | **Original** versionado (`geometry(Geometry,4326)`), validación, `area_m2` (método `geography`) | Índice GiST; `ST_IsValid` registrado, **no reparado en silencio**             |
+| `geographic_relations`            | `administrative` · `contains` · `near` · `access_via` con evidencia                             | Sin autorrelaciones; **no es un árbol**                                       |
+| `destinations`                    | Concepto turístico con `key` inmutable, `kind`, `status`, `version`                             | `key` ≠ nombre; `version` sube con cambios editoriales                        |
+| `destination_areas`               | Vincula destino ↔ área con **rol** (`primary`/`context`/`access`)                               | Nunca por nombre                                                              |
+| `destination_slugs`               | Slugs por idioma con alias                                                                      | `UNIQUE(locale, slug)`; un único `is_current` por destino+idioma              |
+| `destination_translations`        | Traducción tipada con estado editorial                                                          | Ver reglas abajo                                                              |
+| `visual_coverage`                 | Evidencia de cobertura por destino/capacidad/proveedor                                          | Vista `current_visual_coverage` **deriva** `UNKNOWN` al caducar               |
+| `rights_policies`                 | Política de derechos con estado `verified`/`provisional` y acciones permitidas                  | Alimenta el evaluador (ADR-0007)                                              |
+| `audit_events`                    | Registro inmutable de cambios                                                                   | Solo se inserta por _trigger_; lectura solo `admin`                           |
 
 ### Reglas de traducciones (`destination_translations`)
 
@@ -53,7 +63,7 @@ erDiagram
 - `translation_status ∈ {draft, machine_translated, reviewed, published, outdated}`.
 - `reviewed`/`published` ⇒ `reviewed_by` **y** `reviewed_at` no nulos.
 - `machine_translated` ⇒ `reviewed_by` **nulo** (una máquina no puede figurar como revisora).
-- *Trigger*: al subir `destinations.version`, las traducciones con `source_version` anterior pasan a `outdated` (no se borran).
+- _Trigger_: al subir `destinations.version`, las traducciones con `source_version` anterior pasan a `outdated` (no se borran).
 - Un **revisor** no puede revisar **su propia** traducción (`translated_by ≠ reviewed_by` cuando ambos existen).
 
 ### Cobertura derivada
@@ -62,32 +72,32 @@ erDiagram
 
 ## Matriz RLS (Fase 1)
 
-| Tabla | Visitante (anon) | Usuario | Editor | Revisor | Admin |
-| --- | --- | --- | --- | --- | --- |
-| `destinations` | Solo `published` | igual | CRUD | lectura | CRUD |
-| `destination_translations` | Solo `published` de destinos `published` | igual | Crear/editar **sin** fijar `reviewed_*` | Pasar a `reviewed/published` fijándose a sí mismo | CRUD |
-| `destination_slugs` | De destinos `published` | igual | CRUD | lectura | CRUD |
-| `geographic_areas` / `geometry_versions` | `is_public` o vinculadas a destino `published` | igual | CRUD (editorial) | lectura | CRUD |
-| `data_sources` / `source_versions` | Lectura (atribución) | igual | CRUD | lectura | CRUD |
-| `visual_coverage` | Lectura vía vista de cobertura de destinos `published` | igual | CRUD | lectura | CRUD |
-| `rights_policies` | **Sin acceso** | sin acceso | lectura | lectura | CRUD |
-| `profiles` | Sin acceso | **Solo el propio** | lectura | lectura | CRUD |
-| `user_roles` | Sin acceso | Lectura de los propios | sin acceso | sin acceso | **Solo admin escribe** |
-| `audit_events` | Sin acceso | sin acceso | sin acceso | sin acceso | Lectura |
+| Tabla                                    | Visitante (anon)                                       | Usuario                | Editor                                  | Revisor                                           | Admin                  |
+| ---------------------------------------- | ------------------------------------------------------ | ---------------------- | --------------------------------------- | ------------------------------------------------- | ---------------------- |
+| `destinations`                           | Solo `published`                                       | igual                  | CRUD                                    | lectura                                           | CRUD                   |
+| `destination_translations`               | Solo `published` de destinos `published`               | igual                  | Crear/editar **sin** fijar `reviewed_*` | Pasar a `reviewed/published` fijándose a sí mismo | CRUD                   |
+| `destination_slugs`                      | De destinos `published`                                | igual                  | CRUD                                    | lectura                                           | CRUD                   |
+| `geographic_areas` / `geometry_versions` | `is_public` o vinculadas a destino `published`         | igual                  | CRUD (editorial)                        | lectura                                           | CRUD                   |
+| `data_sources` / `source_versions`       | Lectura (atribución)                                   | igual                  | CRUD                                    | lectura                                           | CRUD                   |
+| `visual_coverage`                        | Lectura vía vista de cobertura de destinos `published` | igual                  | CRUD                                    | lectura                                           | CRUD                   |
+| `rights_policies`                        | **Sin acceso**                                         | sin acceso             | lectura                                 | lectura                                           | CRUD                   |
+| `profiles`                               | Sin acceso                                             | **Solo el propio**     | lectura                                 | lectura                                           | CRUD                   |
+| `user_roles`                             | Sin acceso                                             | Lectura de los propios | sin acceso                              | sin acceso                                        | **Solo admin escribe** |
+| `audit_events`                           | Sin acceso                                             | sin acceso             | sin acceso                              | sin acceso                                        | Lectura                |
 
 Pruebas de integración contra PostgreSQL real verifican cada celda relevante (ver `docs/testing.md`).
 
 ## Entidades PLANIFICADAS (por fase)
 
-| Fase | Tablas |
-| --- | --- |
-| 2–3 | `layers`, `layer_translations`, `style_versions`, `publications`, `attractions`, `access_points` |
-| 4 | `media_assets`, `media_links`, `story_translations`, `field_assertions`, `source_records` |
-| 5 | (cobertura de calle) `visual_coverage` ampliada, `story_*` |
-| 6 | `businesses`, `business_locations`, `offerings`, `business_memberships`, `registrations`, `business_translations`, `verification_events`, `review_queue` |
-| 7 | `activities`, `activity_translations`, `events`, `seasonal_windows`, `advisories` |
-| 8 | `trails`, `routes`, `route_segments`, `itineraries`, `itinerary_days`, `itinerary_stops`, `itinerary_legs`, `favorites` |
-| 9 | `provider_usage`, `budget_reservations` (+ trazas de evaluación de IA) |
+| Fase | Tablas                                                                                                                                                   |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2–3  | `layers`, `layer_translations`, `style_versions`, `publications`, `attractions`, `access_points`                                                         |
+| 4    | `media_assets`, `media_links`, `story_translations`, `field_assertions`, `source_records`                                                                |
+| 5    | (cobertura de calle) `visual_coverage` ampliada, `story_*`                                                                                               |
+| 6    | `businesses`, `business_locations`, `offerings`, `business_memberships`, `registrations`, `business_translations`, `verification_events`, `review_queue` |
+| 7    | `activities`, `activity_translations`, `events`, `seasonal_windows`, `advisories`                                                                        |
+| 8    | `trails`, `routes`, `route_segments`, `itineraries`, `itinerary_days`, `itinerary_stops`, `itinerary_legs`, `favorites`                                  |
+| 9    | `provider_usage`, `budget_reservations` (+ trazas de evaluación de IA)                                                                                   |
 
 Una empresa será **una** entidad con establecimientos y servicios (no tres registros: hotel, restaurante, operador).
 

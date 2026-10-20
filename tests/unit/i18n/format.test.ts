@@ -20,11 +20,14 @@ describe('formatos con Intl', () => {
     expect(PANAMA_TIME_ZONE).toBe('America/Panama');
   });
 
-  it.each(LOCALES)('%s: la hora local se muestra en Panamá, no en la zona del proceso', (locale) => {
-    const text = formatPanamaDateTime(locale, instant, { timeStyle: 'short' });
-    expect(text).toMatch(/10[:.]30/);
-    expect(text).not.toMatch(/15[:.]30/);
-  });
+  it.each(LOCALES)(
+    '%s: la hora local se muestra en Panamá, no en la zona del proceso',
+    (locale) => {
+      const text = formatPanamaDateTime(locale, instant, { timeStyle: 'short' });
+      expect(text).toMatch(/10[:.]30/);
+      expect(text).not.toMatch(/15[:.]30/);
+    },
+  );
 
   it('la hora de Panamá no depende de la zona del proceso en el cambio de día', () => {
     // 03:00 UTC del 21 = 22:00 del día 20 en Panamá.

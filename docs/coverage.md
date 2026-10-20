@@ -8,47 +8,47 @@ Evaluación inicial, **2026-10-20**. Estados: `UNKNOWN`, `VERIFIED`, `PARTIAL`, 
 
 La clave (`key`) es inmutable y **no** se deriva del nombre mostrado. Los nombres por idioma y los slugs se gestionan aparte (`docs/i18n.md`).
 
-| key | Destino (nombre en español) | Naturaleza |
-| --- | --- | --- |
-| `panama-city` | Ciudad de Panamá | Núcleo urbano / distrito |
-| `casco-antiguo` | Casco Antiguo | Distrito histórico (UNESCO: «Panamá Viejo y Distrito Histórico») |
-| `panama-canal` | Canal de Panamá | Infraestructura / paisaje |
-| `el-valle-de-anton` | El Valle de Antón | Localidad en caldera volcánica |
-| `boquete` | Boquete | Distrito / localidad de montaña |
-| `volcan-baru` | Volcán Barú | Volcán / parque nacional |
-| `bocas-del-toro` | Bocas del Toro | Archipiélago / provincia / localidad |
-| `santa-catalina` | Santa Catalina | Localidad costera (Veraguas) |
-| `coiba` | Coiba | Isla / parque nacional (UNESCO) |
+| key                 | Destino (nombre en español) | Naturaleza                                                       |
+| ------------------- | --------------------------- | ---------------------------------------------------------------- |
+| `panama-city`       | Ciudad de Panamá            | Núcleo urbano / distrito                                         |
+| `casco-antiguo`     | Casco Antiguo               | Distrito histórico (UNESCO: «Panamá Viejo y Distrito Histórico») |
+| `panama-canal`      | Canal de Panamá             | Infraestructura / paisaje                                        |
+| `el-valle-de-anton` | El Valle de Antón           | Localidad en caldera volcánica                                   |
+| `boquete`           | Boquete                     | Distrito / localidad de montaña                                  |
+| `volcan-baru`       | Volcán Barú                 | Volcán / parque nacional                                         |
+| `bocas-del-toro`    | Bocas del Toro              | Archipiélago / provincia / localidad                             |
+| `santa-catalina`    | Santa Catalina              | Localidad costera (Veraguas)                                     |
+| `coiba`             | Coiba                       | Isla / parque nacional (UNESCO)                                  |
 
 ## Matriz de cobertura
 
 Leyenda: `V` VERIFIED · `P` PARTIAL · `U` UNAVAILABLE · `?` UNKNOWN. La columna **Geometría** describe **qué existe** en Overture `2026-09-23.1` (derivado de OSM, **no oficial**) para esa entidad.
 
-| Destino | Geometría (Overture/OSM) | Terreno AWS (relieve en tierra) | Google 3D | Street View | Mapillary / KartaView | Imagen satelital abierta | Geometría oficial (IGN/ANATI, MiAmbiente, ATP, UNESCO) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **Ciudad de Panamá** | **V** `county` «Distrito de Panamá» (+ localidades/barrios) · E-23 | **V** ≈33 m, SRTM · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Casco Antiguo** | **U** como límite del distrito histórico. Existe `landuse=retail` «Casco Viejo» (**no equivale** al distrito UNESCO) · E-23 | **V** ≈23 m (resolución 30 m: **sin utilidad a escala de edificio**) · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Canal de Panamá** | **P** líneas `waterway=canal`, Lago Gatún (MultiPolygon), esclusas (polígonos), presa de Gatún. **Sin polígono de zona del Canal** · E-23b | **V** ≈23 m en Miraflores · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **El Valle de Antón** | **P** solo punto de volcán «El Valle» (Wikidata Q1324715) y cerros; **sin polígono de localidad/corregimiento** · E-23 | **V** ≈589 m · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Boquete** | **V** `county` «Boquete», `locality` «Bajo/Alto Boquete» · E-22/E-23 | **V** ≈1 225 m · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Volcán Barú** | **P** polígono OSM «Parque Nacional Volcán Barú» (`protected`), pico (Q594726). **No oficial.** · E-23 | **V** ≈3 438 m (orden de magnitud) · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Bocas del Toro** | **V** `region`, `county` y `locality` (**tres entidades distintas**, ver nota) · E-22 | **V** ≈7 m en tierra; **sin batimetría a z12** · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Santa Catalina** | **P** `locality` de Veraguas (bbox ≈ 1,2 km). **Hay otras 3 «Santa Catalina»** · E-23c | **V** ≈50 m · E-25 | `?` | `?` | `?` | `?` | `?` |
-| **Coiba** | **P** polígonos OSM «Isla de Coiba» (Q741636), «Parque Nacional Coiba», «P. N. Marino Golfo de Chiriquí». **No oficiales.** · E-23 | **P** relieve en isla ≈138 m; mar sin batimetría a z12 · E-25 | `?` | `?` | `?` | `?` | `?` |
+| Destino               | Geometría (Overture/OSM)                                                                                                                   | Terreno AWS (relieve en tierra)                                                                                                       | Google 3D | Street View | Mapillary / KartaView | Imagen satelital abierta | Geometría oficial (IGN/ANATI, MiAmbiente, ATP, UNESCO) |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------- | ----------- | --------------------- | ------------------------ | ------------------------------------------------------ |
+| **Ciudad de Panamá**  | **V** `county` «Distrito de Panamá» (+ localidades/barrios) · E-23                                                                         | **V** ≈33 m, SRTM · E-25                                                                                                              | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Casco Antiguo**     | **U** como límite del distrito histórico. Existe `landuse=retail` «Casco Viejo» (**no equivale** al distrito UNESCO) · E-23                | **V** ≈23 m (SRTM; resolución nativa **no verificada**: ≈30 m por conocimiento general, **sin utilidad a escala de edificio**) · E-25 | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Canal de Panamá**   | **P** líneas `waterway=canal`, Lago Gatún (MultiPolygon), esclusas (polígonos), presa de Gatún. **Sin polígono de zona del Canal** · E-23b | **V** ≈23 m en Miraflores · E-25                                                                                                      | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **El Valle de Antón** | **P** solo punto de volcán «El Valle» (Wikidata Q1324715) y cerros; **sin polígono de localidad/corregimiento** · E-23                     | **V** ≈589 m · E-25                                                                                                                   | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Boquete**           | **V** `county` «Boquete», `locality` «Bajo/Alto Boquete» · E-22/E-23                                                                       | **V** ≈1 225 m · E-25                                                                                                                 | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Volcán Barú**       | **P** polígono OSM «Parque Nacional Volcán Barú» (`protected`), pico (Q594726). **No oficial.** · E-23                                     | **V** ≈3 438 m (orden de magnitud) · E-25                                                                                             | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Bocas del Toro**    | **V** `region`, `county` y `locality` (**tres entidades distintas**, ver nota) · E-22                                                      | **P** ≈7 m en tierra; **sin batimetría a z12** · E-25                                                                                 | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Santa Catalina**    | **P** `locality` de Veraguas (bbox ≈ 1,2 km). **Hay otras 3 «Santa Catalina»** · E-23c                                                     | **V** ≈50 m · E-25                                                                                                                    | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
+| **Coiba**             | **P** polígonos OSM «Isla de Coiba» (Q741636), «Parque Nacional Coiba», «P. N. Marino Golfo de Chiriquí». **No oficiales.** · E-23         | **P** relieve en isla ≈138 m; mar sin batimetría a z12 · E-25                                                                         | `?`       | `?`         | `?`                   | `?`                      | `?`                                                    |
 
 ### Por qué casi todo es `UNKNOWN` y qué lo desbloquea
 
-| Capacidad | Motivo del `UNKNOWN` | Para verificarla |
-| --- | --- | --- |
-| Google 3D | Sin clave de Map Tiles API; la página de cobertura no se pudo leer; ninguna búsqueda devolvió una lista con Panamá (E-30). | Clave + sondeo del tile raíz por destino y revisión visual con `Tiles3DProvider` (ver `docs/setup.md`). |
-| Street View | Sin clave; `tile.googleapis.com` responde pero sin autenticación no se puede consultar. | Clave + endpoints de metadatos. |
-| Mapillary / KartaView | Hosts bloqueados y Mapillary requiere token (E-00). | Token + desbloqueo de `graph.mapillary.com`/`api.kartaview.org`; distinguir fotos de panoramas 360. |
-| Imagen satelital abierta | El bucket de Sentinel-2 COG es alcanzable, pero no hay servicio de teselas ni licencia de distribución evaluada. | Decidir proveedor y licencia (ADR futuro). |
-| Geometrías oficiales | Hosts de IGN/ANATI, MiAmbiente, ATP, UNESCO bloqueados; licencia de reutilización desconocida (E-00, E-34). | Desbloqueo + consulta formal de licencia al IGN/ANATI y MiAmbiente. |
+| Capacidad                | Motivo del `UNKNOWN`                                                                                                       | Para verificarla                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Google 3D                | Sin clave de Map Tiles API; la página de cobertura no se pudo leer; ninguna búsqueda devolvió una lista con Panamá (E-30). | Clave + sondeo del tile raíz por destino y revisión visual con `Tiles3DProvider` (ver `docs/setup.md`). |
+| Street View              | Sin clave; `tile.googleapis.com` responde pero sin autenticación no se puede consultar.                                    | Clave + endpoints de metadatos.                                                                         |
+| Mapillary / KartaView    | Hosts bloqueados y Mapillary requiere token (E-00).                                                                        | Token + desbloqueo de `graph.mapillary.com`/`api.kartaview.org`; distinguir fotos de panoramas 360.     |
+| Imagen satelital abierta | El bucket de Sentinel-2 COG es alcanzable, pero no hay servicio de teselas ni licencia de distribución evaluada.           | Decidir proveedor y licencia (ADR futuro).                                                              |
+| Geometrías oficiales     | Hosts de IGN/ANATI, MiAmbiente, ATP, UNESCO bloqueados; licencia de reutilización desconocida (E-00, E-34).                | Desbloqueo + consulta formal de licencia al IGN/ANATI y MiAmbiente.                                     |
 
 ### Notas por destino (trampas detectadas)
 
-- **Homonimia**: el distrito *Barú* **no** es el *Volcán Barú*; hay cuatro «Santa Catalina» (E-23c). **Regla**: nunca se asigna geometría por coincidencia de nombre; solo mediante `destination_areas` con rol y evidencia revisada.
+- **Homonimia**: el distrito _Barú_ **no** es el _Volcán Barú_; hay cuatro «Santa Catalina» (E-23c). **Regla**: nunca se asigna geometría por coincidencia de nombre; solo mediante `destination_areas` con rol y evidencia revisada.
 - **Bocas del Toro**: provincia (`region`), distrito (`county`) y pueblo (`locality`) comparten nombre. El «destino» turístico (archipiélago + pueblo + acceso marítimo) **no** es ninguno de ellos exactamente: requiere decisión editorial documentada.
 - **Casco Antiguo**: **no** usar el `landuse=retail` «Casco Viejo» como límite del distrito histórico. Si se dibuja uno sin fuente oficial, será **editorial** y se etiquetará como tal.
 - **Volcán Barú**: Boquete y Volcán son **accesos** (`access_via`), no contenedores.

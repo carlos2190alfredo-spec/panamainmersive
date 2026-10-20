@@ -41,7 +41,8 @@ describe('registro de los nueve destinos', () => {
       for (const l of LOCALES) {
         const n = d.names[l];
         expect(['draft', 'machine_translated']).toContain(n.status);
-        if (n.status === 'machine_translated') expect(n.provenance).toBe('ai_translation_2026-10-20');
+        if (n.status === 'machine_translated')
+          expect(n.provenance).toBe('ai_translation_2026-10-20');
         if (l === 'es') expect(n.provenance).toBe('toponym_original');
       }
     }
@@ -49,7 +50,10 @@ describe('registro de los nueve destinos', () => {
 
   it('un nombre conservado del original no se declara traducido', () => {
     const casco = getDestination('casco-antiguo');
-    expect(casco?.names.de).toMatchObject({ name: 'Casco Antiguo', provenance: 'toponym_original' });
+    expect(casco?.names.de).toMatchObject({
+      name: 'Casco Antiguo',
+      provenance: 'toponym_original',
+    });
   });
 
   it('los destinos con homonimia conocida llevan su aviso', () => {
@@ -65,8 +69,14 @@ describe('registro de los nueve destinos', () => {
       slug: 'panama-city',
       reason: 'other_locale',
     });
-    expect(resolveDestinationSlug('de', 'panama-canal')).toMatchObject({ kind: 'redirect', slug: 'panamakanal' });
-    expect(resolveDestinationSlug('es', 'volcan-baru')).toEqual({ kind: 'found', key: 'volcan-baru' });
+    expect(resolveDestinationSlug('de', 'panama-canal')).toMatchObject({
+      kind: 'redirect',
+      slug: 'panamakanal',
+    });
+    expect(resolveDestinationSlug('es', 'volcan-baru')).toEqual({
+      kind: 'found',
+      key: 'volcan-baru',
+    });
   });
 
   it('un slug idéntico en varios idiomas se resuelve directamente en cada uno (sin redirecciones)', () => {

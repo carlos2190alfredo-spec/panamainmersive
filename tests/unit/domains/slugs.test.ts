@@ -8,9 +8,15 @@ import {
 } from '@/domains/tourism/slugs';
 import { LOCALES, type Locale } from '@/i18n/locales';
 
-function entry(key: string, per: Partial<Record<Locale, { current: string; aliases?: string[] }>>): SluggedEntry {
+function entry(
+  key: string,
+  per: Partial<Record<Locale, { current: string; aliases?: string[] }>>,
+): SluggedEntry {
   const slugs = Object.fromEntries(
-    LOCALES.map((l) => [l, { current: per[l]?.current ?? `${key}-${l}`, aliases: per[l]?.aliases ?? [] }]),
+    LOCALES.map((l) => [
+      l,
+      { current: per[l]?.current ?? `${key}-${l}`, aliases: per[l]?.aliases ?? [] },
+    ]),
   ) as unknown as SluggedEntry['slugs'];
   return { key, slugs };
 }
@@ -42,7 +48,10 @@ describe('slugify', () => {
 
 describe('resolveSlug (ADR-0003)', () => {
   const entries = [
-    entry('a', { es: { current: 'nuevo-nombre', aliases: ['viejo-nombre'] }, en: { current: 'new-name' } }),
+    entry('a', {
+      es: { current: 'nuevo-nombre', aliases: ['viejo-nombre'] },
+      en: { current: 'new-name' },
+    }),
     entry('b', { es: { current: 'otro' }, en: { current: 'other' } }),
   ];
 

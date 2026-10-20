@@ -11,7 +11,7 @@ Identidad propia, textos largos en alemán/francés/portugués, preparación par
 
 - **CSS Modules** + **tokens CSS** (custom properties) en `src/styles/tokens.css` con tema claro/oscuro; **propiedades lógicas** (`margin-inline`, `inset-block`, …) y `min-width/max-width` con contenido flexible. Sin Tailwind ni CSS-in-JS.
 - **Tokens semánticos** de color (superficie, tinta, acento, estados, categorías) y una **prueba unitaria de contraste WCAG** sobre los pares declarados.
-- **Tipografía autoalojada** desde `@fontsource-variable/*` (OFL-1.1): *Fraunces* (titulares, serif de carácter editorial) y *Figtree* (texto). Subconjunto **latin + latin-ext** (cubre `ñ á é í ó ú ü ç ã õ â ê ô à è ù œ ß ä ö`).
+- **Tipografía autoalojada** desde `@fontsource-variable/*` (OFL-1.1): _Fraunces_ (titulares, serif de carácter editorial) y _Figtree_ (texto). Subconjunto **latin + latin-ext** (cubre `ñ á é í ó ú ü ç ã õ â ê ô à è ù œ ß ä ö`).
 - **RTL**: se prepara con propiedades lógicas; **no** se declara soporte hasta probarlo.
 
 ## Alternativas descartadas

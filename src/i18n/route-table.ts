@@ -9,7 +9,13 @@ type LocalizedPath = string | Readonly<Record<Locale, string>>;
  */
 export const ROUTE_PATHNAMES = {
   '/': '/',
-  '/explore': { es: '/explorar', en: '/explore', pt: '/explorar', fr: '/explorer', de: '/entdecken' },
+  '/explore': {
+    es: '/explorar',
+    en: '/explore',
+    pt: '/explorar',
+    fr: '/explorer',
+    de: '/entdecken',
+  },
   '/destinations': {
     es: '/destinos',
     en: '/destinations',

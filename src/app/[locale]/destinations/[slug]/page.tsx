@@ -48,7 +48,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     locale,
     title: t('destination.title', { name }),
     description: t('destination.description', { name, siteName: SITE.name }),
-    hrefFor: (l) => ({ pathname: '/destinations/[slug]', params: { slug: destinationSlug(entry, l) } }),
+    hrefFor: (l) => ({
+      pathname: '/destinations/[slug]',
+      params: { slug: destinationSlug(entry, l) },
+    }),
     // La ficha editorial aún no existe: no se indexan páginas vacías.
     hasRequiredFields: false,
   });
@@ -149,7 +152,9 @@ export default async function DestinationPage(props: Props) {
       </section>
 
       <p>
-        <ButtonLink href={{ pathname: '/explore', query: { d: entry.key } }}>{t('viewOnMap')}</ButtonLink>
+        <ButtonLink href={{ pathname: '/explore', query: { d: entry.key } }}>
+          {t('viewOnMap')}
+        </ButtonLink>
       </p>
     </div>
   );

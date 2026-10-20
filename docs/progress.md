@@ -1,37 +1,74 @@
 # Progreso
 
-Última actualización: **2026-10-20**. Proyecto nuevo en `/home/user/panama-immersive` (no se ha tocado nada fuera de esta carpeta; `/home/user` estaba vacío).
+Última actualización: **2026-10-20**. Proyecto nuevo en `/home/user/panama-immersive` (`/home/user` estaba vacío: no se ha tocado nada fuera de esta carpeta).
+
+Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una prueba pasando) · **BLOCKED** (falta credencial/acceso/decisión externa) · **DEFERRED** (pospuesto a propósito).
 
 ## Estado por fase
 
-| Fase | Estado | Notas |
-| --- | --- | --- |
-| 0 — Discovery | **IMPLEMENTED** (documentación completa; evidencias con fiabilidad declarada) | Fuentes primarias oficiales no accesibles: ver `docs/research/evidence-log.md` E-00 |
-| 1 — Foundation | EN CURSO | |
-| 2 — Exploración de Panamá | PENDIENTE | |
-| 3 — GIS | PENDIENTE | |
-| 4–10 | PENDIENTE | |
+| Fase                      | Estado                                                                     | Notas                                                                 |
+| ------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada) | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                    | Detalle abajo                                                         |
+| 2 — Exploración de Panamá | EN CURSO                                                                   | Mapa MapLibre con datos permitidos                                    |
+| 3 — GIS                   | PENDIENTE                                                                  | Los sondeos de Fase 0 ya extraen datos reales de Overture             |
+| 4–10                      | PENDIENTE                                                                  | Ver `docs/backlog.md`                                                 |
 
-## Entrega 0 — Discovery y Architecture v1
+## Entrega 1 — Foundation
 
-### Qué se hizo
-- Se inspeccionó el entorno: carpeta vacía, sin Git, sin CLAUDE.md/AGENTS.md, sin proyectos previos. Versiones instaladas verificadas (E-01, E-02).
-- Se conservó el documento rector sin modificar: `docs/PROMPT-MAESTRO.md` (misma suma SHA-256 que el original).
-- **Spikes que podían invalidar la arquitectura** (resultados en `docs/research/evidence-log.md`):
-  1. Next 16.4.2 + TypeScript 7.0.2: **compila**, pero typescript-eslint no soporta TS ≥ 6.1 → TS 6.0.3 fijado (ADR-0002).
-  2. Cesium 1.146: MVT solo experimental y **sin PMTiles** → MapLibre es el motor del MVP (ADR-0004).
-  3. next-intl: `pathnames` estático y hreflang automático inadecuado para publicación parcial → slugs en registro propio y `alternateLinks:false` (ADR-0003).
-  4. Overture en S3 con poda por bbox: **datos reales de Panamá extraídos en segundos** (E-21…E-24).
-  5. Terreno AWS: CORS verificado; **sin batimetría a z12** (E-25).
-- Documentos: `architecture.md`, 12 ADR, `coverage.md`, `data-sources.md`, `provider-rights.md`, `i18n.md`, `gis.md`, `data-model.md`, `security.md`, `performance.md`, `costs.md`, `setup.md`, `backlog.md`.
+### Qué funciona
 
-### Hallazgos que cambian el plan
-- **Homonimia**: distrito *Barú* ≠ *Volcán Barú*; hay **cuatro «Santa Catalina»**. → nada se relaciona por nombre.
-- **Casco Antiguo, Canal, El Valle, Volcán Barú y Coiba no tienen polígono de división** en Overture; Barú y Coiba solo tienen polígonos OSM de áreas protegidas (**no oficiales**). → etiqueta de procedencia obligatoria.
-- **Casi toda la cobertura de proveedores es `UNKNOWN`** por falta de acceso/credenciales, no por ausencia (ver `coverage.md`).
+- **Cinco idiomas** (`es` por defecto, `en`, `pt`, `fr`, `de`): rutas con prefijo y **localizadas** (`/es/explorar`, `/en/explore`, `/pt/explorar`, `/fr/explorer`, `/de/entdecken`), slugs de destino por registro con **redirecciones 308** (slug de otro idioma, alias), 404 localizado, negociación de idioma (cookie > `Accept-Language` > `es`, sin geolocalización), selector sin banderas que **conserva destino, query y estado**.
+- **Interfaz mapa primero** (≈70/30 en escritorio; apilada en móvil), sistema de diseño con tokens, tipografías autoalojadas, tema claro/oscuro, `prefers-reduced-motion`, propiedades lógicas.
+- **Nueve destinos** con clave estable, nombres/slugs por idioma, avisos de homonimia y **evidencia de cobertura con caducidad** (`UNKNOWN` ≠ ausencia).
+- **SEO**: `lang` correcto, canonical propio por idioma, hreflang/sitemap **solo de variantes publicadas** (hoy ninguna ⇒ vacíos), `noindex` fuera de producción (meta + cabecera + `robots.txt`).
+- **Seguridad**: configuración validada (zod) con flags que se desactivan con motivo observable, cabeceras y CSP (ADR-0010), escaneo de secretos del bundle, migraciones que rechazan bases remotas sin confirmación.
+- **BD** PostgreSQL/PostGIS: 5 migraciones, **RLS en todas las tablas**, auditoría inmutable, restricciones de integridad editorial y GIS, probadas contra un PostgreSQL real.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm install
+pnpm dev                                   # http://localhost:3000 (usa «localhost»)
+SITE_ENV=development pnpm build && pnpm start
+```
+
+Comandos de verificación en `README.md` y `docs/testing.md`.
+
+### Pruebas ejecutadas (observadas el 2026-10-20)
+
+| Comprobación                                          | Resultado                                                                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm typecheck` (TS 6.0.3 estricto)                  | sin errores                                                                                                                                |
+| `pnpm lint` (ESLint 10 + a11y + fronteras de dominio) | sin errores                                                                                                                                |
+| `pnpm format`                                         | sin diferencias                                                                                                                            |
+| `pnpm test`                                           | **188 / 188** (16 ficheros)                                                                                                                |
+| `pnpm test:integration`                               | **92 / 92** (7 ficheros) contra PostgreSQL 16.15 + PostGIS 3.4.2                                                                           |
+| `pnpm test:e2e`                                       | **97 / 97** (69 escritorio + 28 móvil): axe WCAG 2.2 AA × 7 páginas × 5 idiomas × claro/oscuro, CSP con hidratación, i18n, teclado, 320 px |
+| `pnpm check:bundle`                                   | sin secretos en el bundle; JS 190,5 KB gzip por página (línea base, ver `performance.md`)                                                  |
+| Test de mutación de las migraciones                   | 4/4 garantías rotas a propósito fueron detectadas (ver `testing.md`)                                                                       |
+
+### Lo que se encontró y cambió (honestamente)
+
+- **ADR-0002**: TypeScript 7.0.2 compila pero rompe el lint tipado ⇒ TS 6.0.3.
+- **ADR-0010**: `script-src 'self'` **rompe la hidratación** (3 scripts en línea de Next; SRI cubre 6/9) ⇒ `'unsafe-inline'` con controles compensatorios, decisión basada en evidencia.
+- **ADR-0013**: ESLint 9 está fuera de soporte ⇒ ESLint 10 (verificado con control positivo).
+- **Bucle 307**: `next start -H 127.0.0.1` rompe las rutas localizadas. **No era un defecto del código** (verificado con varios `Host`); documentado como trampa.
+- **axe**: detectó una violación real (WCAG 2.5.3, `aria-label` ≠ texto visible) y otra solo en móvil (tablas desplazables no enfocables, 2.1.1): corregidas.
+- **PostGIS**: `spatial_ref_sys` quedaba sin RLS en `public` ⇒ extensiones en el esquema `extensions`.
+- **Portugués**: mi primer borrador salió con giros europeos; se rehízo en **portugués brasileño** y se dejó la variante como decisión humana pendiente.
+- **Presupuesto de JS**: mi suposición (160 KB) era errónea; la medición (190,5 KB) lo recalibró.
 
 ### Qué no pudo verificarse
-Todo lo que depende de hosts bloqueados (E-00): términos de Google/OSM/Mapillary, geoportales oficiales, UNESCO, Wikimedia. Los precios de `costs.md` son de fuentes secundarias.
+
+- **CI en GitHub Actions**: `.github/workflows/ci.yml` existe pero no se ha podido ejecutar (IMPLEMENTED, no VERIFIED).
+- **Todo lo que depende de hosts bloqueados**: términos de Google/OSM/Mapillary, geoportales oficiales, UNESCO, Wikimedia (E-00). Precios de `docs/costs.md` de fuentes secundarias.
+- **Revisión humana** de los cinco idiomas, lectores de pantalla reales, dispositivos reales, rendimiento (LCP/INP), Supabase real.
+
+### Bloqueos de lanzamiento (no impiden probar en local)
+
+`docs/backlog.md` L-01…L-05: ninguna política de derechos `verified`; ningún idioma con revisión humana; geometrías oficiales sin acceso; revisión legal pendiente; cobertura Google/Mapillary `UNKNOWN`.
 
 ### Siguiente acción concreta
-Foundation: scaffold de Next 16 con cinco idiomas, tokens, componentes accesibles, migraciones PostGIS+RLS probadas, cabeceras de seguridad, CI y pruebas.
+
+**Fase 2**: integrar MapLibre con datos permitidos reales (Natural Earth + Overture + terreno AWS construidos por un pipeline reproducible), cámara con conversión 2D↔altitud, deep links, selección de destino, alternativa textual y _fallback_.

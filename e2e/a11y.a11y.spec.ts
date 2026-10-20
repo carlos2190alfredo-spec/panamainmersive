@@ -14,7 +14,11 @@ test.describe('WCAG 2.2 AA con axe (todas las páginas × cinco idiomas × tema 
           await page.waitForLoadState('networkidle');
           const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
           const summary = results.violations.map(
-            (v) => `${v.id} [${v.impact ?? '?'}] ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`,
+            (v) =>
+              `${v.id} [${v.impact ?? '?'}] ${v.nodes
+                .slice(0, 3)
+                .map((n) => n.target.join(' '))
+                .join(' | ')}`,
           );
           expect(summary, `${locale} ${PATHS[name][locale]}`).toEqual([]);
         }
@@ -27,14 +31,19 @@ test.describe('WCAG 2.2 AA con axe (todas las páginas × cinco idiomas × tema 
       await page.goto(PATHS.explore[locale]);
       await page.locator('summary').first().click();
       const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-      expect(results.violations.map((v) => v.id), locale).toEqual([]);
+      expect(
+        results.violations.map((v) => v.id),
+        locale,
+      ).toEqual([]);
     }
   });
 });
 
 test.describe('teclado y foco', () => {
   for (const locale of LOCALES) {
-    test(`${locale}: el primer Tab es «saltar al contenido» y lleva el foco a <main>`, async ({ page }) => {
+    test(`${locale}: el primer Tab es «saltar al contenido» y lleva el foco a <main>`, async ({
+      page,
+    }) => {
       await page.goto(PATHS.home[locale]);
       await page.keyboard.press('Tab');
       const skip = page.locator('a[href="#main-content"]');
@@ -45,7 +54,9 @@ test.describe('teclado y foco', () => {
     });
   }
 
-  test('todo es alcanzable con Tab y el foco siempre se ve (anillo con contraste)', async ({ page }) => {
+  test('todo es alcanzable con Tab y el foco siempre se ve (anillo con contraste)', async ({
+    page,
+  }) => {
     await page.goto(PATHS.destinations.es);
     const seen: string[] = [];
     for (let i = 0; i < 20; i++) {
@@ -77,7 +88,8 @@ test.describe('teclado y foco', () => {
       const out: string[] = [];
       for (const el of document.querySelectorAll('a[href], button, summary')) {
         const r = el.getBoundingClientRect();
-        if (r.width > 0 && (r.width < 24 || r.height < 24)) out.push(`${el.tagName} ${el.textContent?.trim()}`);
+        if (r.width > 0 && (r.width < 24 || r.height < 24))
+          out.push(`${el.tagName} ${el.textContent?.trim()}`);
       }
       return out;
     });

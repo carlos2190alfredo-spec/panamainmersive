@@ -43,7 +43,9 @@ const PUBLIC_KEY_ALLOWLIST: ReadonlySet<string> = new Set(['NEXT_PUBLIC_GOOGLE_M
 
 export function findPublicSecrets(raw: Readonly<Record<string, string | undefined>>): string[] {
   return Object.keys(raw)
-    .filter((k) => k.startsWith('NEXT_PUBLIC_') && SECRET_NAME.test(k) && !PUBLIC_KEY_ALLOWLIST.has(k))
+    .filter(
+      (k) => k.startsWith('NEXT_PUBLIC_') && SECRET_NAME.test(k) && !PUBLIC_KEY_ALLOWLIST.has(k),
+    )
     .sort();
 }
 
@@ -51,21 +53,27 @@ export function parseEnv(raw: Readonly<Record<string, string | undefined>>): Env
   const issues: string[] = [];
 
   for (const k of findPublicSecrets(raw)) {
-    issues.push(`${k}: un secreto no puede llevar el prefijo NEXT_PUBLIC_ (se expondría al navegador)`);
+    issues.push(
+      `${k}: un secreto no puede llevar el prefijo NEXT_PUBLIC_ (se expondría al navegador)`,
+    );
   }
 
   // Cadenas vacías (`VAR=`) se tratan como ausentes.
-  const cleaned = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined && v !== ''));
+  const cleaned = Object.fromEntries(
+    Object.entries(raw).filter(([, v]) => v !== undefined && v !== ''),
+  );
   const parsed = schema.safeParse(cleaned);
   if (!parsed.success) {
-    for (const i of parsed.error.issues) issues.push(`${i.path.join('.') || '(raíz)'}: ${i.message}`);
+    for (const i of parsed.error.issues)
+      issues.push(`${i.path.join('.') || '(raíz)'}: ${i.message}`);
   }
 
   if (parsed.success) {
     const e = parsed.data;
     if (e.SITE_ENV === 'production') {
       const url = new URL(e.NEXT_PUBLIC_SITE_URL);
-      if (url.protocol !== 'https:') issues.push('NEXT_PUBLIC_SITE_URL: en producción debe ser https');
+      if (url.protocol !== 'https:')
+        issues.push('NEXT_PUBLIC_SITE_URL: en producción debe ser https');
       if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
         issues.push('NEXT_PUBLIC_SITE_URL: en producción no puede apuntar a localhost');
       }

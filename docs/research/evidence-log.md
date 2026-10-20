@@ -36,6 +36,7 @@ La política de red del entorno de trabajo devuelve `403` (CONNECT) o no resuelv
 | E-05 | `typescript-eslint@8.72.0` y `@typescript-eslint/parser`: peer `typescript >=4.8.4 <6.1.0`. Con TS 7 el lint tipado no es soportado. `eslint-plugin-jsx-a11y@6.10.2` declara peer `eslint` hasta `^9`; `eslint-plugin-react-hooks@7.1.1` admite `^10`; `eslint-config-next@16.4.2` admite `>=9`. | P | `npm view … peerDependencies` |
 | E-06 | **Cesium**: `cesium@1.146.0` (publicado 2026-10-01, Apache-2.0, Node ≥22) depende de `@cesium/engine ^26.4.0`. El motor contiene `MVTDataProvider` (**`@experimental`**, solo plantilla `{z}/{x}/{y}`), `createGooglePhotorealistic3DTileset`, `Google2DImageryProvider`, `GoogleStreetViewCubeMapPanoramaProvider`. **No** existe lector de PMTiles ni un `ImageryProvider` de MVT. | P | `npm pack @cesium/engine@26.4.0` + lectura del código |
 | E-07 | Licencias npm: maplibre-gl BSD-3-Clause; pmtiles BSD-3-Clause; cesium Apache-2.0; deck.gl MIT; three MIT; resium MIT; mapbox-gl `3.33.0` con licencia propia (`LICENSE.txt`, no OSI); fuentes @fontsource-variable (Fraunces, Figtree, Inter, …) OFL-1.1. | P | `npm view … license` |
+| E-40 | `eslint@9.39.5` figura en npm como **«This version is no longer supported»**. ESLint 10.13.0 funciona con `eslint-plugin-jsx-a11y@6.10.2` (peer declarado hasta ^9, aviso de pnpm) verificado con control positivo. | P | `npm view eslint@9.39.5 deprecated`; ejecución local |
 
 ## Documentación oficial leída (repositorios oficiales en GitHub, rama `main`/`canary`)
 

@@ -41,13 +41,18 @@ export function buildSitemap<H>(args: {
     if (published.length === 0) continue;
 
     const languages: Record<string, string> = {};
-    for (const l of published) languages[LOCALE_INFO[l].htmlLang] = args.urlFor(l, route.hrefFor(l));
+    for (const l of published)
+      languages[LOCALE_INFO[l].htmlLang] = args.urlFor(l, route.hrefFor(l));
     const defaultPublished = published.includes(DEFAULT_LOCALE);
     if (route.isHome) languages['x-default'] = args.rootUrl;
-    else if (defaultPublished) languages['x-default'] = args.urlFor(DEFAULT_LOCALE, route.hrefFor(DEFAULT_LOCALE));
+    else if (defaultPublished)
+      languages['x-default'] = args.urlFor(DEFAULT_LOCALE, route.hrefFor(DEFAULT_LOCALE));
 
     for (const l of published) {
-      out.push({ url: args.urlFor(l, route.hrefFor(l)), alternates: { languages: { ...languages } } });
+      out.push({
+        url: args.urlFor(l, route.hrefFor(l)),
+        alternates: { languages: { ...languages } },
+      });
     }
   }
   return out;

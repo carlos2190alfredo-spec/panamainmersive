@@ -13,22 +13,22 @@ Estado: modelo de amenazas inicial + controles de la Foundation. Etiquetas: `IMP
 
 ## Amenazas y controles
 
-| Amenaza | Control | Estado |
-| --- | --- | --- |
-| XSS | CSP estricta (ADR-0010), React escapa por defecto, sin `dangerouslySetInnerHTML` (regla ESLint), mensajes ICU con interpolación segura | PLANNED→Fase 1 |
-| Inyección de entorno / config rota | `src/config/env.ts` con zod: falla al arrancar con valores inválidos; separación cliente/servidor | Fase 1 |
-| Fuga de claves | Prefijo `NEXT_PUBLIC_` solo para lo público; prueba que los secretos no aparecen en el bundle cliente | Fase 1 |
-| Escalada de privilegios | RLS + función `app.has_role`; pruebas de integración | Fase 1 |
-| Manipulación de traducciones (marcar IA como revisada) | Restricciones SQL + trigger + política de publicación | Fase 1 |
-| SSRF en importaciones | Lista blanca de hosts, sin redirecciones a hosts no permitidos | Fase 3 |
-| Zip bomb / path traversal / XML (XXE) / geometrías excesivas | Límites de tamaño y vértices, rechazo de `..`, parser sin entidades externas | Fase 3 |
-| Abuso de API espacial | Validación de bbox/zoom/capas, límites de resultados y tiempo, *rate limit* | Fase 3 |
-| Abuso general | *Rate limits* por operación (IP + cuenta) | Fase 1 (cabeceras) / 3 |
-| Clickjacking | `frame-ancestors 'none'` + `X-Frame-Options: DENY` | Fase 1 |
-| Robo de sesión/CSRF | Cookies `Secure`, `HttpOnly`, `SameSite=Lax` según despliegue; sin sesiones en Fase 1 | PLANNED |
-| Proxy de teselas que infrinja términos | **No** se crea (ver `provider-rights.md`) | Política |
-| Inyección de prompts vía fuentes | Fuentes como **datos**; herramientas tipadas; sin SQL libre | Fase 9 |
-| Registro de datos personales | No se registran ubicaciones precisas ni prompts con PII sin necesidad; retención definida | Fase 1 (política) |
+| Amenaza                                                      | Control                                                                                                                                | Estado                                                                  |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| XSS                                                          | CSP estricta (ADR-0010), React escapa por defecto, sin `dangerouslySetInnerHTML` (regla ESLint), mensajes ICU con interpolación segura | IMPLEMENTED + VERIFIED (E2E: cabecera y hidratación bajo CSP; ADR-0010) |
+| Inyección de entorno / config rota                           | `src/config/env.ts` con zod: falla al arrancar con valores inválidos; separación cliente/servidor                                      | VERIFIED (unitarias)                                                    |
+| Fuga de claves                                               | Prefijo `NEXT_PUBLIC_` solo para lo público; prueba que los secretos no aparecen en el bundle cliente                                  | VERIFIED (`check:bundle` + unitarias)                                   |
+| Escalada de privilegios                                      | RLS + función `app.has_role`; pruebas de integración                                                                                   | VERIFIED (92 pruebas de integración; test de mutación)                  |
+| Manipulación de traducciones (marcar IA como revisada)       | Restricciones SQL + trigger + política de publicación                                                                                  | VERIFIED (integración + unitarias)                                      |
+| SSRF en importaciones                                        | Lista blanca de hosts, sin redirecciones a hosts no permitidos                                                                         | Fase 3                                                                  |
+| Zip bomb / path traversal / XML (XXE) / geometrías excesivas | Límites de tamaño y vértices, rechazo de `..`, parser sin entidades externas                                                           | Fase 3                                                                  |
+| Abuso de API espacial                                        | Validación de bbox/zoom/capas, límites de resultados y tiempo, _rate limit_                                                            | Fase 3                                                                  |
+| Abuso general                                                | _Rate limits_ por operación (IP + cuenta)                                                                                              | Fase 1 (cabeceras) / 3                                                  |
+| Clickjacking                                                 | `frame-ancestors 'none'` + `X-Frame-Options: DENY`                                                                                     | VERIFIED (E2E)                                                          |
+| Robo de sesión/CSRF                                          | Cookies `Secure`, `HttpOnly`, `SameSite=Lax` según despliegue; sin sesiones en Fase 1                                                  | PLANNED                                                                 |
+| Proxy de teselas que infrinja términos                       | **No** se crea (ver `provider-rights.md`)                                                                                              | Política                                                                |
+| Inyección de prompts vía fuentes                             | Fuentes como **datos**; herramientas tipadas; sin SQL libre                                                                            | Fase 9                                                                  |
+| Registro de datos personales                                 | No se registran ubicaciones precisas ni prompts con PII sin necesidad; retención definida                                              | Fase 1 (política)                                                       |
 
 ## Cabeceras (ADR-0010)
 
@@ -46,8 +46,18 @@ Estado: modelo de amenazas inicial + controles de la Foundation. Etiquetas: `IMP
 
 ## Dependencias y licencias
 
-`pnpm audit` y revisión de licencias en CI **sin bloquear por alertas no aplicables** (se evalúan caso a caso y se documentan). `pnpm` bloquea por defecto los *scripts* de instalación; solo se permiten los necesarios en `onlyBuiltDependencies`.
+`pnpm audit` y revisión de licencias en CI **sin bloquear por alertas no aplicables** (se evalúan caso a caso y se documentan). `pnpm` bloquea por defecto los _scripts_ de instalación; solo se permiten los necesarios en `onlyBuiltDependencies`.
 
 ## Lo que NO está hecho
 
 Autenticación real, CSRF/sesiones, rate limiting efectivo, revisión legal de privacidad, pruebas de penetración. Todo se lista en `docs/backlog.md`.
+
+## Hallazgos de la Foundation (con evidencia)
+
+| Hallazgo                                                | Detalle                                                                                                                                                                                                                             | Resolución                                                                                                          |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **`spatial_ref_sys` sin RLS en `public`**               | PostGIS instalado en `public` deja su tabla de sistema expuesta por la API (el linter de Supabase la marca «RLS disabled in public»); no se le puede activar RLS de forma portable. Lo detectó la prueba «RLS en todas las tablas». | PostGIS, `pg_trgm` y `unaccent` en el esquema `extensions` (migración 0001); prueba que lo fija                     |
+| **CSP estricta rompe la hidratación**                   | `script-src 'self'` bloquea 3 scripts en línea de Next; SRI experimental cubre 6 de 9 scripts                                                                                                                                       | ADR-0010: `script-src 'self' 'unsafe-inline'` con controles compensatorios y prueba que fija la directiva exacta    |
+| **Artefacto de producción en un entorno no productivo** | `SITE_ENV` se hornea en las páginas estáticas al compilar                                                                                                                                                                           | El `proxy` añade `X-Robots-Tag: noindex, nofollow` en tiempo de ejecución si `SITE_ENV ≠ production` (VERIFIED E2E) |
+| **Secretos en el bundle de cliente**                    | `publicEnv` convivía con los nombres de las variables secretas                                                                                                                                                                      | `src/config/public-env.ts` separado; `check:bundle` escanea `.next/static` (VERIFIED)                               |
+| **Migrar una base remota por error**                    | —                                                                                                                                                                                                                                   | `pnpm db:migrate` rechaza hosts no locales sin `MIGRATE_CONFIRM_REMOTE=<host>` (VERIFIED)                           |

@@ -14,7 +14,7 @@ El documento rector propone CesiumJS para 3D «cuando aporta valor» y MapLibre 
 ## Decisión
 
 - **MapLibre GL JS** (6.15) es el motor del MVP: mapa 2D, relieve 3D (`raster-dem` + hillshade/terrain), PMTiles, deep links y offline futuro.
-- **Cesium se aísla tras un adaptador de visor imperativo** y un *feature flag* (`FEATURE_CESIUM`), no implementado hasta que existan: (a) cobertura 3D **VERIFIED** en al menos un destino, (b) credencial válida, (c) medición de bundle/memoria que cabe en el presupuesto.
+- **Cesium se aísla tras un adaptador de visor imperativo** y un _feature flag_ (`FEATURE_CESIUM`), no implementado hasta que existan: (a) cobertura 3D **VERIFIED** en al menos un destino, (b) credencial válida, (c) medición de bundle/memoria que cabe en el presupuesto.
 - **No** se usa Resium. **No** se usa deck.gl ni three.js hasta que MapLibre no alcance en volumen de datos (medido).
 - Un solo visor pesado vive a la vez; el adaptador define `create / flyTo / setLayers / getCameraState / destroy`.
 

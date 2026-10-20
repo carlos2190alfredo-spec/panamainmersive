@@ -62,8 +62,19 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/components/*', '@/app/*', '@/adapters/*', 'react', 'react-dom', 'next', 'next/*', 'next-intl', 'next-intl/*'],
-              message: 'src/domains es lógica pura: no importa UI, framework ni adaptadores (ADR-0001).',
+              group: [
+                '@/components/*',
+                '@/app/*',
+                '@/adapters/*',
+                'react',
+                'react-dom',
+                'next',
+                'next/*',
+                'next-intl',
+                'next-intl/*',
+              ],
+              message:
+                'src/domains es lógica pura: no importa UI, framework ni adaptadores (ADR-0001).',
             },
           ],
         },
@@ -74,7 +85,14 @@ export default tseslint.config(
   { files: ['**/*.mjs'], ...tseslint.configs.disableTypeChecked },
   // Scripts y configuraciones: relajar solo lo estrictamente necesario.
   {
-    files: ['scripts/**/*.ts', '*.config.ts', '*.config.mjs', 'tests/**/*.ts', 'tests/**/*.tsx', 'e2e/**/*.ts'],
+    files: [
+      'scripts/**/*.ts',
+      '*.config.ts',
+      '*.config.mjs',
+      'tests/**/*.ts',
+      'tests/**/*.tsx',
+      'e2e/**/*.ts',
+    ],
     rules: { 'no-console': 'off' },
   },
 );
