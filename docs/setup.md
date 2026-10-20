@@ -67,3 +67,19 @@ pnpm data:build      # extrae, tesela y VERIFICA; publica public/data/panama-bas
 - Los artefactos (`data/build/`, `public/data/*`) **no se versionan**. Los glifos (`public/map-assets/glyphs/`) y las anclas **sí**.
 - **Hosting de producción** [pendiente]: cualquier almacén estático con **HTTP Range** y CORS si es de otro origen; configurar `NEXT_PUBLIC_TILES_BASE_URL` (su origen entra solo en `connect-src`). Hoy el mapa de producción está **desactivado** por L-01.
 - Relieve: `NEXT_PUBLIC_TERRAIN_TILES_URL` (por defecto AWS Terrarium); se valida la plantilla `{z}/{x}/{y}` y, en producción, https.
+
+## 7. Ingesta de áreas a la base de datos (Fase 3)
+
+Necesita el entorno de §6 (`.venv` activado; `pip install -r pipelines/requirements.txt -r pipelines/requirements-dev.txt` para tener también `pytest`), una base PostgreSQL+PostGIS migrada (`DATABASE_URL`, `pnpm db:migrate`) y red hacia el S3 de Overture.
+
+```bash
+. .venv/bin/activate
+pnpm test:pipelines                 # 90 pruebas del ETL (sin red)
+pnpm data:ingest                    # extrae, valida y escribe data/build/ingest/<dataset>/<release>/ (fuera de git)
+pnpm db:import-areas --manifest data/build/ingest/overture-protected-areas/2026-09-23.1/manifest.json
+pnpm db:import-areas --manifest data/build/ingest/overture-destination-references/2026-09-23.1/manifest.json
+```
+
+- Importar no publica: las áreas quedan con `is_public = false`. `--publish` es una decisión editorial y solo funciona si la política de derechos lo permite (hoy `provisional`: no, L-01).
+- Una base que no sea local exige `IMPORT_CONFIRM_REMOTE=<host>`. **No se ha importado a ninguna base remota.**
+- Repetir la importación del mismo contenido no escribe nada (`noop`, queda en `import_runs`).

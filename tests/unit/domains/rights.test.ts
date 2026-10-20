@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MAP_RIGHTS,
   evaluateRights,
+  parsePolicies,
   policiesMatchSources,
   resolveMapExperience,
   type RightsPolicy,
 } from '@/domains/geography/rights';
 import { USED_SOURCES } from '@/domains/geography/sources';
+import { RIGHTS_POLICIES as MAP_RIGHTS } from '@/lib/rights-policies';
 import { allowedLayers } from '@/domains/geography/map-url-state';
 
 const verified: RightsPolicy = { subject: 'x', status: 'verified', allowed: ['display'] };
@@ -50,14 +51,14 @@ describe('evaluador de derechos (deny-by-default)', () => {
 describe('Experience Resolver v1 (mapa)', () => {
   it('hoy NINGUNA política es verified: en producción no se ofrece ni el mapa base ni el relieve', () => {
     expect(MAP_RIGHTS.every((p) => p.status === 'provisional')).toBe(true);
-    const experience = resolveMapExperience('production');
+    const experience = resolveMapExperience('production', MAP_RIGHTS);
     expect(experience.basemap.allowed).toBe(false);
     expect(experience.terrain.allowed).toBe(false);
   });
 
   it('fuera de producción todo se ofrece (desarrollo local y staging)', () => {
     for (const env of ['development', 'staging'] as const) {
-      const experience = resolveMapExperience(env);
+      const experience = resolveMapExperience(env, MAP_RIGHTS);
       expect(experience.basemap.allowed).toBe(true);
       expect(experience.terrain.allowed).toBe(true);
     }
@@ -80,7 +81,7 @@ describe('Experience Resolver v1 (mapa)', () => {
   });
 
   it('las políticas y el registro de fuentes en uso son coherentes (sin fuentes huérfanas)', () => {
-    expect(policiesMatchSources()).toEqual([]);
+    expect(policiesMatchSources(MAP_RIGHTS)).toEqual([]);
     expect(policiesMatchSources(MAP_RIGHTS.filter((p) => p.subject !== 'overture'))).toEqual([
       'overture: en uso pero sin política de derechos',
     ]);
@@ -105,5 +106,27 @@ describe('capas permitidas por derechos', () => {
       'protectedAreas',
       'hillshade',
     ]);
+  });
+});
+
+describe('documento de políticas compartido (TypeScript + Python)', () => {
+  it('rechaza sujetos repetidos, acciones desconocidas y estados inválidos', () => {
+    const base = {
+      schema: 1,
+      reviewedOn: '2026-10-20',
+      note: 'x',
+      policies: [{ subject: 'a', status: 'verified', allowed: ['display'], evidence: 'e' }],
+    };
+    expect(parsePolicies(base)).toHaveLength(1);
+    expect(() =>
+      parsePolicies({ ...base, policies: [...base.policies, ...base.policies] }),
+    ).toThrow(/repetida/);
+    expect(() =>
+      parsePolicies({ ...base, policies: [{ ...base.policies[0], allowed: ['robar'] }] }),
+    ).toThrow();
+    expect(() =>
+      parsePolicies({ ...base, policies: [{ ...base.policies[0], status: 'verified?' }] }),
+    ).toThrow();
+    expect(() => parsePolicies({ ...base, policies: [] })).toThrow();
   });
 });

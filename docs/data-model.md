@@ -87,6 +87,17 @@ erDiagram
 
 Pruebas de integración contra PostgreSQL real verifican cada celda relevante (ver `docs/testing.md`).
 
+### Añadido en la Fase 3.a (migración `0006`)
+
+| Tabla                   | Para qué                                                                                                                                        | Visitante (anon)           | Usuario    | Editor                                               | Admin   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------- | ---------------------------------------------------- | ------- |
+| `geographic_area_names` | Nombre **local** de la fuente (sin idioma), nombres por idioma **solo si la fuente los trae**, o editorial; con procedencia y versión de fuente | Solo los de áreas visibles | igual      | Escribe solo `editorial` y solo en áreas `editorial` | CRUD    |
+| `import_runs`           | Registro de cada ingesta (conjunto, versión de fuente, hash, estado `applied`/`noop`, recuentos, cuarentena)                                    | **Sin acceso**             | sin acceso | Lectura (personal)                                   | Lectura |
+
+- `geographic_areas.external_ref ->> 'overture_id'` es **único** (`geographic_areas_overture_id_uq`): la identidad de un área de Overture es su ID, nunca el nombre.
+- `geographic_area_names`: `source_local` sin idioma y como máximo uno por área; `source_common` con idioma y uno por idioma; las de fuente exigen `source_version_id`; sin caracteres de control.
+- Los cambios de ambas tablas quedan en `audit_events`. Nadie con rol de aplicación escribe `import_runs`: solo el propietario que ejecuta la importación.
+
 ## Entidades PLANIFICADAS (por fase)
 
 | Fase | Tablas                                                                                                                                                   |

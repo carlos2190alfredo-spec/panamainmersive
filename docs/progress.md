@@ -11,7 +11,7 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 | 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada) | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
 | 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                    | Detalle abajo                                                         |
 | 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**   | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
-| 3 — GIS                   | PENDIENTE                                                                  | Los sondeos de Fase 0 ya extraen datos reales de Overture             |
+| 3 — GIS                   | **EN CURSO**: F3.a (ingesta a PostGIS) **VERIFIED**; F3.b–e pendientes     | Entrega 3 (abajo)                                                     |
 | 4–10                      | PENDIENTE                                                                  | Ver `docs/backlog.md`                                                 |
 
 ## Entrega 1 — Foundation
@@ -133,3 +133,49 @@ Carreteras y picos; etiquetas de destino con colisión; CDN/Range entre orígene
 ### Siguiente acción concreta
 
 **Fase 3 (GIS)**: importación controlada y versionada de geometrías a PostGIS, Layer Engine y Legend Engine sobre datos publicados, consultas espaciales con API acotada (`docs/gis.md` §5) y las pruebas de seguridad del pipeline (SSRF, importaciones maliciosas). Las tareas independientes de credenciales pueden avanzar; las que dependen de geometrías oficiales siguen bloqueadas por L-03.
+
+## Entrega 3 — Fase 3: GIS (en curso) · F3.a Ingesta controlada de áreas
+
+### Qué funciona (VERIFIED, 2026-10-20)
+
+- **Pipeline de ingesta** (`pipelines/ingest/`): extrae de Overture `2026-09-23.1`, valida (ejes, rango, anillos, vértices, área de trabajo), manda a **cuarentena** lo que incumple (nunca repara ni recorta) y escribe artefactos + **manifiesto** con hash. Derechos comprobados **antes** de descargar.
+- **Cargador a PostGIS** (`pnpm db:import-areas`): revalida manifiesto y hash, una transacción, la BD vuelve a validar (defensa en profundidad), versiona (`source_version`, geometría v1/v2/histórico), es idempotente (`noop`), calcula la superficie con `ST_Area(geography)` y **no publica** por defecto.
+- **Migración 0006**: `geographic_area_names` (nombres por procedencia, sin traducir topónimos), `import_runs`, ID de Overture único; RLS y auditoría.
+- **Derechos ejecutables con una sola fuente** (`data/rights/policies.json`) para TypeScript y Python.
+- **Datos reales**: 137 áreas protegidas válidas y 2 en cuarentena (E-49); 11 entidades poligonales de referencia de destinos. Todo `osm_derived` (**no oficial**) y **no público** (política `provisional`, L-01).
+
+### Cómo ejecutarlo
+
+```bash
+. .venv/bin/activate && pip install -r pipelines/requirements.txt -r pipelines/requirements-dev.txt   # una vez
+pnpm test:pipelines                                   # 90 pruebas, sin red
+pnpm data:ingest                                      # necesita red hacia el S3 de Overture
+pnpm db:import-areas --manifest data/build/ingest/overture-protected-areas/2026-09-23.1/manifest.json   # necesita DATABASE_URL local
+pnpm test:integration                                 # incluye la importación y la RLS nueva (PostgreSQL temporal)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-20)
+
+| Comando                                        | Resultado                                                                                                |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Sin errores                                                                                              |
+| `pnpm test`                                    | 23 ficheros / **327** pruebas                                                                            |
+| `pnpm test:pipelines`                          | 5 ficheros / **90** pruebas (Python 3.13, `.venv`)                                                       |
+| `pnpm test:integration`                        | 9 ficheros / **120** pruebas: +20 de importación (incluye datos reales) y +8 de RLS de las tablas nuevas |
+
+### Lo que se encontró y cambió (honestamente)
+
+- `fsspec` **sigue redirecciones** por defecto (riesgo SSRF): se forzó `allow_redirects=False` y tamaño conocido (E-50).
+- Dos áreas reales de Overture quedan fuera de nuestra área de trabajo (una cruza el antimeridiano): cuarentena, no recorte (E-49).
+- Una prueba de RLS aceptaba **cualquier** error como «denegado» y su título afirmaba que «solo el admin escribe» `import_runs` (falso: nadie con rol de aplicación escribe). Corregida para exigir SQLSTATE 42501 y comprobar editor y admin.
+- Faltaba `pytest` en el entorno al reanudar: se recreó `.venv` (ESLint/Prettier/tsc ya lo excluyen).
+
+### Qué no pudo verificarse
+
+- La importación **no** se ha hecho contra una base remota/Supabase. La descarga de Overture no está en CI. Las políticas de derechos siguen `provisional` (L-01): **no se puede publicar** nada importado.
+- **No hay límites oficiales** (L-03); estas áreas son de OpenStreetMap y deben etiquetarse así en la interfaz (F3.d).
+- El job de pytest del CI está **IMPLEMENTED, no VERIFIED** (no ejecutable aquí).
+
+### Pendiente de la Fase 3
+
+F3.b API espacial acotada · F3.c Layer Engine y Legend Engine declarativos · F3.d selección de áreas en el mapa con ficha de fuente/superficie · F3.e cierre (documentación, E2E, commit). Detalle en `docs/backlog.md`.

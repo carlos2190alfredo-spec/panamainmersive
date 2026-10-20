@@ -12,6 +12,8 @@ pnpm test:integration                                      # PostgreSQL+PostGIS 
 SITE_ENV=development pnpm build && pnpm check:bundle       # build + secretos en bundle + presupuesto JS (+ mapa diferido)
 pnpm test:e2e                                              # Playwright sobre el build de producción (incluye el mapa con WebGL real)
 pnpm data:anchors && pnpm data:build                       # datos del mapa (Python + tippecanoe; ver docs/setup.md §6)
+. .venv/bin/activate && pnpm test:pipelines                # ETL de Python (90 pruebas, sin red; `.venv` activado porque los scripts usan `python3 -I`)
+pnpm data:ingest && pnpm db:import-areas --manifest …      # ingesta controlada de áreas (docs/setup.md §7, ADR-0015)
 ```
 
 Actualiza `docs/progress.md` en cada entrega: qué funciona, cómo ejecutarlo, qué pruebas se corrieron, qué queda.
@@ -41,6 +43,8 @@ Actualiza `docs/progress.md` en cada entrega: qué funciona, cómo ejecutarlo, q
 - **MapLibre 6** necesita `setWorkerUrl` (E-46) y su CSS pisa `position` de una sola clase: usa selectores de dos clases (ver `MapStage.module.css`). Los marcadores son **botones HTML** y se agrupan por distancia en pantalla.
 - **El relieve (AWS) es opt-in**: nunca lo actives por defecto ni lo cargues sin que la persona lo pida. Con política de derechos `provisional` el mapa y el relieve se **bloquean en producción** (`resolveMapExperience`).
 - **No traduzcas topónimos**: el estilo usa `name_<idioma>` solo si la fuente lo trae (E-43).
+- **Ingesta (ADR-0015)**: lo que incumple una regla va a **cuarentena**, nunca se repara con `ST_MakeValid` ni se recorta. Las políticas de derechos salen de `data/rights/policies.json` (una sola fuente para TS y Python); el manifiesto **no** puede mejorarlas. Importar **no publica**. `fsspec` sigue redirecciones: usa `open_remote` (E-50). Al relacionar áreas con destinos, por **ID** y rol `context`, nunca por nombre.
+- **`.venv/` en la raíz**: ESLint, Prettier y `tsc` lo excluyen explícitamente; no lo muevas ni lo versiones.
 - **Bucle de recarga en `next dev`** («HMR hash mismatch» en la consola): caché de Turbopack obsoleta. Borra `.next/dev`. Los E2E usan el build de producción y no se ven afectados.
 - **`style=""` está prohibido por la CSP** (`style-src 'self'`): usa clases CSS sobre tokens, también en SVG.
 - **No imprimas el progreso de tippecanoe** (miles de líneas): redirige `2>/dev/null`.

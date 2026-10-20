@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "reviewedOn": "2026-10-20",
+  "note": "Fuente única de las políticas de derechos que ejecuta el producto: la leen el evaluador de TypeScript y el pipeline de Python. «provisional» = licencia conocida de forma secundaria, NO leída en la fuente primaria (docs/provider-rights.md): permite trabajar fuera de producción y bloquea producción.",
+  "policies": [
+    {
+      "subject": "overture",
+      "status": "provisional",
+      "allowed": ["display", "combine", "cache", "transform", "redistribute"],
+      "evidence": "Resumen secundario (E-33); ODbL derivada de OpenStreetMap; atribución obligatoria."
+    },
+    {
+      "subject": "aws-terrain",
+      "status": "provisional",
+      "allowed": ["display"],
+      "evidence": "CORS verificado (E-25/E-48); términos de redistribución sin leer."
+    },
+    {
+      "subject": "noto-sans-glyphs",
+      "status": "provisional",
+      "allowed": ["display", "redistribute"],
+      "evidence": "Licencia OFL 1.1 del repositorio de Noto leída; empaquetado de openmaptiles/fonts sin declaración propia."
+    }
+  ]
+}

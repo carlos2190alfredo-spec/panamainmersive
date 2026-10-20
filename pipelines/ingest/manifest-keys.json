@@ -1,0 +1,28 @@
+{
+  "top": [
+    "schema",
+    "dataset",
+    "release",
+    "retrievedAt",
+    "source",
+    "license",
+    "validation",
+    "counts",
+    "files",
+    "contentSha256",
+    "links",
+    "publishable"
+  ],
+  "counts": [
+    "read",
+    "skippedNotPolygonal",
+    "duplicates",
+    "quarantined",
+    "valid"
+  ],
+  "file": [
+    "name",
+    "bytes",
+    "sha256"
+  ]
+}

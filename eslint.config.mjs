@@ -16,6 +16,7 @@ export default tseslint.config(
       'test-results/**',
       'public/**',
       'pipelines/**',
+      '.venv/**',
       'next-env.d.ts',
     ],
   },

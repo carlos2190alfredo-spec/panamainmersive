@@ -19,6 +19,7 @@ import { DESTINATIONS, destinationName, destinationSlug } from '@/domains/touris
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_ANCHORS } from '@/lib/destination-anchors';
 import { assertLocale, type LocaleParams } from '@/lib/params';
+import { RIGHTS_POLICIES } from '@/lib/rights-policies';
 import { pageMetadata } from '@/lib/seo';
 import { getTodayIsoDate } from '@/lib/today';
 import styles from './page.module.css';
@@ -45,7 +46,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
   const today = getTodayIsoDate();
   const { anchors, info } = DESTINATION_ANCHORS;
   // Experience Resolver v1: qué se puede ofrecer según los derechos y el entorno (provisional ⇒ no en producción).
-  const experience = resolveMapExperience(getEnv().SITE_ENV);
+  const experience = resolveMapExperience(getEnv().SITE_ENV, RIGHTS_POLICIES);
   const blocked = !experience.basemap.allowed;
   const terrainAllowed = experience.terrain.allowed;
 

@@ -39,6 +39,14 @@ Ver `docs/progress.md` para el estado exacto de cada elemento.
 
 Pipeline de importación controlada y reproducible; geometrías versionadas; Layer Engine y Legend Engine; clustering; consultas espaciales con API acotada.
 
+| ID   | Tarea                                                                                                                                                    | Estado              |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| F3-1 | Ingesta controlada de áreas a PostGIS (ADR-0015)                                                                                                         | **VERIFIED** (F3.a) |
+| F3-2 | API espacial acotada (`/api/spatial/areas`, `/areas/[id]`, `/locate`): validación pura, rol `anon`, tiempo máximo, simplificación por zoom               | PENDING (F3.b)      |
+| F3-3 | Layer Engine y Legend Engine declarativos; más capas seleccionables (límites, ríos, cobertura, lugares)                                                  | PENDING (F3.c)      |
+| F3-4 | Selección de área en el mapa + lista equivalente por teclado + ficha con fuente, método de superficie y «sin datos verificados»                          | PENDING (F3.d)      |
+| F3-5 | Importar y publicar áreas (requiere L-01) · límites oficiales (requiere L-03) · ingesta incremental entre _releases_ · ingesta en CI sin depender de red | BLOCKED / DEFERRED  |
+
 ### Fase 4 — Destinos
 
 Nueve fichas con fuentes, traducciones, medios autorizados, SEO. **Sin rellenar huecos con afirmaciones inventadas.** Depende de L-01…L-03.

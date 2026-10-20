@@ -24,7 +24,10 @@
     "db:migrate": "tsx scripts/db/migrate.ts",
     "check:bundle": "tsx scripts/check-bundle.ts",
     "data:anchors": "python3 -I pipelines/anchors/derive_anchors.py",
-    "data:build": "python3 -I pipelines/basemap/build_basemap.py"
+    "data:build": "python3 -I pipelines/basemap/build_basemap.py",
+    "test:pipelines": "python3 -I -m pytest pipelines/tests -q -p no:cacheprovider",
+    "data:ingest": "python3 -I pipelines/ingest/import_areas.py --dataset overture-protected-areas && python3 -I pipelines/ingest/import_areas.py --dataset overture-destination-references",
+    "db:import-areas": "tsx scripts/db/import-areas.ts"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "5.3.0",

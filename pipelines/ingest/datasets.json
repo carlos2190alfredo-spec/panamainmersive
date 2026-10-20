@@ -1,0 +1,56 @@
+{
+  "overture-protected-areas": {
+    "source": {
+      "key": "overture",
+      "institution": "Overture Maps Foundation",
+      "url": "https://overturemaps.org/",
+      "kind": "osm_derived"
+    },
+    "license": {
+      "name": "ODbL (datos derivados de OpenStreetMap)",
+      "url": "https://opendatacommons.org/licenses/odbl/",
+      "attribution": "© OpenStreetMap contributors, Overture Maps Foundation"
+    },
+    "rightsSubject": "overture",
+    "actions": [
+      "transform",
+      "redistribute",
+      "display"
+    ],
+    "extract": {
+      "theme": "base",
+      "type": "land_use",
+      "subtype": "protected"
+    },
+    "description": "Áreas protegidas de OpenStreetMap vía Overture. NO son límites oficiales (MiAmbiente/SINAP sin acceso, L-03).",
+    "publishable": true
+  },
+  "overture-destination-references": {
+    "source": {
+      "key": "overture",
+      "institution": "Overture Maps Foundation",
+      "url": "https://overturemaps.org/",
+      "kind": "osm_derived"
+    },
+    "license": {
+      "name": "ODbL (datos derivados de OpenStreetMap)",
+      "url": "https://opendatacommons.org/licenses/odbl/",
+      "attribution": "© OpenStreetMap contributors, Overture Maps Foundation"
+    },
+    "rightsSubject": "overture",
+    "actions": [
+      "transform",
+      "redistribute",
+      "display"
+    ],
+    "extract": {
+      "idsFromAnchors": "pipelines/anchors/anchors.config.json"
+    },
+    "description": "Entidades de referencia elegidas POR ID para ubicar y encuadrar cada destino (E-41). NO son el límite del destino.",
+    "kindOverrides": {
+      "67c657c5-e8ca-37a6-806e-b008549d77fd": "infrastructure"
+    },
+    "kindOverridesNote": "Decisión explícita POR ID (nunca por nombre): «Esclusas de Miraflores» es un polígono de agua de una obra del Canal (base/water), que el mapeo genérico no clasifica.",
+    "publishable": false
+  }
+}

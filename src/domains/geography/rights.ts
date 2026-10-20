@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { USED_SOURCES, type RightsStatus } from './sources';
 
 /**
@@ -48,22 +49,40 @@ export function evaluateRights(
   return { allowed: true, reason: 'provisional-outside-production' };
 }
 
-/**
- * Acciones que este producto ejecuta sobre cada fuente. Se ESPERA de las políticas del proveedor, no se asume:
- * son la entrada de la matriz de docs/provider-rights.md. Hoy todas son `provisional` (bloqueo de lanzamiento L-01).
- */
-export const MAP_RIGHTS: readonly RightsPolicy[] = [
-  // Overture: se extrae, recorta y teselea (transform) y se sirve desde este origen (redistribute, cache).
-  {
-    subject: 'overture',
-    status: 'provisional',
-    allowed: ['display', 'combine', 'cache', 'transform', 'redistribute'],
-  },
-  // Terreno AWS: el navegador lo pide directamente al proveedor; no se copia ni se redistribuye.
-  { subject: 'aws-terrain', status: 'provisional', allowed: ['display'] },
-  // Glifos de Noto Sans (OFL): se sirven desde este origen.
-  { subject: 'noto-sans-glyphs', status: 'provisional', allowed: ['display', 'redistribute'] },
-];
+const ACTIONS = [
+  'display',
+  'combine',
+  'cache',
+  'download',
+  'transform',
+  'redistribute',
+  'offline',
+  'aiProcess',
+] as const;
+
+const PoliciesDocument = z.object({
+  schema: z.literal(1),
+  reviewedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note: z.string().min(1),
+  policies: z
+    .array(
+      z.object({
+        subject: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+        status: z.enum(['verified', 'provisional']),
+        allowed: z.array(z.enum(ACTIONS)).min(1),
+        evidence: z.string().min(1),
+      }),
+    )
+    .min(1),
+});
+
+/** Valida el documento de políticas; rechaza sujetos repetidos (una sola política por fuente). */
+export function parsePolicies(raw: unknown): readonly RightsPolicy[] {
+  const doc = PoliciesDocument.parse(raw);
+  const subjects = doc.policies.map((p) => p.subject);
+  if (new Set(subjects).size !== subjects.length) throw new Error('Política de derechos repetida');
+  return doc.policies.map(({ subject, status, allowed }) => ({ subject, status, allowed }));
+}
 
 export interface MapExperience {
   /** Mapa base vectorial (cartografía + etiquetas). Si se deniega, no se inicializa el mapa. */
@@ -79,7 +98,7 @@ function firstDenied(decisions: readonly RightsDecision[]): RightsDecision | und
 /** Experience Resolver v1: qué partes de la experiencia de mapa se pueden ofrecer HOY y por qué. */
 export function resolveMapExperience(
   env: SiteEnv,
-  policies: readonly RightsPolicy[] = MAP_RIGHTS,
+  policies: readonly RightsPolicy[],
 ): MapExperience {
   const basemapChecks: RightsDecision[] = [
     evaluateRights(policies, 'overture', 'display', env),
@@ -98,7 +117,7 @@ export function resolveMapExperience(
 }
 
 /** Coherencia: toda fuente en uso tiene política y su estado coincide con el del registro de fuentes. */
-export function policiesMatchSources(policies: readonly RightsPolicy[] = MAP_RIGHTS): string[] {
+export function policiesMatchSources(policies: readonly RightsPolicy[]): string[] {
   const problems: string[] = [];
   for (const source of USED_SOURCES) {
     const policy = policies.find((p) => p.subject === source.id);

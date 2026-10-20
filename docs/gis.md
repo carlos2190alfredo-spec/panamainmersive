@@ -117,3 +117,29 @@ Reglas que importan (con evidencia):
 ## 10. Pruebas GIS implementadas (Fase 2)
 
 Conversión cámara↔zoom contra valores analíticos independientes (zoom 0 ⇒ 1,5 × circunferencia) e ida y vuelta; prueba de **propiedad** de que `formatCamera` siempre produce algo reanalizable y canónico (2 000 cámaras); validación del estilo con `@maplibre/maplibre-gl-style-spec` (+ control positivo); contrato Python↔TypeScript (capas y área de trabajo); anclas dentro del área, de su encuadre y cerca de referencias independientes (guarda de homonimias); agrupamiento sin solapes (300 ensayos); E2E con WebGL real. Detalle en `docs/testing.md`.
+
+## 11. Ingesta controlada de áreas a PostGIS (Fase 3.a — IMPLEMENTADA y VERIFICADA)
+
+Decisiones y alternativas: ADR-0015. Evidencias: E-49, E-50.
+
+```text
+Overture (S3, lista blanca, sin redirecciones)
+  → pipelines/ingest/import_areas.py    derechos ANTES de extraer; normaliza; valida; cuarentena
+  → data/build/ingest/<dataset>/<release>/{raw,valid}.geojsonl, quarantine.jsonl, manifest.json   (fuera de git)
+  → scripts/db/import-areas.ts          revalida manifiesto y hash; UNA transacción; PostGIS vuelve a validar
+  → geographic_areas · geometry_versions · geographic_area_names · import_runs · destination_areas (rol context)
+```
+
+```bash
+pnpm data:ingest                                                    # genera los artefactos (Python + red a Overture)
+pnpm db:import-areas --manifest data/build/ingest/overture-protected-areas/2026-09-23.1/manifest.json
+#   --publish  hace visibles las áreas (decisión editorial; por defecto NO)
+#   --target-env development|staging|production  (producción exige que la política de derechos lo permita)
+#   una base que no sea local exige IMPORT_CONFIRM_REMOTE=<host>
+```
+
+**Reglas de validación** (`pipelines/ingest/validate.py`, versión 1; un incumplimiento manda la entidad a cuarentena con su código): tipo `Polygon`/`MultiPolygon` · coordenadas finitas y en rango · **orden lon/lat** (`geometry.axis_order_swapped`) · anillos cerrados y con ≥ 4 posiciones · área no nula · ≤ 250 000 vértices y ≤ 20 000 anillos · **dentro del área de trabajo** (−85…−75 lon, 5…11 lat). La BD repite lo esencial (CHECK de área de trabajo, validez con PostGIS, ejes) por si el fichero se alterase tras generar el manifiesto.
+
+**Resultado observado (2026-10-20, Overture `2026-09-23.1`)**: 137 áreas protegidas válidas y 2 en cuarentena (E-49); 11 entidades poligonales de referencia de destinos. Todas `osm_derived`, **no oficiales**, no públicas. Superficies con `ST_Area(geography)`.
+
+**Qué NO hace** (no darlo por hecho): no importa límites administrativos ni de destinos; no hay límites oficiales (L-03); no actualiza de forma incremental entre _releases_; no repara geometrías; no traduce nombres.
