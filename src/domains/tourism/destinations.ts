@@ -33,7 +33,12 @@ export type DestinationKind = (typeof DESTINATION_KINDS)[number];
 
 /** Avisos sobre homonimia o ambigüedad (mensajes en `Destinations.notes`). */
 export type DestinationNoteKey =
-  'homonymBaru' | 'homonymSantaCatalina' | 'bocasAmbiguous' | 'cascoNoBoundary';
+  | 'homonymBaru'
+  | 'homonymSantaCatalina'
+  | 'homonymElValle'
+  | 'homonymCascoViejo'
+  | 'bocasAmbiguous'
+  | 'cascoNoBoundary';
 
 export interface DestinationName {
   readonly name: string;
@@ -105,7 +110,7 @@ export const DESTINATIONS: readonly DestinationEntry[] = [
       fr: slug('casco-antiguo'),
       de: slug('casco-antiguo'),
     },
-    noteKeys: ['cascoNoBoundary'],
+    noteKeys: ['cascoNoBoundary', 'homonymCascoViejo'],
   },
   {
     key: 'panama-canal',
@@ -143,7 +148,7 @@ export const DESTINATIONS: readonly DestinationEntry[] = [
       fr: slug('el-valle-de-anton'),
       de: slug('el-valle-de-anton'),
     },
-    noteKeys: [],
+    noteKeys: ['homonymElValle'],
   },
   {
     key: 'boquete',

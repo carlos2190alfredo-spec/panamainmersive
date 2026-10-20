@@ -81,9 +81,82 @@
     "panelLabel": "Map information",
     "listHeading": "Destinations",
     "listDescription": "This list is the text alternative to the map: it contains the same destinations.",
-    "count": "{count, plural, one {# destination} other {# destinations}}",
-    "mapPendingTitle": "The interactive map is not available yet",
-    "mapPendingBody": "The map integration is being prepared. In the meantime, use the list of destinations."
+    "count": "{count, plural, one {# destination} other {# destinations}}"
+  },
+  "Map": {
+    "regionLabel": "Interactive map of Panama",
+    "keyboardHelp": "With focus on the map, use the arrow keys to pan, + and − to zoom, and Shift with the arrow keys to rotate. The destination list is the text alternative to the map.",
+    "loading": "Loading the map…",
+    "unsupported": {
+      "title": "This browser cannot display the map",
+      "body": "The map needs WebGL, which is not available here. The destination list contains the same information."
+    },
+    "error": {
+      "title": "The map could not be loaded",
+      "body": "Preparing the map failed. The destination list is still available.",
+      "retry": "Try again"
+    },
+    "dataMissing": {
+      "title": "Base map data is not available",
+      "body": "The cartography file was not found. The destination list is still available."
+    },
+    "terrainError": {
+      "title": "Terrain could not be loaded",
+      "body": "The base map is shown without terrain."
+    },
+    "invalidLink": "Part of the link was not valid and was ignored.",
+    "showOnMap": "Show on map",
+    "selectedHeading": "Selected destination",
+    "selectedAnnouncement": "{name} selected on the map.",
+    "openFicha": "Open the {name} page",
+    "referencePoint": "The marker is a reference point derived from OpenStreetMap; it is not an official boundary.",
+    "clearSelection": "Clear selection",
+    "layers": {
+      "heading": "Layers",
+      "protectedAreas": {
+        "label": "Protected areas",
+        "hint": "Polygons derived from OpenStreetMap, not official."
+      },
+      "hillshade": {
+        "label": "Terrain shading",
+        "hint": "Third-party data: loads tiles from Amazon Web Services."
+      },
+      "terrain3d": {
+        "label": "3D terrain",
+        "hint": "Third-party data: loads tiles from Amazon Web Services. Tilt the map to see it."
+      },
+      "thirdPartyNotice": "With a terrain layer on, Amazon Web Services receives your IP address when tiles are requested.",
+      "rightsPending": "Turned off until the rights to this data are verified."
+    },
+    "legend": {
+      "heading": "Legend",
+      "water": "Water",
+      "protectedAreas": "Protected area (dashed outline)",
+      "hillshade": "Terrain shading",
+      "borderCountry": "Country boundary (solid line)",
+      "borderRegion": "Province or comarca boundary (dashes)",
+      "borderCounty": "District boundary (dots)"
+    },
+    "attribution": "Base map: © OpenStreetMap contributors, Overture Maps Foundation (release {release}). Reference cartography: contains no official boundaries.",
+    "controls": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetBearing": "Reset bearing to north",
+      "toggleAttribution": "Show or hide attribution",
+      "mapTitle": "Map",
+      "cooperativeMac": "Use ⌘ + scroll to zoom the map",
+      "cooperativeWindows": "Use Ctrl + scroll to zoom the map",
+      "cooperativeMobile": "Use two fingers to move the map",
+      "scaleMeters": "m",
+      "scaleKilometers": "km"
+    },
+    "cluster": "{count} destinations grouped: {names}. Zoom the map in",
+    "noscript": "The interactive map needs JavaScript. The destination list contains the same information.",
+    "showOnMapLabel": "Show on map: {name}",
+    "blocked": {
+      "title": "The map is disabled in production",
+      "body": "The usage rights for the map data have not yet been verified at their primary sources. The destination list is still available."
+    }
   },
   "Destinations": {
     "indexTitle": "The nine destinations",
@@ -102,7 +175,9 @@
       "homonymBaru": "This is not the Barú district: they are different entities.",
       "homonymSantaCatalina": "Other localities and one district share this name. Here we mean the coastal locality in Veraguas.",
       "bocasAmbiguous": "“Bocas del Toro” names a province, a district and a locality at once. The exact scope of the destination is pending editorial definition.",
-      "cascoNoBoundary": "The open sources consulted contain no official boundary of the historic district."
+      "cascoNoBoundary": "The official boundary of the historic district could not be consulted (source not reachable from the working environment). The map only marks a reference point derived from OpenStreetMap; it draws no boundary.",
+      "homonymElValle": "Another “El Valle” exists (a neighborhood in Chiriquí). Here we mean the locality in Coclé province.",
+      "homonymCascoViejo": "Another “Casco Viejo” exists in Veraguas province: it is not this one."
     }
   },
   "DestinationKind": {
@@ -138,8 +213,8 @@
       "geoProtectedArea": "Protected-area polygon derived from OpenStreetMap, not official.",
       "geoProtectedIsland": "Island and park polygons derived from OpenStreetMap, not official.",
       "geoCanalLines": "Water lines and polygons (canal, lake, locks) derived from OpenStreetMap; there is no official Canal zone.",
-      "geoPointOnly": "Only a volcano point and hills exist; there is no polygon for the locality.",
-      "geoNoPolygon": "There is no historic-district boundary in the source consulted.",
+      "geoContainingLocality": "Only the polygon of the locality that contains it (San Felipe) exists, derived from OpenStreetMap; it is not the boundary of the historic district.",
+      "geoLocalityCorroborated": "Polygon of the locality “El Valle” derived from OpenStreetMap, linked by containment of a volcano feature; not official.",
       "terrainLand": "Terrain available on land (SRTM source).",
       "terrainLandNoBathymetry": "Terrain on land; no bathymetry at high zoom.",
       "reasonNoCredential": "No credential available to check it.",
@@ -184,13 +259,13 @@
       "provisional": "Provisional: not verified at the primary source"
     },
     "use": {
-      "overture": "Administrative divisions, protected areas, water and coastline, derived from OpenStreetMap.",
-      "naturalEarth": "National context at low zoom.",
-      "awsTerrain": "Terrain relief and shading on land.",
+      "overture": "Coastline, water, land cover, protected areas, administrative boundaries and localities, derived from OpenStreetMap.",
+      "awsTerrain": "Terrain relief and shading on land. Loaded only if you turn on a terrain layer.",
       "anati": "Official administrative boundaries.",
       "miambiente": "Official boundaries of protected areas.",
       "atp": "Official tourism information.",
-      "unesco": "Boundaries of World Heritage sites."
+      "unesco": "Boundaries of World Heritage sites.",
+      "glyphs": "Typeface for the map labels (Noto Sans glyphs)."
     },
     "pendingAccess": "Pending access and license."
   },

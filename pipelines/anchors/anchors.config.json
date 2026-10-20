@@ -1,0 +1,56 @@
+{
+  "release": "2026-09-23.1",
+  "description": "Entidades de Overture elegidas A MANO (por ID, nunca por nombre) como referencia de ubicación de cada destino. Cada selección es una decisión humana revisable; el script solo calcula y verifica.",
+  "destinations": {
+    "panama-city": {
+      "anchor": { "theme": "divisions", "type": "division", "id": "79c08b58-1ac7-47b1-af69-5ee53cb748fd", "expect": { "name": "Panamá", "subtype": "locality", "region": "PA-8" } },
+      "bounds": null,
+      "defaultZoom": 11
+    },
+    "casco-antiguo": {
+      "anchor": { "theme": "divisions", "type": "division_area", "id": "3d3fc04b-85c7-4197-8600-3a7d487948dc", "expect": { "name": "San Felipe", "subtype": "locality", "region": "PA-8" } },
+      "bounds": "anchor",
+      "corroboration": [{ "theme": "base", "type": "infrastructure", "id": "3c571bd0-5f2a-3127-9cf8-e1ce078aff08", "expect": { "name": "Casco Antiguo" }, "mustBeWithinAnchor": true }],
+      "note": "San Felipe es el corregimiento que contiene el Casco Antiguo (conocimiento general; corroborado por una parada llamada «Casco Antiguo» dentro de su polígono). NO es el límite del distrito histórico de la UNESCO.",
+      "defaultZoom": 15
+    },
+    "panama-canal": {
+      "anchor": { "theme": "base", "type": "water", "id": "67c657c5-e8ca-37a6-806e-b008549d77fd", "expect": { "name": "Esclusas de Miraflores" } },
+      "bounds": { "union": "canal-lines" },
+      "defaultZoom": 11
+    },
+    "el-valle-de-anton": {
+      "anchor": { "theme": "divisions", "type": "division_area", "id": "4b25d4ee-10ae-4655-b914-467265749097", "expect": { "name": "El Valle", "subtype": "locality", "region": "PA-2" } },
+      "bounds": "anchor",
+      "corroboration": [{ "theme": "base", "type": "land", "id": "d43044dc-7edf-3f53-acd4-d3f9ff59388e", "expect": { "name": "El Valle", "subtype": "physical" }, "mustBeWithinAnchor": true }],
+      "note": "Hay otra localidad «El Valle» en Chiriquí (PA-4): se descarta por región y por contención del volcán «El Valle».",
+      "defaultZoom": 12
+    },
+    "boquete": {
+      "anchor": { "theme": "divisions", "type": "division_area", "id": "b49f851b-b7f8-4aa4-8f01-d4064c67a3bb", "expect": { "name": "Bajo Boquete", "subtype": "locality", "region": "PA-4" } },
+      "bounds": { "theme": "divisions", "type": "division_area", "id": null, "match": { "name": "Boquete", "subtype": "county", "region": "PA-4" } },
+      "defaultZoom": 12
+    },
+    "volcan-baru": {
+      "anchor": { "theme": "base", "type": "land", "id": "f6c22557-f7cf-3138-a895-fac1f3bbc2bb", "expect": { "name": "Volcán Barú", "subtype": "physical" } },
+      "bounds": { "theme": "base", "type": "land_use", "id": "1bf6c749-aacc-35dd-b5b6-7094176c0c7b", "expect": { "name": "Parque Nacional Volcán Barú" } },
+      "defaultZoom": 12
+    },
+    "bocas-del-toro": {
+      "anchor": { "theme": "divisions", "type": "division_area", "id": "401e38e5-765b-4a21-ba48-8d48c58fb0d4", "expect": { "name": "Bocas del Toro", "subtype": "locality", "region": "PA-1" } },
+      "bounds": { "theme": "divisions", "type": "division_area", "id": null, "match": { "name": "Bocas del Toro", "subtype": "county", "region": "PA-1" } },
+      "defaultZoom": 11
+    },
+    "santa-catalina": {
+      "anchor": { "theme": "divisions", "type": "division_area", "id": "fd200297-522e-43df-a29b-4c2722f96e85", "expect": { "name": "Santa Catalina", "subtype": "locality", "region": "PA-9" } },
+      "bounds": "anchor",
+      "note": "Existen otras tres «Santa Catalina» y un distrito con ese nombre; esta es la localidad de Veraguas (PA-9).",
+      "defaultZoom": 14
+    },
+    "coiba": {
+      "anchor": { "theme": "base", "type": "land", "id": "1998f147-59e8-379c-a053-010b1a22ccc8", "expect": { "name": "Isla de Coiba" } },
+      "bounds": { "theme": "base", "type": "land_use", "id": "d981ede1-c3f0-3293-8560-a7052b4dadf0", "expect": { "name": "Parque Nacional Coiba" } },
+      "defaultZoom": 9
+    }
+  }
+}

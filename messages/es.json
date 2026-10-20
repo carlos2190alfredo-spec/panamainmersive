@@ -81,9 +81,82 @@
     "panelLabel": "Información del mapa",
     "listHeading": "Destinos",
     "listDescription": "Esta lista es la alternativa en texto del mapa: contiene los mismos destinos.",
-    "count": "{count, plural, one {# destino} other {# destinos}}",
-    "mapPendingTitle": "El mapa interactivo todavía no está disponible",
-    "mapPendingBody": "Se está preparando la integración del mapa. Mientras tanto, usa la lista de destinos."
+    "count": "{count, plural, one {# destino} other {# destinos}}"
+  },
+  "Map": {
+    "regionLabel": "Mapa interactivo de Panamá",
+    "keyboardHelp": "Con el foco en el mapa, usa las flechas para desplazarlo, + y − para acercar o alejar, y Mayús con las flechas para rotarlo. La lista de destinos es la alternativa en texto del mapa.",
+    "loading": "Cargando el mapa…",
+    "unsupported": {
+      "title": "Este navegador no puede mostrar el mapa",
+      "body": "El mapa necesita WebGL, que no está disponible aquí. La lista de destinos contiene la misma información."
+    },
+    "error": {
+      "title": "No se pudo cargar el mapa",
+      "body": "Falló la preparación del mapa. La lista de destinos sigue disponible.",
+      "retry": "Reintentar"
+    },
+    "dataMissing": {
+      "title": "Los datos del mapa base no están disponibles",
+      "body": "No se encontró el archivo de cartografía. La lista de destinos sigue disponible."
+    },
+    "terrainError": {
+      "title": "No se pudo cargar el relieve",
+      "body": "Se muestra el mapa base sin relieve."
+    },
+    "invalidLink": "Una parte del enlace no era válida y se ignoró.",
+    "showOnMap": "Ver en el mapa",
+    "selectedHeading": "Destino seleccionado",
+    "selectedAnnouncement": "{name} seleccionado en el mapa.",
+    "openFicha": "Abrir la ficha de {name}",
+    "referencePoint": "El marcador es un punto de referencia derivado de OpenStreetMap; no es un límite oficial.",
+    "clearSelection": "Quitar la selección",
+    "layers": {
+      "heading": "Capas",
+      "protectedAreas": {
+        "label": "Áreas protegidas",
+        "hint": "Polígonos derivados de OpenStreetMap, no oficiales."
+      },
+      "hillshade": {
+        "label": "Sombreado del relieve",
+        "hint": "Datos de terceros: carga teselas de Amazon Web Services."
+      },
+      "terrain3d": {
+        "label": "Relieve en 3D",
+        "hint": "Datos de terceros: carga teselas de Amazon Web Services. Inclina el mapa para verlo."
+      },
+      "thirdPartyNotice": "Con una capa de relieve activa, Amazon Web Services recibe tu dirección IP al pedir las teselas.",
+      "rightsPending": "Desactivada hasta verificar los derechos de estos datos."
+    },
+    "legend": {
+      "heading": "Leyenda",
+      "water": "Agua",
+      "protectedAreas": "Área protegida (borde discontinuo)",
+      "hillshade": "Sombreado del relieve",
+      "borderCountry": "Límite del país (línea continua)",
+      "borderRegion": "Límite de provincia o comarca (guiones)",
+      "borderCounty": "Límite de distrito (puntos)"
+    },
+    "attribution": "Mapa base: © OpenStreetMap contributors, Overture Maps Foundation (versión {release}). Cartografía de referencia: no contiene límites oficiales.",
+    "controls": {
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "resetBearing": "Orientar al norte",
+      "toggleAttribution": "Mostrar u ocultar los créditos",
+      "mapTitle": "Mapa",
+      "cooperativeMac": "Usa ⌘ + rueda para ampliar el mapa",
+      "cooperativeWindows": "Usa Ctrl + rueda para ampliar el mapa",
+      "cooperativeMobile": "Usa dos dedos para mover el mapa",
+      "scaleMeters": "m",
+      "scaleKilometers": "km"
+    },
+    "cluster": "{count} destinos agrupados: {names}. Acercar el mapa",
+    "noscript": "El mapa interactivo necesita JavaScript. La lista de destinos contiene la misma información.",
+    "showOnMapLabel": "Ver en el mapa: {name}",
+    "blocked": {
+      "title": "El mapa está desactivado en producción",
+      "body": "Los derechos de uso de los datos del mapa todavía no se han verificado en sus fuentes primarias. La lista de destinos sigue disponible."
+    }
   },
   "Destinations": {
     "indexTitle": "Los nueve destinos",
@@ -102,7 +175,9 @@
       "homonymBaru": "No es el distrito de Barú: son entidades distintas.",
       "homonymSantaCatalina": "Existen otras localidades y un distrito con este nombre. Aquí nos referimos a la localidad costera de Veraguas.",
       "bocasAmbiguous": "«Bocas del Toro» designa a la vez una provincia, un distrito y una localidad. El alcance exacto del destino está pendiente de definición editorial.",
-      "cascoNoBoundary": "En las fuentes abiertas consultadas no existe un límite oficial del distrito histórico."
+      "cascoNoBoundary": "No se pudo consultar el límite oficial del distrito histórico (fuente inaccesible desde el entorno de trabajo). El mapa solo señala un punto de referencia derivado de OpenStreetMap; no dibuja un límite.",
+      "homonymElValle": "Existe otra «El Valle» (un barrio en Chiriquí). Aquí nos referimos a la localidad de la provincia de Coclé.",
+      "homonymCascoViejo": "Existe otro «Casco Viejo» en la provincia de Veraguas: no es este."
     }
   },
   "DestinationKind": {
@@ -138,8 +213,8 @@
       "geoProtectedArea": "Polígono de área protegida derivado de OpenStreetMap, no oficial.",
       "geoProtectedIsland": "Polígonos de isla y de parque derivados de OpenStreetMap, no oficiales.",
       "geoCanalLines": "Líneas y polígonos de agua (canal, lago, esclusas) derivados de OpenStreetMap; no hay zona oficial del Canal.",
-      "geoPointOnly": "Solo hay un punto de volcán y cerros; no hay polígono de la localidad.",
-      "geoNoPolygon": "No hay límite del distrito histórico en la fuente consultada.",
+      "geoContainingLocality": "Solo hay el polígono de la localidad que lo contiene (San Felipe), derivado de OpenStreetMap; no es el límite del distrito histórico.",
+      "geoLocalityCorroborated": "Polígono de la localidad «El Valle» derivado de OpenStreetMap, vinculado por contención de un elemento del volcán; no es oficial.",
       "terrainLand": "Relieve disponible en tierra (fuente SRTM).",
       "terrainLandNoBathymetry": "Relieve en tierra; sin batimetría a zoom alto.",
       "reasonNoCredential": "Sin credencial para comprobarlo.",
@@ -184,13 +259,13 @@
       "provisional": "Provisional: no verificado en la fuente primaria"
     },
     "use": {
-      "overture": "Divisiones administrativas, áreas protegidas, agua y costa, derivadas de OpenStreetMap.",
-      "naturalEarth": "Contexto nacional a zoom bajo.",
-      "awsTerrain": "Relieve y sombreado del terreno en tierra.",
+      "overture": "Costa, agua, cobertura del suelo, áreas protegidas, límites administrativos y localidades, derivados de OpenStreetMap.",
+      "awsTerrain": "Relieve y sombreado del terreno en tierra. Solo se carga si activas una capa de relieve.",
       "anati": "Límites administrativos oficiales.",
       "miambiente": "Límites oficiales de áreas protegidas.",
       "atp": "Información turística oficial.",
-      "unesco": "Límites de los sitios del Patrimonio Mundial."
+      "unesco": "Límites de los sitios del Patrimonio Mundial.",
+      "glyphs": "Tipografía de las etiquetas del mapa (glifos de Noto Sans)."
     },
     "pendingAccess": "Pendiente de acceso y licencia."
   },

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_TERRAIN_TILES_URL, hasTileTemplate, originOf } from './map-urls';
 
 /**
  * Configuración validada por entorno (docs/security.md). Se valida al arrancar: un valor inválido
@@ -14,6 +15,7 @@ const schema = z.object({
 
   NEXT_PUBLIC_SITE_URL: z.url().default('http://localhost:3000'),
   NEXT_PUBLIC_TILES_BASE_URL: z.string().min(1).default('/data'),
+  NEXT_PUBLIC_TERRAIN_TILES_URL: z.string().min(1).default(DEFAULT_TERRAIN_TILES_URL),
 
   DATABASE_URL: z.string().min(1).optional(),
 
@@ -70,6 +72,20 @@ export function parseEnv(raw: Readonly<Record<string, string | undefined>>): Env
 
   if (parsed.success) {
     const e = parsed.data;
+    if (!hasTileTemplate(e.NEXT_PUBLIC_TERRAIN_TILES_URL)) {
+      issues.push('NEXT_PUBLIC_TERRAIN_TILES_URL: debe contener {z}, {x} e {y}');
+    }
+    for (const [name, value] of [
+      ['NEXT_PUBLIC_TILES_BASE_URL', e.NEXT_PUBLIC_TILES_BASE_URL],
+      ['NEXT_PUBLIC_TERRAIN_TILES_URL', e.NEXT_PUBLIC_TERRAIN_TILES_URL],
+    ] as const) {
+      if (!value.startsWith('/') && originOf(value) === null) {
+        issues.push(`${name}: debe ser una ruta que empiece por «/» o una URL http(s) absoluta`);
+      }
+      if (e.SITE_ENV === 'production' && originOf(value)?.startsWith('http:')) {
+        issues.push(`${name}: en producción una URL absoluta debe ser https`);
+      }
+    }
     if (e.SITE_ENV === 'production') {
       const url = new URL(e.NEXT_PUBLIC_SITE_URL);
       if (url.protocol !== 'https:')

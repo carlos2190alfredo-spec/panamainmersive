@@ -94,4 +94,44 @@ describe('integraciones: flag + credencial, con motivo observable', () => {
     const env = parseEnv({ FEATURE_CESIUM: 'true', GOOGLE_MAPS_API_KEY: 'k' });
     expect(featureState('cesium', env).reason).toBe('missing_credential');
   });
+
+  describe('direcciones del mapa', () => {
+    it('por defecto: teselas en /data y relieve en AWS Terrain Tiles (virtual-hosted)', () => {
+      const env = parseEnv({});
+      expect(env.NEXT_PUBLIC_TILES_BASE_URL).toBe('/data');
+      expect(env.NEXT_PUBLIC_TERRAIN_TILES_URL).toBe(
+        'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png',
+      );
+    });
+
+    it('la plantilla de relieve debe contener {z}, {x} e {y}', () => {
+      expect(() =>
+        parseEnv({ NEXT_PUBLIC_TERRAIN_TILES_URL: 'https://t.example/terrarium.png' }),
+      ).toThrow(/\{z\}/);
+    });
+
+    it('rechaza valores que no son ruta ni URL http(s) (p. ej. javascript: o file:)', () => {
+      for (const bad of [
+        'javascript:alert(1)',
+        'file:///etc/passwd',
+        'data/relativa',
+        'ftp://x.example/a',
+      ]) {
+        expect(() => parseEnv({ NEXT_PUBLIC_TILES_BASE_URL: bad }), bad).toThrow(
+          /NEXT_PUBLIC_TILES_BASE_URL/,
+        );
+      }
+    });
+
+    it('en producción una URL absoluta de teselas o relieve debe ser https', () => {
+      const prod = { SITE_ENV: 'production', NEXT_PUBLIC_SITE_URL: 'https://example.org' } as const;
+      expect(() =>
+        parseEnv({ ...prod, NEXT_PUBLIC_TILES_BASE_URL: 'http://cdn.example.org/data' }),
+      ).toThrow(/https/);
+      expect(
+        parseEnv({ ...prod, NEXT_PUBLIC_TILES_BASE_URL: 'https://cdn.example.org/data' })
+          .NEXT_PUBLIC_TILES_BASE_URL,
+      ).toBe('https://cdn.example.org/data');
+    });
+  });
 });

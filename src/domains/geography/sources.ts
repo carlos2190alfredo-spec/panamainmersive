@@ -6,7 +6,7 @@
 export type RightsStatus = 'verified' | 'provisional';
 
 export type SourceUseKey =
-  'overture' | 'naturalEarth' | 'awsTerrain' | 'anati' | 'miambiente' | 'atp' | 'unesco';
+  'overture' | 'awsTerrain' | 'glyphs' | 'anati' | 'miambiente' | 'atp' | 'unesco';
 
 export interface UsedSource {
   readonly id: string;
@@ -33,20 +33,20 @@ export const USED_SOURCES: readonly UsedSource[] = [
     attribution: '© OpenStreetMap contributors, Overture Maps Foundation',
   },
   {
-    id: 'natural-earth',
-    name: 'Natural Earth',
-    useKey: 'naturalEarth',
-    license: 'Public domain',
-    rights: 'provisional',
-    attribution: 'Made with Natural Earth',
-  },
-  {
     id: 'aws-terrain',
     name: 'Terrain Tiles on AWS (Terrarium)',
     useKey: 'awsTerrain',
     license: 'SRTM, GMTED, ETOPO1 (see source attributions)',
     rights: 'provisional',
     attribution: 'Terrain Tiles on AWS: SRTM, GMTED2010, ETOPO1',
+  },
+  {
+    id: 'noto-sans-glyphs',
+    name: 'Noto Sans (glifos SDF de openmaptiles/fonts v2.0)',
+    useKey: 'glyphs',
+    license: 'SIL Open Font License 1.1',
+    rights: 'provisional',
+    attribution: 'Noto Sans © The Noto Project Authors (SIL OFL 1.1)',
   },
 ];
 
@@ -59,4 +59,4 @@ export const BLOCKED_SOURCES: readonly BlockedSource[] = [
 
 /** Cadena corta de atribución de datos para el pie de página y el control del mapa. */
 export const DATA_ATTRIBUTION =
-  '© OpenStreetMap contributors, Overture Maps Foundation · Natural Earth · Terrain Tiles on AWS';
+  '© OpenStreetMap contributors, Overture Maps Foundation · Terrain Tiles on AWS · Noto Sans (SIL OFL)';

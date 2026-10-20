@@ -67,9 +67,16 @@ describe('evidencia de cobertura', () => {
     }
   });
 
-  it('Casco Antiguo NO figura como geometría verificada (solo existe un landuse=retail)', () => {
+  it('Casco Antiguo NUNCA figura como límite verificado: solo hay la localidad que lo contiene (E-41)', () => {
     const geom = COVERAGE['casco-antiguo'].find((c) => c.capability === 'geometry');
-    expect(geom?.status).toBe('UNAVAILABLE');
+    expect(geom?.status).toBe('PARTIAL');
+    expect(geom?.observation).toBe('geoContainingLocality');
+  });
+
+  it('El Valle de Antón: polígono de localidad vinculado por contención, nunca VERIFIED por nombre (E-41)', () => {
+    const geom = COVERAGE['el-valle-de-anton'].find((c) => c.capability === 'geometry');
+    expect(geom?.status).toBe('PARTIAL');
+    expect(geom?.observation).toBe('geoLocalityCorroborated');
   });
 
   it('ninguna geometría oficial figura como verificada: no hay acceso a las fuentes oficiales', () => {

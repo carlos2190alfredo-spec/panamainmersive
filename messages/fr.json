@@ -81,9 +81,82 @@
     "panelLabel": "Informations de la carte",
     "listHeading": "Destinations",
     "listDescription": "Cette liste est l’alternative textuelle à la carte\u00a0: elle contient les mêmes destinations.",
-    "count": "{count, plural, one {# destination} other {# destinations}}",
-    "mapPendingTitle": "La carte interactive n’est pas encore disponible",
-    "mapPendingBody": "L’intégration de la carte est en préparation. En attendant, utilisez la liste des destinations."
+    "count": "{count, plural, one {# destination} other {# destinations}}"
+  },
+  "Map": {
+    "regionLabel": "Carte interactive du Panama",
+    "keyboardHelp": "Lorsque la carte a le focus, utilisez les flèches pour la déplacer, + et − pour zoomer, et Maj avec les flèches pour la faire pivoter. La liste des destinations est l’alternative textuelle de la carte.",
+    "loading": "Chargement de la carte…",
+    "unsupported": {
+      "title": "Ce navigateur ne peut pas afficher la carte",
+      "body": "La carte nécessite WebGL, qui n’est pas disponible ici. La liste des destinations contient les mêmes informations."
+    },
+    "error": {
+      "title": "Impossible de charger la carte",
+      "body": "La préparation de la carte a échoué. La liste des destinations reste disponible.",
+      "retry": "Réessayer"
+    },
+    "dataMissing": {
+      "title": "Les données du fond de carte sont indisponibles",
+      "body": "Le fichier cartographique est introuvable. La liste des destinations reste disponible."
+    },
+    "terrainError": {
+      "title": "Impossible de charger le relief",
+      "body": "Le fond de carte s’affiche sans relief."
+    },
+    "invalidLink": "Une partie du lien n’était pas valide et a été ignorée.",
+    "showOnMap": "Voir sur la carte",
+    "selectedHeading": "Destination sélectionnée",
+    "selectedAnnouncement": "{name} sélectionné sur la carte.",
+    "openFicha": "Ouvrir la fiche de {name}",
+    "referencePoint": "Le repère est un point de référence dérivé d’OpenStreetMap\u00a0; ce n’est pas une limite officielle.",
+    "clearSelection": "Effacer la sélection",
+    "layers": {
+      "heading": "Couches",
+      "protectedAreas": {
+        "label": "Aires protégées",
+        "hint": "Polygones dérivés d’OpenStreetMap, non officiels."
+      },
+      "hillshade": {
+        "label": "Ombrage du relief",
+        "hint": "Données tierces\u00a0: charge des tuiles depuis Amazon Web Services."
+      },
+      "terrain3d": {
+        "label": "Relief en 3D",
+        "hint": "Données tierces\u00a0: charge des tuiles depuis Amazon Web Services. Inclinez la carte pour le voir."
+      },
+      "thirdPartyNotice": "Lorsqu’une couche de relief est active, Amazon Web Services reçoit votre adresse IP lors de la demande des tuiles.",
+      "rightsPending": "Désactivée tant que les droits sur ces données ne sont pas vérifiés."
+    },
+    "legend": {
+      "heading": "Légende",
+      "water": "Eau",
+      "protectedAreas": "Aire protégée (contour en tirets)",
+      "hillshade": "Ombrage du relief",
+      "borderCountry": "Limite du pays (trait continu)",
+      "borderRegion": "Limite de province ou de comarque (tirets)",
+      "borderCounty": "Limite de district (pointillés)"
+    },
+    "attribution": "Fond de carte\u00a0: © OpenStreetMap contributors, Overture Maps Foundation (version {release}). Cartographie de référence\u00a0: ne contient aucune limite officielle.",
+    "controls": {
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "resetBearing": "Orienter vers le nord",
+      "toggleAttribution": "Afficher ou masquer les crédits",
+      "mapTitle": "Carte",
+      "cooperativeMac": "Utilisez ⌘ + défilement pour zoomer sur la carte",
+      "cooperativeWindows": "Utilisez Ctrl + défilement pour zoomer sur la carte",
+      "cooperativeMobile": "Utilisez deux doigts pour déplacer la carte",
+      "scaleMeters": "m",
+      "scaleKilometers": "km"
+    },
+    "cluster": "{count} destinations regroupées\u00a0: {names}. Zoomer sur la carte",
+    "noscript": "La carte interactive nécessite JavaScript. La liste des destinations contient les mêmes informations.",
+    "showOnMapLabel": "Voir sur la carte\u00a0: {name}",
+    "blocked": {
+      "title": "La carte est désactivée en production",
+      "body": "Les droits d’utilisation des données de la carte n’ont pas encore été vérifiés auprès des sources primaires. La liste des destinations reste disponible."
+    }
   },
   "Destinations": {
     "indexTitle": "Les neuf destinations",
@@ -102,7 +175,9 @@
       "homonymBaru": "Ce n’est pas le district de Barú\u00a0: ce sont des entités distinctes.",
       "homonymSantaCatalina": "D’autres localités et un district portent ce nom. Ici, il s’agit de la localité côtière de Veraguas.",
       "bocasAmbiguous": "«\u00a0Bocas del Toro\u00a0» désigne à la fois une province, un district et une localité. La portée exacte de la destination reste à définir par la rédaction.",
-      "cascoNoBoundary": "Les sources ouvertes consultées ne contiennent aucune limite officielle du quartier historique."
+      "cascoNoBoundary": "La limite officielle du quartier historique n’a pas pu être consultée (source inaccessible depuis l’environnement de travail). La carte ne signale qu’un point de repère dérivé d’OpenStreetMap\u00a0; elle ne trace aucune limite.",
+      "homonymElValle": "Il existe un autre «\u00a0El Valle\u00a0» (un quartier du Chiriquí). Il s’agit ici de la localité de la province de Coclé.",
+      "homonymCascoViejo": "Il existe un autre «\u00a0Casco Viejo\u00a0» dans la province de Veraguas\u00a0: ce n’est pas celui-ci."
     }
   },
   "DestinationKind": {
@@ -138,8 +213,8 @@
       "geoProtectedArea": "Polygone d’aire protégée dérivé d’OpenStreetMap, non officiel.",
       "geoProtectedIsland": "Polygones d’île et de parc dérivés d’OpenStreetMap, non officiels.",
       "geoCanalLines": "Lignes et polygones d’eau (canal, lac, écluses) dérivés d’OpenStreetMap\u00a0; il n’existe pas de zone officielle du Canal.",
-      "geoPointOnly": "Il n’existe qu’un point de volcan et des collines\u00a0; il n’y a pas de polygone de la localité.",
-      "geoNoPolygon": "Il n’y a pas de limite du quartier historique dans la source consultée.",
+      "geoContainingLocality": "Il n’existe que le polygone de la localité qui le contient (San Felipe), dérivé d’OpenStreetMap\u00a0; ce n’est pas la limite du quartier historique.",
+      "geoLocalityCorroborated": "Polygone de la localité «\u00a0El Valle\u00a0» dérivé d’OpenStreetMap, rattaché par inclusion d’un élément du volcan\u00a0; non officiel.",
       "terrainLand": "Relief disponible sur terre (source SRTM).",
       "terrainLandNoBathymetry": "Relief sur terre\u00a0; pas de bathymétrie à fort zoom.",
       "reasonNoCredential": "Aucun identifiant pour la vérifier.",
@@ -184,13 +259,13 @@
       "provisional": "Provisoire\u00a0: non vérifié à la source primaire"
     },
     "use": {
-      "overture": "Divisions administratives, aires protégées, eau et côte, dérivées d’OpenStreetMap.",
-      "naturalEarth": "Contexte national à faible zoom.",
-      "awsTerrain": "Relief et ombrage du terrain sur terre.",
+      "overture": "Littoral, eau, occupation du sol, aires protégées, limites administratives et localités, dérivés d’OpenStreetMap.",
+      "awsTerrain": "Relief et ombrage du terrain sur terre. Chargé uniquement si vous activez une couche de relief.",
       "anati": "Limites administratives officielles.",
       "miambiente": "Limites officielles des aires protégées.",
       "atp": "Informations touristiques officielles.",
-      "unesco": "Limites des sites du patrimoine mondial."
+      "unesco": "Limites des sites du patrimoine mondial.",
+      "glyphs": "Police des étiquettes de la carte (glyphes de Noto Sans)."
     },
     "pendingAccess": "En attente d’accès et de licence."
   },

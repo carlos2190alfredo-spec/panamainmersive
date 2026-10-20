@@ -16,3 +16,4 @@ __pycache__/
 /public/data/*.pmtiles
 .DS_Store
 next-env.d.ts
+/public/data/*.manifest.json

@@ -1,0 +1,20 @@
+.button {
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  color: var(--color-accent-strong);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-sunken);
+}
+
+.button[aria-pressed='true'] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}

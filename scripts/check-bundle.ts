@@ -1,10 +1,11 @@
 /**
  * Comprobación posterior al build (`pnpm check:bundle`, requiere `pnpm build`):
  *  1. ningún secreto ni nombre de variable solo-servidor en el bundle de cliente (`.next/static`);
- *  2. presupuesto de JS/CSS que carga cada página pública (medición real, gzip).
+ *  2. presupuesto de JS/CSS que carga cada página pública (medición real, gzip);
+ *  3. presupuesto del mapa, que se carga DIFERIDO (MapLibre + su worker + PMTiles) solo en /explorar.
  * Los presupuestos son objetivos iniciales (docs/performance.md): se ajustan con evidencia.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { SERVER_ONLY_NAMES, assetsOfHtml, findForbidden, gzipBytes, walk } from './lib/bundle-scan';
 
@@ -85,4 +86,33 @@ console.log(
   `\nMedición (gzip, build de producción; sin red ni caché; presupuestos JS ${JS_BUDGET_KB} KB / CSS ${CSS_BUDGET_KB} KB)`,
 );
 console.log(rows.join('\n'));
+
+// 3) Mapa (carga diferida) ------------------------------------------------------------------------
+// MapLibre 6 se emite como activo estático (`static/media/maplibre-gl.<hash>.mjs`) junto a su worker; PMTiles y el
+// código del lienzo viven en chunks normales. Los `-dev` y `shared` no se piden en producción.
+const MAP_LAZY_BUDGET_KB = Number(process.env.MAP_LAZY_BUDGET_KB ?? 500); // gzip. Medido 2026-10-20: ≈ 451 KB
+const mediaDir = join(NEXT, 'static/media');
+const lazyFiles = [
+  ...(existsSync(mediaDir) ? readdirSync(mediaDir) : [])
+    .filter((f) => /^maplibre-gl(-worker)?\.[\w-]+\.mjs$/.test(f))
+    .map((f) => join(mediaDir, f)),
+  ...walk(join(NEXT, 'static/chunks'), /\.js$/).filter((f) => {
+    const src = readFileSync(f);
+    return src.includes('Wrong magic number') || src.includes('data-map-status');
+  }),
+];
+const lazyKb = lazyFiles.reduce((sum, f) => sum + gzipBytes(f), 0) / 1024;
+console.log(
+  `\nMapa (carga diferida, solo en /explorar): ${lazyKb.toFixed(1)} KB gzip en ${lazyFiles.length} ficheros (presupuesto ${MAP_LAZY_BUDGET_KB} KB)`,
+);
+if (lazyFiles.length < 3) {
+  console.error('FALLO: no se encontraron los activos del mapa (¿cambió la forma de emitirlos?).');
+  failed = true;
+}
+if (lazyKb > MAP_LAZY_BUDGET_KB) {
+  console.error(
+    `FALLO: el mapa pesa ${lazyKb.toFixed(1)} KB > presupuesto ${MAP_LAZY_BUDGET_KB} KB`,
+  );
+  failed = true;
+}
 if (failed) process.exit(1);

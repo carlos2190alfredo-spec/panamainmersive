@@ -53,6 +53,14 @@ const TEXT_PAIRS: [string, string][] = [
   ['unknown-fg', 'unknown-bg'],
   ['error-fg', 'error-bg'],
   ['notice-fg', 'notice-bg'],
+  // Etiquetas del mapa: sobre el halo y sobre cada relleno que pueden cruzar.
+  ['map-label', 'map-halo'],
+  ['map-label', 'map-land'],
+  ['map-label', 'map-forest'],
+  ['map-label', 'map-wetland'],
+  ['map-label', 'map-sand'],
+  ['map-label', 'map-protected-fill'],
+  ['map-protected-line', 'map-halo'],
 ];
 
 const UI_PAIRS: [string, string][] = [
@@ -61,6 +69,11 @@ const UI_PAIRS: [string, string][] = [
   ['focus', 'paper'],
   ['focus', 'surface'],
   ['accent', 'surface'],
+  // Gráficos del mapa necesarios para entender el contenido (1.4.11): costa, fronteras y áreas protegidas.
+  ['map-water', 'map-land'],
+  ['map-boundary', 'map-land'],
+  ['map-protected-line', 'map-land'],
+  ['map-protected-line', 'map-protected-fill'],
 ];
 
 describe.each([

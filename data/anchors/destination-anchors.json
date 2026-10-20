@@ -1,0 +1,438 @@
+{
+  "attribution": "© OpenStreetMap contributors, Overture Maps Foundation",
+  "destinations": {
+    "bocas-del-toro": {
+      "anchor": {
+        "lat": 9.3403,
+        "lon": -82.24182,
+        "method": "division_point"
+      },
+      "bounds": [
+        -82.3322,
+        9.0889,
+        -81.5402,
+        9.4411
+      ],
+      "corroboration": [],
+      "defaultZoom": 11,
+      "sources": [
+        {
+          "geometryType": "MultiPolygon",
+          "id": "401e38e5-765b-4a21-ba48-8d48c58fb0d4",
+          "name": "Bocas del Toro",
+          "region": "PA-1",
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        },
+        {
+          "geometryType": "Point",
+          "id": "46fbbdc0-104f-46e8-93a0-31b3fedab487",
+          "name": "Bocas del Toro",
+          "region": "PA-1",
+          "release": "2026-09-23.1",
+          "role": "anchor_point",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division",
+          "wikidata": "Q49094981"
+        },
+        {
+          "geometryType": "MultiPolygon",
+          "id": "fb32a58b-83f5-4dcd-b72f-463335f5c892",
+          "name": "Bocas del Toro",
+          "region": "PA-1",
+          "release": "2026-09-23.1",
+          "role": "bounds",
+          "subtype": "county",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        }
+      ]
+    },
+    "boquete": {
+      "anchor": {
+        "lat": 8.77637,
+        "lon": -82.43482,
+        "method": "division_point"
+      },
+      "bounds": [
+        -82.5596,
+        8.595,
+        -82.2578,
+        8.8866
+      ],
+      "corroboration": [],
+      "defaultZoom": 12,
+      "sources": [
+        {
+          "geometryType": "Polygon",
+          "id": "b49f851b-b7f8-4aa4-8f01-d4064c67a3bb",
+          "name": "Bajo Boquete",
+          "region": "PA-4",
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        },
+        {
+          "geometryType": "Point",
+          "id": "bdb6f99c-ac09-4062-842c-a260b30055fb",
+          "name": "Bajo Boquete",
+          "region": "PA-4",
+          "release": "2026-09-23.1",
+          "role": "anchor_point",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division",
+          "wikidata": "Q804144"
+        },
+        {
+          "geometryType": "Polygon",
+          "id": "97c66f50-01c8-4b66-8d8f-cff693d2d046",
+          "name": "Boquete",
+          "region": "PA-4",
+          "release": "2026-09-23.1",
+          "role": "bounds",
+          "subtype": "county",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        }
+      ]
+    },
+    "casco-antiguo": {
+      "anchor": {
+        "lat": 8.95255,
+        "lon": -79.53472,
+        "method": "division_point"
+      },
+      "bounds": [
+        -79.5389,
+        8.9492,
+        -79.5315,
+        8.9556
+      ],
+      "corroboration": [
+        {
+          "geometryType": "Point",
+          "id": "3c571bd0-5f2a-3127-9cf8-e1ce078aff08",
+          "name": "Casco Antiguo",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "corroboration",
+          "subtype": "transit",
+          "theme": "base",
+          "type": "infrastructure",
+          "wikidata": null,
+          "withinAnchor": true
+        }
+      ],
+      "defaultZoom": 15,
+      "note": "San Felipe es el corregimiento que contiene el Casco Antiguo (conocimiento general; corroborado por una parada llamada «Casco Antiguo» dentro de su polígono). NO es el límite del distrito histórico de la UNESCO.",
+      "sources": [
+        {
+          "geometryType": "Polygon",
+          "id": "3d3fc04b-85c7-4197-8600-3a7d487948dc",
+          "name": "San Felipe",
+          "region": "PA-8",
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        },
+        {
+          "geometryType": "Point",
+          "id": "eaa5bc23-645b-426a-a3c0-73b83406ca98",
+          "name": "San Felipe",
+          "region": "PA-8",
+          "release": "2026-09-23.1",
+          "role": "anchor_point",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division",
+          "wikidata": "Q6118671"
+        }
+      ]
+    },
+    "coiba": {
+      "anchor": {
+        "lat": 7.48343,
+        "lon": -81.79592,
+        "method": "representative_point"
+      },
+      "bounds": [
+        -81.9373,
+        7.1758,
+        -81.5359,
+        7.8928
+      ],
+      "corroboration": [],
+      "defaultZoom": 9,
+      "sources": [
+        {
+          "geometryType": "Polygon",
+          "id": "1998f147-59e8-379c-a053-010b1a22ccc8",
+          "name": "Isla de Coiba",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "land",
+          "theme": "base",
+          "type": "land",
+          "wikidata": "Q741636"
+        },
+        {
+          "geometryType": "Polygon",
+          "id": "d981ede1-c3f0-3293-8560-a7052b4dadf0",
+          "name": "Parque Nacional Coiba",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "bounds",
+          "subtype": "protected",
+          "theme": "base",
+          "type": "land_use",
+          "wikidata": "Q741636"
+        }
+      ]
+    },
+    "el-valle-de-anton": {
+      "anchor": {
+        "lat": 8.60251,
+        "lon": -80.12161,
+        "method": "division_point"
+      },
+      "bounds": [
+        -80.1636,
+        8.5814,
+        -80.1016,
+        8.6574
+      ],
+      "corroboration": [
+        {
+          "geometryType": "Point",
+          "id": "d43044dc-7edf-3f53-acd4-d3f9ff59388e",
+          "name": "El Valle",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "corroboration",
+          "subtype": "physical",
+          "theme": "base",
+          "type": "land",
+          "wikidata": "Q1324715",
+          "withinAnchor": true
+        }
+      ],
+      "defaultZoom": 12,
+      "note": "Hay otra localidad «El Valle» en Chiriquí (PA-4): se descarta por región y por contención del volcán «El Valle».",
+      "sources": [
+        {
+          "geometryType": "Polygon",
+          "id": "4b25d4ee-10ae-4655-b914-467265749097",
+          "name": "El Valle",
+          "region": "PA-2",
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        },
+        {
+          "geometryType": "Point",
+          "id": "32535e2e-ba6e-43f5-8e3b-57ebf8938f50",
+          "name": "El Valle",
+          "region": "PA-2",
+          "release": "2026-09-23.1",
+          "role": "anchor_point",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division",
+          "wikidata": "Q4845114"
+        }
+      ]
+    },
+    "panama-canal": {
+      "anchor": {
+        "lat": 8.99534,
+        "lon": -79.5907,
+        "method": "representative_point"
+      },
+      "bounds": [
+        -79.9262,
+        8.9429,
+        -79.5647,
+        9.3115
+      ],
+      "corroboration": [],
+      "defaultZoom": 11,
+      "sources": [
+        {
+          "geometryType": "Polygon",
+          "id": "67c657c5-e8ca-37a6-806e-b008549d77fd",
+          "name": "Esclusas de Miraflores",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "water",
+          "theme": "base",
+          "type": "water",
+          "wikidata": "Q6872559"
+        },
+        {
+          "count": 23,
+          "geometryType": "LineString",
+          "ids": [
+            "067597af-a28b-3177-bf49-8405c917d5e2",
+            "0833e2f2-9061-3afd-9fbb-499603037515",
+            "0b3c200c-a50c-347a-95be-4470a3a3c8b1",
+            "1424b1b1-9c06-367f-9f1b-22c1c9a78006",
+            "2ba6a295-d371-3608-97fd-cfd73ac27a44",
+            "3f15083b-48a2-30e8-9329-0e100a92b0cc",
+            "549af097-ed82-3012-a553-67d6a0764fe6",
+            "57b25eff-8a9c-38cd-a057-d07fa82d0bcf",
+            "5cc75237-d341-3aa9-b615-151e71d6363c",
+            "651c464f-e5ba-37d6-ae40-db2a8aa1f984",
+            "7225ab7a-14cb-36ea-9c88-4d2b56421952",
+            "75f48634-1dfd-32a7-8d7c-8f6c7a746d19",
+            "7889a555-5bc6-3160-aecf-4146b7848033",
+            "a5e5d8e7-b02f-347d-8e86-f51ce351df2d",
+            "a688b039-c6a5-399c-b1ba-34bcf71c5741",
+            "aeee5e78-b694-3868-8294-d7a2ba4ea4db",
+            "cb927488-f443-3840-be43-ffe2af0e9e96",
+            "e2f52168-4e5f-3b3f-8f01-dd267c8f899e",
+            "e4520f28-c003-3003-b9e7-7ec3c01f7693",
+            "e660bfec-ee54-3045-ad86-0f2156784e9f",
+            "f11fd375-f4f2-34e5-a95a-89f1b5aaf6b1",
+            "fee057ca-70f5-32fe-b400-1112258169f2",
+            "ffb8707f-8f89-3153-9924-d99ae59ed659"
+          ],
+          "name": "Canal de Panamá",
+          "release": "2026-09-23.1",
+          "role": "bounds",
+          "theme": "base",
+          "type": "water"
+        }
+      ]
+    },
+    "panama-city": {
+      "anchor": {
+        "lat": 8.97145,
+        "lon": -79.53418,
+        "method": "point"
+      },
+      "bounds": null,
+      "corroboration": [],
+      "defaultZoom": 11,
+      "sources": [
+        {
+          "geometryType": "Point",
+          "id": "79c08b58-1ac7-47b1-af69-5ee53cb748fd",
+          "name": "Panamá",
+          "region": "PA-8",
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division",
+          "wikidata": "Q3306"
+        }
+      ]
+    },
+    "santa-catalina": {
+      "anchor": {
+        "lat": 8.13977,
+        "lon": -81.26411,
+        "method": "division_point"
+      },
+      "bounds": [
+        -81.267,
+        8.1366,
+        -81.2563,
+        8.1417
+      ],
+      "corroboration": [],
+      "defaultZoom": 14,
+      "note": "Existen otras tres «Santa Catalina» y un distrito con ese nombre; esta es la localidad de Veraguas (PA-9).",
+      "sources": [
+        {
+          "geometryType": "Polygon",
+          "id": "fd200297-522e-43df-a29b-4c2722f96e85",
+          "name": "Santa Catalina",
+          "region": "PA-9",
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division_area",
+          "wikidata": null
+        },
+        {
+          "geometryType": "Point",
+          "id": "f35acf1f-9c85-44df-8f82-4cbd39ec1aa6",
+          "name": "Santa Catalina",
+          "region": "PA-9",
+          "release": "2026-09-23.1",
+          "role": "anchor_point",
+          "subtype": "locality",
+          "theme": "divisions",
+          "type": "division",
+          "wikidata": null
+        }
+      ]
+    },
+    "volcan-baru": {
+      "anchor": {
+        "lat": 8.80893,
+        "lon": -82.54239,
+        "method": "point"
+      },
+      "bounds": [
+        -82.6255,
+        8.7554,
+        -82.4889,
+        8.8881
+      ],
+      "corroboration": [],
+      "defaultZoom": 12,
+      "sources": [
+        {
+          "geometryType": "Point",
+          "id": "f6c22557-f7cf-3138-a895-fac1f3bbc2bb",
+          "name": "Volcán Barú",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "anchor",
+          "subtype": "physical",
+          "theme": "base",
+          "type": "land",
+          "wikidata": "Q594726"
+        },
+        {
+          "geometryType": "Polygon",
+          "id": "1bf6c749-aacc-35dd-b5b6-7094176c0c7b",
+          "name": "Parque Nacional Volcán Barú",
+          "region": null,
+          "release": "2026-09-23.1",
+          "role": "bounds",
+          "subtype": "protected",
+          "theme": "base",
+          "type": "land_use",
+          "wikidata": null
+        }
+      ]
+    }
+  },
+  "disclaimer": "Puntos de referencia de ubicación derivados de OpenStreetMap. NO son límites oficiales ni geometrías de los destinos.",
+  "license": "ODbL (datos derivados de OpenStreetMap vía Overture) — PROVISIONAL, no leída en la fuente primaria",
+  "release": "2026-09-23.1",
+  "sourceClass": "osm_derived"
+}

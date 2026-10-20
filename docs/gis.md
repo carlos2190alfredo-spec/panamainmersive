@@ -1,6 +1,6 @@
 # GIS
 
-Decisiones: ADR-0005 (PMTiles), ADR-0009 (ETL). Evidencias: E-21…E-26.
+Decisiones: ADR-0005 (PMTiles), ADR-0009 (ETL), ADR-0014 (basemap y mapa). Evidencias: E-21…E-26, E-41…E-48.
 
 ## 1. Reglas de geometría y coordenadas
 
@@ -79,3 +79,41 @@ Información, **fuente de la geometría** (`official` / `osm_derived` / `editori
 ## 8. Pruebas GIS (planificadas)
 
 CRS y orden de ejes; distancia geodésica frente a valor conocido; `ST_Covers` en el límite; área con `geography`; rechazo de bbox enorme; geometría inválida va a cuarentena; el original no se altera al simplificar; ninguna ruta hacia centroides inaccesibles.
+
+## 9. Basemap de Panamá (Fase 2 — IMPLEMENTADO y VERIFICADO)
+
+Un solo PMTiles `panama-basemap.pmtiles` (z4–14, 36,1 MB) construido por `pipelines/basemap/build_basemap.py` (`pnpm data:build`) **solo desde Overture `2026-09-23.1`** (E-42: tierra y mar completos; Natural Earth no se usa). Es cartografía de referencia **derivada de OpenStreetMap, no oficial**.
+
+| Capa (`source-layer`) | Origen y regla                                                    | Entidades | Zoom |
+| --------------------- | ----------------------------------------------------------------- | --------: | ---: |
+| `land`                | `base/land` `subtype=land` (continente, islas, islotes)           |     2 851 |   4+ |
+| `landcover`           | `forest`/`wetland`/`sand`/`reef`, área ≥ 0,5 km²                  |     1 407 |   8+ |
+| `landcover_detail`    | ídem, área < 0,5 km²                                              |     5 376 |  12+ |
+| `protected`           | `base/land_use` `subtype=protected` (OSM, no oficial)             |       138 |   4+ |
+| `boundaries`          | contorno de `country`/`region`/`county` de Panamá, clase `land`   |        99 |   4+ |
+| `ocean`               | `base/water` `subtype=ocean`                                      |        49 |   4+ |
+| `water`               | polígonos de agua (lago, embalse, río, canal…), área ≥ 0,5 km²    |       169 |   5+ |
+| `water_detail`        | ídem, área < 0,5 km²                                              |     3 145 |  10+ |
+| `waterway`            | canal y río con nombre                                            |     2 990 |   7+ |
+| `waterway_detail`     | río sin nombre y arroyo                                           |    19 579 |  10+ |
+| `places`              | `divisions/division` `locality`/`region` de Panamá (3 085 puntos) |     3 085 |   4+ |
+
+Reglas que importan (con evidencia):
+
+- **Recorte antes de teselar**: un polígono oceánico sin recortar generaría millones de teselas. Las fronteras se calculan **antes** de recortar (si no, el borde del área aparecería como una frontera falsa).
+- **Sin `tippecanoe:minzoom` por entidad ni `--drop-*-as-needed`** (E-44). El zoom se fija por capa y por bandas; los puntos se conservan todos (`-r1`).
+- **Puerta de verificación** (si falla, no se publica): teselas z7 completas, ancla ↔ lugar dibujado (≤ 25 m), conservación exacta a z14 de todas las capas (se re-tesela con un `fid` para contar) y de los lugares en todos los zooms. Los polígonos < 1 m² se descartan de forma explícita (E-45).
+- **Manifiesto** (`public/data/panama-basemap.manifest.json`): release, licencia (**provisional**), atribución, bbox, zooms, reglas y recuentos por capa, versión y argumentos de tippecanoe, `sha256`, resultados de verificación. No lleva marcas de tiempo (determinista).
+- **Anclas** (`pnpm data:anchors`): cada destino se fija por **ID de Overture** elegido a mano en `pipelines/anchors/anchors.config.json`; el script comprueba nombre/subtipo/región y la **contención** de la corroboración, y usa el punto `division` enlazado (`division_id`) como marcador. El polígono solo **encuadra**. Ningún límite de destino se dibuja (E-41).
+
+**Estilo** (`src/domains/geography/map-style.ts`, función pura): colores desde tokens `--color-map-*` (claro/oscuro, contraste WCAG probado: costa, fronteras y áreas protegidas ≥ 3:1, etiquetas ≥ 4,5:1). Orden de capas: tierra → cobertura → **relieve** → fronteras → **océano** → agua → áreas protegidas → etiquetas. Fronteras y áreas protegidas se distinguen por **trazo** (continuo/guiones/puntos), no solo por color. La **leyenda** se deriva de las mismas reglas (`buildLegend`).
+
+**Relieve** (opcional, **desactivado por defecto**): `raster-dem` Terrarium de AWS pedido por el navegador; `hillshade` y «Relieve en 3D» (`terrain`, exageración 1,4). El océano se dibuja sobre el relieve para no sombrear batimetría ruidosa (E-25).
+
+**Etiquetas**: glifos SDF de Noto Sans (rangos 0–255, 256–511, 8192–8447, OFL, en `public/map-assets/glyphs/`). Nombre local; `name_<idioma>` solo si la fuente lo trae (E-43).
+
+**Estado en la URL**: `d` (clave estable de destino), `c` (`lon,lat,altitudM,rumbo,cabeceo,alabeo`; la altitud es sobre el suelo del centro y se convierte con el FOV y el tamaño de teselas de MapLibre), `l` (capas). Todo se valida; lo inválido se descarta y se avisa.
+
+## 10. Pruebas GIS implementadas (Fase 2)
+
+Conversión cámara↔zoom contra valores analíticos independientes (zoom 0 ⇒ 1,5 × circunferencia) e ida y vuelta; prueba de **propiedad** de que `formatCamera` siempre produce algo reanalizable y canónico (2 000 cámaras); validación del estilo con `@maplibre/maplibre-gl-style-spec` (+ control positivo); contrato Python↔TypeScript (capas y área de trabajo); anclas dentro del área, de su encuadre y cerca de referencias independientes (guarda de homonimias); agrupamiento sin solapes (300 ensayos); E2E con WebGL real. Detalle en `docs/testing.md`.

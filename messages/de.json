@@ -81,9 +81,82 @@
     "panelLabel": "Karteninformationen",
     "listHeading": "Reiseziele",
     "listDescription": "Diese Liste ist die Textalternative zur Karte: Sie enthält dieselben Reiseziele.",
-    "count": "{count, plural, one {# Reiseziel} other {# Reiseziele}}",
-    "mapPendingTitle": "Die interaktive Karte ist noch nicht verfügbar",
-    "mapPendingBody": "Die Einbindung der Karte wird vorbereitet. Nutzen Sie in der Zwischenzeit die Liste der Reiseziele."
+    "count": "{count, plural, one {# Reiseziel} other {# Reiseziele}}"
+  },
+  "Map": {
+    "regionLabel": "Interaktive Karte von Panama",
+    "keyboardHelp": "Wenn die Karte den Fokus hat, verschieben Sie sie mit den Pfeiltasten, zoomen mit + und − und drehen mit Umschalt plus Pfeiltasten. Die Zielliste ist die Textalternative zur Karte.",
+    "loading": "Karte wird geladen …",
+    "unsupported": {
+      "title": "Dieser Browser kann die Karte nicht anzeigen",
+      "body": "Die Karte benötigt WebGL, das hier nicht verfügbar ist. Die Zielliste enthält dieselben Informationen."
+    },
+    "error": {
+      "title": "Die Karte konnte nicht geladen werden",
+      "body": "Die Vorbereitung der Karte ist fehlgeschlagen. Die Zielliste bleibt verfügbar.",
+      "retry": "Erneut versuchen"
+    },
+    "dataMissing": {
+      "title": "Die Basiskartendaten sind nicht verfügbar",
+      "body": "Die Kartendatei wurde nicht gefunden. Die Zielliste bleibt verfügbar."
+    },
+    "terrainError": {
+      "title": "Das Relief konnte nicht geladen werden",
+      "body": "Die Basiskarte wird ohne Relief angezeigt."
+    },
+    "invalidLink": "Ein Teil des Links war ungültig und wurde ignoriert.",
+    "showOnMap": "Auf der Karte zeigen",
+    "selectedHeading": "Ausgewähltes Reiseziel",
+    "selectedAnnouncement": "{name} auf der Karte ausgewählt.",
+    "openFicha": "Seite zu {name} öffnen",
+    "referencePoint": "Die Markierung ist ein aus OpenStreetMap abgeleiteter Referenzpunkt, keine offizielle Grenze.",
+    "clearSelection": "Auswahl aufheben",
+    "layers": {
+      "heading": "Ebenen",
+      "protectedAreas": {
+        "label": "Schutzgebiete",
+        "hint": "Aus OpenStreetMap abgeleitete Polygone, nicht offiziell."
+      },
+      "hillshade": {
+        "label": "Reliefschattierung",
+        "hint": "Daten Dritter: lädt Kacheln von Amazon Web Services."
+      },
+      "terrain3d": {
+        "label": "3D-Relief",
+        "hint": "Daten Dritter: lädt Kacheln von Amazon Web Services. Neigen Sie die Karte, um es zu sehen."
+      },
+      "thirdPartyNotice": "Bei aktiver Reliefebene erhält Amazon Web Services beim Anfordern der Kacheln Ihre IP-Adresse.",
+      "rightsPending": "Deaktiviert, bis die Rechte an diesen Daten überprüft sind."
+    },
+    "legend": {
+      "heading": "Legende",
+      "water": "Wasser",
+      "protectedAreas": "Schutzgebiet (gestrichelter Rand)",
+      "hillshade": "Reliefschattierung",
+      "borderCountry": "Landesgrenze (durchgezogene Linie)",
+      "borderRegion": "Provinz- oder Comarca-Grenze (Striche)",
+      "borderCounty": "Distriktgrenze (Punkte)"
+    },
+    "attribution": "Basiskarte: © OpenStreetMap contributors, Overture Maps Foundation (Version {release}). Referenzkartografie: enthält keine offiziellen Grenzen.",
+    "controls": {
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "resetBearing": "Nach Norden ausrichten",
+      "toggleAttribution": "Quellenangaben ein- oder ausblenden",
+      "mapTitle": "Karte",
+      "cooperativeMac": "Mit ⌘ + Scrollen zoomen",
+      "cooperativeWindows": "Mit Strg + Scrollen zoomen",
+      "cooperativeMobile": "Mit zwei Fingern die Karte bewegen",
+      "scaleMeters": "m",
+      "scaleKilometers": "km"
+    },
+    "cluster": "{count} Reiseziele gruppiert: {names}. Karte vergrößern",
+    "noscript": "Die interaktive Karte benötigt JavaScript. Die Zielliste enthält dieselben Informationen.",
+    "showOnMapLabel": "Auf der Karte zeigen: {name}",
+    "blocked": {
+      "title": "Die Karte ist in der Produktion deaktiviert",
+      "body": "Die Nutzungsrechte an den Kartendaten wurden noch nicht an den Primärquellen überprüft. Die Zielliste bleibt verfügbar."
+    }
   },
   "Destinations": {
     "indexTitle": "Die neun Reiseziele",
@@ -102,7 +175,9 @@
       "homonymBaru": "Dies ist nicht der Distrikt Barú: Es sind verschiedene Einheiten.",
       "homonymSantaCatalina": "Mehrere andere Orte und ein Distrikt tragen diesen Namen. Gemeint ist hier der Küstenort in Veraguas.",
       "bocasAmbiguous": "„Bocas del Toro“ bezeichnet zugleich eine Provinz, einen Distrikt und einen Ort. Der genaue Umfang des Reiseziels muss noch redaktionell festgelegt werden.",
-      "cascoNoBoundary": "In den geprüften offenen Quellen gibt es keine offizielle Grenze des historischen Viertels."
+      "cascoNoBoundary": "Die offizielle Grenze des historischen Viertels konnte nicht abgefragt werden (Quelle aus der Arbeitsumgebung nicht erreichbar). Die Karte markiert nur einen aus OpenStreetMap abgeleiteten Referenzpunkt und zeichnet keine Grenze.",
+      "homonymElValle": "Es gibt ein weiteres „El Valle“ (ein Stadtviertel in Chiriquí). Gemeint ist hier der Ort in der Provinz Coclé.",
+      "homonymCascoViejo": "In der Provinz Veraguas gibt es ein weiteres „Casco Viejo“: Es ist nicht dieses."
     }
   },
   "DestinationKind": {
@@ -138,8 +213,8 @@
       "geoProtectedArea": "Polygon eines Schutzgebiets aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoProtectedIsland": "Polygone von Insel und Nationalpark aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoCanalLines": "Wasserlinien und -polygone (Kanal, See, Schleusen) aus OpenStreetMap abgeleitet; eine offizielle Kanalzone gibt es nicht.",
-      "geoPointOnly": "Es gibt nur einen Vulkanpunkt und Hügel; ein Polygon des Ortes fehlt.",
-      "geoNoPolygon": "In der geprüften Quelle gibt es keine Grenze des historischen Viertels.",
+      "geoContainingLocality": "Es gibt nur das Polygon des Ortes, der es enthält (San Felipe), abgeleitet aus OpenStreetMap; es ist nicht die Grenze des historischen Viertels.",
+      "geoLocalityCorroborated": "Polygon des Ortes „El Valle“, abgeleitet aus OpenStreetMap, über die Einschließung eines Vulkanelements zugeordnet; nicht offiziell.",
       "terrainLand": "Relief an Land verfügbar (Quelle SRTM).",
       "terrainLandNoBathymetry": "Relief an Land; keine Bathymetrie bei hoher Zoomstufe.",
       "reasonNoCredential": "Keine Zugangsdaten, um dies zu prüfen.",
@@ -184,13 +259,13 @@
       "provisional": "Vorläufig: in der Primärquelle nicht überprüft"
     },
     "use": {
-      "overture": "Verwaltungsgliederung, Schutzgebiete, Gewässer und Küste, aus OpenStreetMap abgeleitet.",
-      "naturalEarth": "Nationaler Überblick bei niedriger Zoomstufe.",
-      "awsTerrain": "Relief und Schummerung des Geländes an Land.",
+      "overture": "Küstenlinie, Gewässer, Bodenbedeckung, Schutzgebiete, Verwaltungsgrenzen und Orte, abgeleitet aus OpenStreetMap.",
+      "awsTerrain": "Relief und Schattierung des Geländes an Land. Wird nur geladen, wenn Sie eine Reliefebene aktivieren.",
       "anati": "Offizielle Verwaltungsgrenzen.",
       "miambiente": "Offizielle Grenzen der Schutzgebiete.",
       "atp": "Offizielle Tourismusinformationen.",
-      "unesco": "Grenzen der Welterbestätten."
+      "unesco": "Grenzen der Welterbestätten.",
+      "glyphs": "Schrift der Kartenbeschriftungen (Glyphen von Noto Sans)."
     },
     "pendingAccess": "Zugang und Lizenz ausstehend."
   },

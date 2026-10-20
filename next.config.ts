@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
-import { TERRAIN_ORIGIN, securityHeaders } from './src/config/security-headers';
+import { mapConnectOrigins } from './src/config/map-urls';
+import { securityHeaders } from './src/config/security-headers';
 
 const withNextIntl = createNextIntlPlugin();
 
@@ -19,9 +20,22 @@ const nextConfig: NextConfig = {
           ...securityHeaders({
             production: isProduction,
             development: !isProduction,
-            connectOrigins: [TERRAIN_ORIGIN],
+            connectOrigins: mapConnectOrigins({
+              tilesBaseUrl: process.env.NEXT_PUBLIC_TILES_BASE_URL,
+              terrainTilesUrl: process.env.NEXT_PUBLIC_TERRAIN_TILES_URL,
+            }),
           }),
         ],
+      },
+      // PMTiles se sirve por peticiones Range: se cachea una hora (el nombre es fijo; PMTiles revalida por ETag).
+      {
+        source: '/data/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600' }],
+      },
+      // Glifos del mapa (rangos Unicode estáticos con licencia OFL).
+      {
+        source: '/map-assets/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }],
       },
     ]);
   },

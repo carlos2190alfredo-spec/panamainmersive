@@ -9,8 +9,9 @@ Documento rector: `docs/PROMPT-MAESTRO.md` (no modificar). Estado y continuidad:
 ```bash
 pnpm typecheck && pnpm lint && pnpm format && pnpm test   # rápido, sin red ni BD
 pnpm test:integration                                      # PostgreSQL+PostGIS temporal (necesita binarios)
-SITE_ENV=development pnpm build && pnpm check:bundle       # build + secretos en bundle + presupuesto JS
-pnpm test:e2e                                              # Playwright sobre el build de producción
+SITE_ENV=development pnpm build && pnpm check:bundle       # build + secretos en bundle + presupuesto JS (+ mapa diferido)
+pnpm test:e2e                                              # Playwright sobre el build de producción (incluye el mapa con WebGL real)
+pnpm data:anchors && pnpm data:build                       # datos del mapa (Python + tippecanoe; ver docs/setup.md §6)
 ```
 
 Actualiza `docs/progress.md` en cada entrega: qué funciona, cómo ejecutarlo, qué pruebas se corrieron, qué queda.
@@ -35,6 +36,15 @@ Actualiza `docs/progress.md` en cada entrega: qué funciona, cómo ejecutarlo, q
 - Hosts bloqueados por la política de red del entorno: ver `docs/research/evidence-log.md` E-00 y `docs/setup.md` §2. No se rodea.
 - Next 16: `middleware` → `proxy.ts`; `next/root-params` no funciona en Route Handlers. La documentación versionada está en `node_modules/next/dist/docs/`.
 
+- **Mapa**: el estado vive en la **URL** (`d`, `c`, `l`). Escribe con `history.pushState/replaceState(**null**, …)`: con `window.history.state` Next se salta su integración y `useSearchParams` no se entera (E-47).
+- **PMTiles**: **no** uses `tippecanoe:minzoom` por entidad ni `--drop-*-as-needed` (pierden 25–75 % de las entidades en silencio, E-44). El zoom se fija por capa. `pnpm data:build` tiene una **puerta de verificación**; no la saltes.
+- **MapLibre 6** necesita `setWorkerUrl` (E-46) y su CSS pisa `position` de una sola clase: usa selectores de dos clases (ver `MapStage.module.css`). Los marcadores son **botones HTML** y se agrupan por distancia en pantalla.
+- **El relieve (AWS) es opt-in**: nunca lo actives por defecto ni lo cargues sin que la persona lo pida. Con política de derechos `provisional` el mapa y el relieve se **bloquean en producción** (`resolveMapExperience`).
+- **No traduzcas topónimos**: el estilo usa `name_<idioma>` solo si la fuente lo trae (E-43).
+- **Bucle de recarga en `next dev`** («HMR hash mismatch» en la consola): caché de Turbopack obsoleta. Borra `.next/dev`. Los E2E usan el build de producción y no se ven afectados.
+- **`style=""` está prohibido por la CSP** (`style-src 'self'`): usa clases CSS sobre tokens, también en SVG.
+- **No imprimas el progreso de tippecanoe** (miles de líneas): redirige `2>/dev/null`.
+
 ## Dónde mirar
 
-`docs/architecture.md` (visión y revisión crítica) · `docs/decisions/` (ADR) · `docs/i18n.md` (rutas, traducciones, SEO) · `docs/data-model.md` (BD y RLS) · `docs/gis.md` · `docs/provider-rights.md` · `docs/testing.md`.
+`docs/architecture.md` (visión y revisión crítica) · `docs/decisions/` (ADR) · `docs/i18n.md` (rutas, traducciones, SEO) · `docs/data-model.md` (BD y RLS) · `docs/gis.md` (§9 basemap) · `docs/provider-rights.md` · `docs/testing.md` · ADR-0014.

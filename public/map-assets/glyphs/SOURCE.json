@@ -1,0 +1,24 @@
+{
+  "what": "Glifos SDF (PBF) de Noto Sans para las etiquetas del mapa (rangos Unicode 0-255, 256-511 y 8192-8447: latín, latín extendido A y puntuación general).",
+  "upstream": {
+    "package": "openmaptiles/fonts, release v2.0, noto-sans.zip",
+    "url": "https://github.com/openmaptiles/fonts/releases/download/v2.0/noto-sans.zip",
+    "zipSha256": "d117316544b43a5dde7ee761b36e17701e9f85574e181d76a74814240fdbaf34",
+    "zipBuiltOn": "2017-12-14 (fecha de los ficheros dentro del zip)",
+    "note": "«Noto Sans (patched by Klokan Technologies)» según el README del proyecto upstream."
+  },
+  "license": {
+    "fontSoftware": "SIL Open Font License 1.1 — texto copiado de https://raw.githubusercontent.com/googlefonts/noto-fonts/main/LICENSE (Copyright 2018 The Noto Project Authors)",
+    "file": "LICENSE-NotoSans-OFL-1.1.txt",
+    "rightsStatus": "provisional",
+    "unverified": "Se leyó la licencia del repositorio de Noto, pero NO se localizó una declaración de licencia propia del empaquetado/parche de estos PBF. Hasta confirmarlo, la política de derechos queda en `provisional` (docs/provider-rights.md) y bloquea producción."
+  },
+  "files": {
+    "NotoSans-Bold/0-255.pbf": "f60ce4cb899455c2203bd8293b550394ade53ffce8032bf9cc7f59255e49259c",
+    "NotoSans-Bold/256-511.pbf": "77c830f114b84a58f8829ca1eac4627a6a688bbce4bdb6a04de00f98fa74bb52",
+    "NotoSans-Bold/8192-8447.pbf": "f31c3c9dcacbd7f9760462c0af5017d9c9f2a9543ab4938476f7a13ffabf0acf",
+    "NotoSans-Regular/0-255.pbf": "ef1f38a3f1978591e846e9eaddf8a54f7047f546fc6aaed7872cc53151a5de78",
+    "NotoSans-Regular/256-511.pbf": "992557f9e2574cfb9a75e16c7b52832578849772b7c9a6e480d6213fb008fe5d",
+    "NotoSans-Regular/8192-8447.pbf": "f061e5b4e42e5925228534d8822b423a029569263db09f5ce44573600d45295f"
+  }
+}

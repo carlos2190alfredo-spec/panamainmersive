@@ -1,0 +1,54 @@
+.legend {
+  margin-block-start: var(--space-4);
+}
+
+.heading {
+  font-size: var(--text-l);
+  margin-block-end: var(--space-2);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.entry {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  font-size: var(--text-s);
+}
+
+.swatch {
+  flex: none;
+  inline-size: 2rem;
+  block-size: 1rem;
+  overflow: visible;
+}
+
+.fillWater {
+  fill: var(--color-map-water);
+}
+
+.fillProtected {
+  fill: var(--color-map-protected-fill);
+  stroke: var(--color-map-protected-line);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 2;
+}
+
+.fillShade {
+  fill: var(--color-map-shade);
+  opacity: 0.45;
+}
+
+.strokeBoundary {
+  stroke: var(--color-map-boundary);
+}
+
+.strokeProtected {
+  stroke: var(--color-map-protected-line);
+}

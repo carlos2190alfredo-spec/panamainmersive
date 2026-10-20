@@ -32,8 +32,8 @@ export type ObservationKey =
   | 'geoProtectedArea'
   | 'geoProtectedIsland'
   | 'geoCanalLines'
-  | 'geoPointOnly'
-  | 'geoNoPolygon'
+  | 'geoContainingLocality'
+  | 'geoLocalityCorroborated'
   | 'terrainLand'
   | 'terrainLandNoBathymetry'
   | 'reasonNoCredential'
@@ -84,7 +84,7 @@ export const COVERAGE: Readonly<Record<DestinationKey, readonly CoverageEvidence
     ...unverifiedExternal(),
   ],
   'casco-antiguo': [
-    row('geometry', 'UNAVAILABLE', 'geoNoPolygon', ['E-23']),
+    row('geometry', 'PARTIAL', 'geoContainingLocality', ['E-41']),
     row('terrain', 'VERIFIED', 'terrainLand', ['E-25']),
     ...unverifiedExternal(),
   ],
@@ -94,7 +94,7 @@ export const COVERAGE: Readonly<Record<DestinationKey, readonly CoverageEvidence
     ...unverifiedExternal(),
   ],
   'el-valle-de-anton': [
-    row('geometry', 'PARTIAL', 'geoPointOnly', ['E-23']),
+    row('geometry', 'PARTIAL', 'geoLocalityCorroborated', ['E-41']),
     row('terrain', 'VERIFIED', 'terrainLand', ['E-25']),
     ...unverifiedExternal(),
   ],

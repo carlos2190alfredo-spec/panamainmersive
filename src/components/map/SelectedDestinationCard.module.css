@@ -1,0 +1,62 @@
+.region {
+  margin-block-end: var(--space-4);
+}
+
+.card {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.name {
+  margin-block: var(--space-1);
+  font-size: var(--text-l);
+}
+
+.kind,
+.badge,
+.note {
+  margin-block: var(--space-2) 0;
+}
+
+.note {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-block-start: var(--space-4);
+}
+
+.link {
+  font-weight: 700;
+}
+
+.clear {
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  font: inherit;
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: var(--color-sunken);
+}

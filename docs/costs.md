@@ -80,3 +80,11 @@ Presupuestos por proveedor y por operación; **reservas de gasto** cuando sea vi
 ## 6. Qué revisar antes de comprar nada
 
 Los términos de Google (3D/Street View/Routes) pueden prohibir combinaciones y almacenamiento que el diseño asume (ver `docs/provider-rights.md`). La decisión de activar Google 3D **requiere** cobertura `VERIFIED`, derechos leídos en la fuente primaria, presupuesto y autorización explícita.
+
+## 7. Datos medidos en la Fase 2 (reemplazan hipótesis donde aplica)
+
+- **Almacenamiento**: PMTiles del basemap **36,1 MB** (E-45). Los glifos (477 KB) viven en el repositorio.
+- **Transferencia por sesión** (carga del mapa + 2 destinos, bytes decodificados): ≈ 3,7 MB de teselas + 154 KB de glifos + JS/CSS del mapa (≈ 0,65 MB gzip, cacheable de forma inmutable). Con este orden de magnitud (≈ 4 MB de datos por sesión sin caché), 10 000 sesiones/mes serían ≈ 40 GB de salida; el precio por GB depende del proveedor **aún no elegido** (no se contrata nada).
+- **Relieve**: AWS Terrarium se pide al proveedor desde el navegador y **no** genera costo de salida para este proyecto (tampoco hay contrato). Autoalojarlo costaría ≈ 250 MB de almacenamiento [estimación] **y** exigiría verificar derechos de redistribución.
+- **Construcción del basemap**: ≈ 5 min y lectura de varios cientos de MB por HTTP Range desde S3 público; sin costo de cómputo externo.
+- Sigue **sin** cuantificarse: CDN real, Google 3D, Cesium ion, IA, base de datos gestionada.

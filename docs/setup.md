@@ -49,3 +49,21 @@ La política de red del entorno cloud **deniega** casi todos los hosts (E-00). P
 ## 5. Variables de entorno
 
 Plantilla sin secretos: `.env.example`. La configuración se valida al arrancar (`src/config/env.ts`); un valor inválido **detiene** la aplicación con un mensaje claro.
+
+## 6. Datos del mapa (Fase 2)
+
+La aplicación **arranca sin** los datos del mapa y lo dice (estado «faltan los datos del mapa base»). Para generarlos:
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r pipelines/requirements.txt          # pyarrow, shapely, pmtiles, mapbox-vector-tile…
+# tippecanoe ≥ 2.17 (salida PMTiles) en el PATH
+pnpm data:anchors    # anclas por ID de Overture → data/anchors/destination-anchors.json (se versiona)
+pnpm data:build      # extrae, tesela y VERIFICA; publica public/data/panama-basemap.{pmtiles,manifest.json}
+```
+
+- Red necesaria: `overturemaps-us-west-2.s3.amazonaws.com` (lista blanca en `pipelines/lib/overture.py`). `data:build` tarda ≈ 5 min.
+- `--reuse-extract` repite solo el teselado y la verificación; `--verify-only` solo verifica el artefacto existente.
+- Los artefactos (`data/build/`, `public/data/*`) **no se versionan**. Los glifos (`public/map-assets/glyphs/`) y las anclas **sí**.
+- **Hosting de producción** [pendiente]: cualquier almacén estático con **HTTP Range** y CORS si es de otro origen; configurar `NEXT_PUBLIC_TILES_BASE_URL` (su origen entra solo en `connect-src`). Hoy el mapa de producción está **desactivado** por L-01.
+- Relieve: `NEXT_PUBLIC_TERRAIN_TILES_URL` (por defecto AWS Terrarium); se valida la plantilla `{z}/{x}/{y}` y, en producción, https.

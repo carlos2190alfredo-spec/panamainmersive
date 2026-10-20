@@ -69,3 +69,11 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 
 - **Lectura**: el JS es **idéntico en todas las páginas** (190,5 KB): es el coste base de React 19 + Next App Router + `next-intl` cliente. Es una **línea base**, no un logro: el presupuesto del script (210 KB) se fijó como línea base + ≈10 % **después de medir** (una primera suposición de 160 KB resultó incorrecta). Cuando se integre MapLibre se medirá de nuevo y se declarará el coste del mapa por separado.
 - **Sin medir todavía**: LCP, INP, CLS, FPS, memoria, tiempo de mapa utilizable, transferencia total real. Requieren dispositivo y red de referencia.
+
+### M-02 · Explorar con mapa (2026-10-20)
+
+- **Primera carga** (`pnpm check:bundle`, gzip): Explorar **199,5 KB de JS** y 15,7 KB de CSS (incluye `maplibre-gl.css`); el resto de páginas, sin cambios (190,6 KB). El mapa **no** entra en esa cifra: se carga **diferido** tras hidratar.
+- **Mapa diferido** (solo en `/explorar`): **455,4 KB gzip** en 4 ficheros (MapLibre ≈ 285, worker ≈ 143, PMTiles y lienzo ≈ 22). Presupuesto del script: 500 KB (`MAP_LAZY_BUDGET_KB`). Se sirve con `Cache-Control: immutable` (`/_next/static`).
+- **Datos** (E-45, E-48): PMTiles 36,1 MB en servidor; mediana de tesela 187 B, p99 7,8 KB, **máxima 416 KB gzip**. Sesión típica (carga + dos destinos): ≈ 3,7 MB de teselas en 70 peticiones Range + 154 KB de glifos. Los números son bytes **decodificados** en Chromium sobre bucle local.
+- **Lectura honesta**: el coste del mapa es **grande** (≈ 455 KB de JS antes de ver el primer píxel útil). Es lo habitual en MapLibre, pero es el primer candidato a optimizar si el tiempo de mapa utilizable incumple el presupuesto en el dispositivo de referencia. Palancas, **no aplicadas aún**: precalentar con `prewarm()`, dividir el worker, reducir capas detalladas a zoom bajo, servir el PMTiles desde un CDN.
+- **Sin medir todavía**: LCP, INP, CLS, FPS, memoria, tiempo de mapa utilizable y transferencia real comprimida en dispositivo y red de referencia. **No se afirma ningún cumplimiento.**

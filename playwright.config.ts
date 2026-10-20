@@ -33,6 +33,7 @@ export default defineConfig({
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
+      testIgnore: /.*\.mobile\.spec\.ts/,
     },
     {
       name: 'mobile',

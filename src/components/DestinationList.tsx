@@ -1,4 +1,5 @@
 import { useLocale, useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import {
   DESTINATIONS,
   destinationName,
@@ -15,9 +16,12 @@ import styles from './DestinationList.module.css';
 export function DestinationList({
   entries = DESTINATIONS,
   showKind = true,
+  renderAction,
 }: {
   entries?: readonly DestinationEntry[];
   showKind?: boolean;
+  /** Acción adicional por destino (p. ej. «Ver en el mapa»); la ficha sigue siendo un enlace. */
+  renderAction?: (entry: DestinationEntry, name: string) => ReactNode;
 }) {
   const locale = useLocale();
   const kinds = useTranslations('DestinationKind');
@@ -38,6 +42,7 @@ export function DestinationList({
               <span className={styles.name}>{name}</span>
               {showKind ? <span className={styles.kind}>{kinds(d.kind)}</span> : null}
             </Link>
+            {renderAction ? <div className={styles.action}>{renderAction(d, name)}</div> : null}
           </li>
         );
       })}

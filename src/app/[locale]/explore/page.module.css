@@ -16,9 +16,9 @@
 
 .map {
   position: relative;
-  padding: var(--space-4);
   background: var(--color-sunken);
   overflow: hidden;
+  min-block-size: 18rem;
 }
 
 .panel {
@@ -46,4 +46,30 @@
 .help {
   color: var(--color-ink-muted);
   font-size: var(--text-s);
+}
+
+.section {
+  margin-block-start: var(--space-4);
+}
+
+.attribution {
+  margin-block-start: var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.sourcesLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  font-weight: 700;
+}
+
+.noscript {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--color-sunken);
 }

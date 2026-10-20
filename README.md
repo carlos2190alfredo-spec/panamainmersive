@@ -2,7 +2,7 @@
 
 Plataforma turística geoespacial, multilingüe y honesta con sus datos, para explorar Panamá con mapas, relieve y fuentes verificables. Nombre **provisional** (centralizado en `src/config/site.ts`).
 
-> **Estado:** Fase 0 (Discovery) y Fase 1 (Foundation) completadas; Fase 2 (mapa real) en curso. Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
+> **Estado:** Fases 0 (Discovery), 1 (Foundation) y 2 (mapa real de Panamá) completadas en local; el mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
 > Documento rector del proyecto: [`docs/PROMPT-MAESTRO.md`](docs/PROMPT-MAESTRO.md) (copia literal).
 
 ## Qué funciona hoy
@@ -13,14 +13,17 @@ Plataforma turística geoespacial, multilingüe y honesta con sus datos, para ex
 - SEO: canonical por idioma, hreflang/sitemap **solo de variantes publicadas**; todo `noindex` fuera de producción.
 - Base de datos PostgreSQL/PostGIS con migraciones, **RLS en todas las tablas** y auditoría inmutable, probadas contra un PostgreSQL real.
 
-**Lo que NO existe todavía** (no hay que darlo por hecho): mapa interactivo, datos turísticos editoriales, imágenes, 3D, rutas, IA, offline. Detalle y motivos en [`docs/progress.md`](docs/progress.md) y [`docs/backlog.md`](docs/backlog.md).
+- **Mapa interactivo de Panamá** (MapLibre) con cartografía propia derivada de OpenStreetMap vía Overture (PMTiles de 36 MB), nueve destinos como marcadores accesibles y agrupables, estado compartible por URL, capas y leyenda, relieve **opcional** (opt-in) y estados de error honestos. **Sin límites oficiales ni geometrías de destino inventadas.**
+- Pipeline reproducible de datos con **puerta de verificación** (`pnpm data:build`).
+
+**Lo que NO existe todavía** (no hay que darlo por hecho): datos turísticos editoriales, imágenes, 3D, rutas, IA, offline, carreteras en el mapa. Detalle y motivos en [`docs/progress.md`](docs/progress.md) y [`docs/backlog.md`](docs/backlog.md).
 
 ## Requisitos
 
 - Node ≥ 22.12 (`.nvmrc`), pnpm 10 (`corepack enable`).
 - Para las pruebas de integración: PostgreSQL 16 y PostGIS 3.4 (binarios; las pruebas levantan su propio clúster temporal).
 - Para las pruebas E2E: Chromium (`pnpm exec playwright install chromium`, o el preinstalado del entorno).
-- Para el pipeline de datos (Fase 3): Python ≥ 3.12, `tippecanoe`, GDAL (ver `docs/setup.md`).
+- Para generar los datos del mapa: Python ≥ 3.12 (`pipelines/requirements.txt`) y `tippecanoe` ≥ 2.17 (ver `docs/setup.md` §6). La aplicación arranca sin ellos y lo dice.
 
 ## Puesta en marcha
 
@@ -47,6 +50,7 @@ pnpm start                        # NO añadir -H 127.0.0.1 (ver docs/testing.md
 | `pnpm build && pnpm check:bundle`              | Compilación + escaneo de secretos en el bundle + presupuesto de JS por página      |
 | `pnpm test:e2e`                                | Playwright contra el build de producción (escritorio y móvil, axe, CSP)            |
 | `pnpm db:migrate`                              | Aplica `db/migrations` a `DATABASE_URL` (rechaza bases remotas sin confirmación)   |
+| `pnpm data:anchors` · `pnpm data:build`        | Anclas por ID de Overture y basemap PMTiles verificado (Python + tippecanoe)       |
 
 ## Estructura
 
@@ -58,7 +62,7 @@ src/i18n/              registro de idiomas, rutas, navegación, formatos (Intl)
 src/config/            entorno validado (zod), marca, cabeceras de seguridad
 messages/              textos de interfaz por idioma (ICU)
 db/migrations/         SQL versionado con checksum (PostGIS, RLS, auditoría)
-pipelines/             ETL en Python y sondeos de Fase 0 (spikes)
+pipelines/             ETL en Python: anclas, basemap PMTiles y sondeos (spikes)
 e2e/ tests/            Playwright · Vitest (unit e integration)
 docs/                  arquitectura, ADR, cobertura, derechos, i18n, GIS, seguridad, costes, progreso
 ```
