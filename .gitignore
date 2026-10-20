@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+.venv/
+__pycache__/
+*.pyc
+# datos generados (se reconstruyen con `pnpm data:build`; ver docs/gis.md)
+/data/build/
+/public/data/*.pmtiles
+.DS_Store
