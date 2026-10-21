@@ -49,6 +49,31 @@ export function evaluateRights(
   return { allowed: true, reason: 'provisional-outside-production' };
 }
 
+/** Todas las acciones deben estar permitidas; devuelve la primera denegación (o la autorización) para explicarla. */
+export function evaluateAll(
+  policies: readonly RightsPolicy[],
+  subject: string,
+  actions: readonly RightsAction[],
+  env: SiteEnv,
+): RightsDecision {
+  let last: RightsDecision = { allowed: false, reason: 'action-not-allowed', subject };
+  for (const action of actions) {
+    last = evaluateRights(policies, subject, action, env);
+    if (!last.allowed) return last;
+  }
+  return last;
+}
+
+/**
+ * Qué hay que poder hacer con una fuente para SERVIR sus geometrías por la API pública: mostrarlas,
+ * transformarlas (simplificar) y redistribuirlas. Mismo criterio que el mapa base (ADR-0014).
+ */
+export const SPATIAL_SERVE_ACTIONS: readonly RightsAction[] = [
+  'display',
+  'transform',
+  'redistribute',
+];
+
 const ACTIONS = [
   'display',
   'combine',

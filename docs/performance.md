@@ -77,3 +77,9 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 - **Datos** (E-45, E-48): PMTiles 36,1 MB en servidor; mediana de tesela 187 B, p99 7,8 KB, **máxima 416 KB gzip**. Sesión típica (carga + dos destinos): ≈ 3,7 MB de teselas en 70 peticiones Range + 154 KB de glifos. Los números son bytes **decodificados** en Chromium sobre bucle local.
 - **Lectura honesta**: el coste del mapa es **grande** (≈ 455 KB de JS antes de ver el primer píxel útil). Es lo habitual en MapLibre, pero es el primer candidato a optimizar si el tiempo de mapa utilizable incumple el presupuesto en el dispositivo de referencia. Palancas, **no aplicadas aún**: precalentar con `prewarm()`, dividir el worker, reducir capas detalladas a zoom bajo, servir el PMTiles desde un CDN.
 - **Sin medir todavía**: LCP, INP, CLS, FPS, memoria, tiempo de mapa utilizable y transferencia real comprimida en dispositivo y red de referencia. **No se afirma ningún cumplimiento.**
+
+### M-03 · Efecto de las rutas de la API espacial (2026-10-21)
+
+- Al añadir las tres rutas `/api/spatial/*` el JS compartido pasó de **190,6 a 191,1 KB** (Explorar 199,5 → **199,9 KB**), +0,4–0,5 KB. Comparación por _chunk_ con y sin los cambios: **todos los ficheros de código de la aplicación son idénticos**; solo cambia el _chunk_ de _runtime_ de Turbopack (`turbopack-*.js`, 3 972 → 4 423 B gzip, **+451 B**). Es coste de infraestructura de la compilación, no código del cliente. No se investigó la causa exacta más allá de aislarla (hipótesis: el registro de _chunks_ crece con las nuevas entradas). Margen restante frente al presupuesto de 210 KB: ≈ 18,9 KB.
+- El servidor (`pg`, consultas) no entra en el bundle del navegador (comprobado por `pnpm check:bundle` y por una regla de ESLint).
+- **Latencia de la API y carga: sin medir** (ver `docs/testing.md`).

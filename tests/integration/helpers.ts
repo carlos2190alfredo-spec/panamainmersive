@@ -7,6 +7,8 @@ export type Role = 'anon' | 'authenticated';
 export interface TestDb {
   /** Conexión del propietario (superusuario): para preparar datos, saltando RLS. */
   readonly owner: Client;
+  /** Cadena de conexión (socket Unix) a ESTA base, para probar código que abre sus propias conexiones. */
+  readonly connectionString: string;
   /** Ejecuta `fn` como un rol de Supabase con claims JWT, dentro de una transacción que siempre se revierte. */
   as<T>(role: Role, userId: string | null, fn: (c: Client) => Promise<T>): Promise<T>;
   /** Como `as`, pero confirma los cambios (para encadenar pasos que dependen de los anteriores). */
@@ -60,6 +62,7 @@ export async function createTestDb(): Promise<TestDb> {
 
   return {
     owner,
+    connectionString: `postgresql://${cfg.user}@/${name}?host=${encodeURIComponent(cfg.host)}&port=${cfg.port}`,
     as: (role, userId, fn) => run(false, role, userId, fn),
     asCommit: (role, userId, fn) => run(true, role, userId, fn),
     async close() {

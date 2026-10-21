@@ -19,6 +19,7 @@ Un ADR registra **una** decisión, su contexto, las alternativas descartadas y c
 | [0013](0013-eslint-10.md)                   | ESLint 10 (9 está fuera de soporte; `jsx-a11y` verificado con control positivo)                                                           | Aceptada |
 | [0014](0014-basemap-y-mapa.md)              | Basemap de una sola fuente (Overture) en PMTiles con verificación; URL como estado del mapa; relieve opt-in; derechos bloquean producción | Aceptada |
 | [0015](0015-ingesta-controlada-de-areas.md) | Ingesta controlada de áreas: cuarentena en lugar de reparación, derechos ejecutables con una sola fuente, defensa en profundidad en la BD | Aceptada |
+| [0016](0016-api-espacial-acotada.md)        | API espacial acotada: rol `anon` bajo RLS, derechos antes que datos, límites duros y errores sin fugas                                    | Aceptada |
 
 ## Cuándo se revisa un ADR
 

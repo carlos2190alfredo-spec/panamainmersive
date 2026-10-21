@@ -55,7 +55,7 @@ flowchart LR
 
 ## 5. API espacial limitada
 
-Contrato mínimo (Fase 3), validado con zod, con **límites duros**:
+**IMPLEMENTADA (Fase 3.b, ADR-0016)** — ver §12 para el contrato real. Lo que sigue es el contrato inicial; la diferencia es que **no existe el parámetro `version`** (se usa `ETag` del cuerpo) y que los filtros por clave se limitaron a `layers` (lista cerrada):
 
 | Parámetro | Regla                                                                                                                    |
 | --------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -143,3 +143,25 @@ pnpm db:import-areas --manifest data/build/ingest/overture-protected-areas/2026-
 **Resultado observado (2026-10-20, Overture `2026-09-23.1`)**: 137 áreas protegidas válidas y 2 en cuarentena (E-49); 11 entidades poligonales de referencia de destinos. Todas `osm_derived`, **no oficiales**, no públicas. Superficies con `ST_Area(geography)`.
 
 **Qué NO hace** (no darlo por hecho): no importa límites administrativos ni de destinos; no hay límites oficiales (L-03); no actualiza de forma incremental entre _releases_; no repara geometrías; no traduce nombres.
+
+## 12. API espacial (Fase 3.b — IMPLEMENTADA y VERIFICADA)
+
+Decisiones y alternativas: ADR-0016. Código: validación pura en `src/domains/geography/spatial-query.ts`, ensamblado en `spatial-response.ts`, acceso a la BD en `src/server/spatial/`, rutas en `src/app/api/spatial/`.
+
+| Endpoint                      | Parámetros                                                                                  | Devuelve                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `GET /api/spatial/areas`      | `bbox=oeste,sur,este,norte` · `zoom` 0–18 · `layers` (≤ 4) · `limit` ≤ 200 (100) · `locale` | `FeatureCollection` simplificada para mostrar + `sources` + `meta` (truncado, simplificación)   |
+| `GET /api/spatial/areas/{id}` | `id` UUID · `zoom` (12) · `locale`                                                          | `Feature` + todos los nombres de la fuente con su procedencia                                   |
+| `GET /api/spatial/locate`     | `lon`, `lat` · `layers` · `locale`                                                          | Áreas que **cubren** el punto (`ST_Covers`), sin geometría, de la más pequeña a la mayor (≤ 20) |
+
+- **Capas** (`layers`): `protected_areas` (`protected_area`) y `context_areas` (país, región, condado, localidad, isla, cuerpo de agua, distrito histórico, infraestructura). `editorial_area` no se sirve aquí.
+- **Límites duros**: ventana ≤ 25 grados² (recortada a −85…−75 / 5…11; lat/lon intercambiados → 400); parámetros desconocidos, repetidos o de > 256 caracteres → 400; respuesta ≤ 1,5 MB; 3 s de tiempo máximo de sentencia (504).
+- **Simplificación para mostrar**: tolerancia = 1 píxel de una tesela de 512 px (`360 / (512 · 2^zoom)` grados), decimales ≈ 1/10 de píxel. **La superficie y la pertenencia no usan la geometría simplificada.**
+- **Superficie**: solo se publica si se conoce el método (`ST_Area(geography, EPSG:4326)` sobre el original).
+- **Nombres**: el del idioma pedido si la fuente lo trae; si no, el **local** de la fuente; nunca uno traducido ni de otro idioma. Sin nombre → `name: null` (la interfaz lo dice).
+- **Pertenencia**: `ST_Covers` sobre la geometría original, plano lon/lat (como GeoJSON y como lo dibuja el mapa): **el borde cuenta como dentro**.
+- **Derechos**: servir exige poder mostrar, transformar y redistribuir; con la política `provisional`, **en producción responde 403 `rights_blocked` sin consultar la BD**.
+- **Caché**: `ETag` débil + 304; `public, max-age=60, stale-while-revalidate=300` en 200; `no-store` en errores.
+- **Códigos**: 200 · 304 · 400 `invalid_parameters` (con `issues[{field,code}]`) · 403 `rights_blocked` · 404 `not_found` (igual para inexistente, no público o inválida) · 503 `database_unavailable` · 504 `query_timeout` · 500 `internal_error`.
+
+**Qué NO hace** (no darlo por hecho): no pagina (trunca de forma explícita lo más pequeño); no limita la **frecuencia** de peticiones (infraestructura, pendiente); no se ha medido la latencia; no se ha probado con un _pooler_ ni con una base remota; no ofrece `version` ni filtros por atributos.

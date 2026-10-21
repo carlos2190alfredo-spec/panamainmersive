@@ -83,3 +83,17 @@ pnpm db:import-areas --manifest data/build/ingest/overture-destination-reference
 - Importar no publica: las áreas quedan con `is_public = false`. `--publish` es una decisión editorial y solo funciona si la política de derechos lo permite (hoy `provisional`: no, L-01).
 - Una base que no sea local exige `IMPORT_CONFIRM_REMOTE=<host>`. **No se ha importado a ninguna base remota.**
 - Repetir la importación del mismo contenido no escribe nada (`noop`, queda en `import_runs`).
+
+### 7.1 API espacial y base de datos (Fase 3.b, ADR-0016)
+
+La API (`/api/spatial/areas`, `/areas/{id}`, `/locate`) lee de la base indicada en `DATABASE_URL` **con el rol `anon`, en una transacción de solo lectura**. Sin `DATABASE_URL` responde `503 database_unavailable` (nunca inventa datos).
+
+```bash
+# Local: una base PostgreSQL+PostGIS migrada
+pnpm db:migrate && pnpm db:import-areas --manifest …      # ver §7
+DATABASE_URL=postgresql://… pnpm dev
+curl 'http://localhost:3000/api/spatial/areas?bbox=-81,7.5,-77,9.5&zoom=6&layers=protected_areas'
+```
+
+- Las áreas importadas **no son públicas** (`is_public = false`): la API no las devuelve hasta que alguien las publique (decisión editorial) **y** la política de derechos lo permita. En producción con la política `provisional` responde `403 rights_blocked`.
+- **Pendiente con el despliegue** (no hecho; no hay base remota): (1) crear un rol de login **dedicado** miembro solo de `anon` y usar su cadena en `DATABASE_URL` en lugar del propietario; (2) usar un _pooler_ de conexiones si el entorno es sin servidor (el pool es de 5 por proceso); (3) limitación de tasa en la infraestructura. Las migraciones **no** crean roles ni contraseñas.

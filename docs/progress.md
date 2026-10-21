@@ -6,13 +6,13 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                     | Notas                                                                 |
-| ------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada) | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                    | Detalle abajo                                                         |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**   | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
-| 3 — GIS                   | **EN CURSO**: F3.a (ingesta a PostGIS) **VERIFIED**; F3.b–e pendientes     | Entrega 3 (abajo)                                                     |
-| 4–10                      | PENDIENTE                                                                  | Ver `docs/backlog.md`                                                 |
+| Fase                      | Estado                                                                             | Notas                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)         | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                            | Detalle abajo                                                         |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**           | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
+| 3 — GIS                   | **EN CURSO**: F3.a (ingesta) y F3.b (API espacial) **VERIFIED**; F3.c–e pendientes | Entrega 3 y 3b (abajo)                                                |
+| 4–10                      | PENDIENTE                                                                          | Ver `docs/backlog.md`                                                 |
 
 ## Entrega 1 — Foundation
 
@@ -179,3 +179,52 @@ pnpm test:integration                                 # incluye la importación 
 ### Pendiente de la Fase 3
 
 F3.b API espacial acotada · F3.c Layer Engine y Legend Engine declarativos · F3.d selección de áreas en el mapa con ficha de fuente/superficie · F3.e cierre (documentación, E2E, commit). Detalle en `docs/backlog.md`.
+
+## Entrega 3b — Fase 3: API espacial acotada (F3.b)
+
+### Qué funciona (VERIFIED, 2026-10-21)
+
+- **Tres endpoints** (`GET /api/spatial/areas`, `/areas/{id}`, `/locate`; contrato en `docs/gis.md` §12, ADR-0016): consulta por ventana, ficha por UUID y «qué áreas cubren este punto» (`ST_Covers`, el borde cuenta como dentro).
+- **La RLS decide qué se ve** (rol `anon`, transacción de solo lectura, 3 s de tiempo máximo); consultas estáticas y parametrizadas; entrada con lista cerrada y límites duros (ventana ≤ 25 grados², lat/lon intercambiados → 400, `limit` ≤ 200, 1,5 MB).
+- **Derechos antes que datos**: con la política `provisional`, **en producción responde 403 sin consultar la BD** (comprobado a mano con un build de producción); además se comprueba cada fila contra su fuente.
+- **Honestidad de datos**: geometría simplificada para mostrar (declarada), superficie solo con método, nombre de la fuente sin traducir, procedencia y licencia en cada respuesta, `osm_derived` nunca como oficial, truncado explícito, mismo 404 para lo inexistente y lo no público.
+- Caché por `ETag` + 304; errores sin fugas (503 sin BD, 504 por tiempo, 500 genérico).
+
+### Cómo ejecutarlo
+
+```bash
+DATABASE_URL=postgresql://… pnpm dev          # BD migrada con áreas importadas (docs/setup.md §7, §7.1)
+curl 'http://localhost:3000/api/spatial/areas?bbox=-81,7.5,-77,9.5&zoom=6&layers=protected_areas'
+curl 'http://localhost:3000/api/spatial/locate?lon=-79.5&lat=8.5'
+pnpm test && pnpm test:integration            # pruebas de la API (unitarias + PostGIS real)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-21)
+
+| Comando                                        | Resultado                                                                                                                                                                  |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Sin errores                                                                                                                                                                |
+| `pnpm test`                                    | 26 ficheros / **428** (+101: validación con fuzz, ensamblado, manejadores, contratos con SQL/Python/políticas)                                                             |
+| `pnpm test:integration`                        | 10 ficheros / **142** (+22 con PostGIS real: RLS, versión vigente, inválidas, simplificación, `ST_Covers`, solo lectura, 57014, derechos)                                  |
+| `pnpm test:e2e`                                | **140** (108 escritorio + 32 móvil; +5 de la API en el build real)                                                                                                         |
+| `pnpm check:bundle`                            | JS 191,1 KB (Explorar 199,9 KB), mapa diferido 455,4 KB: dentro de presupuesto (+451 B del _runtime_ de Turbopack, `performance.md` M-03)                                  |
+| Mutaciones                                     | Se rompió a propósito y fallaron pruebas: sin `set local role anon` (4), `ST_Contains` por `ST_Covers` (1), sin filtro de geometrías inválidas (4), derechos ignorados (1) |
+| Comprobación manual                            | Build con `SITE_ENV=production`: las tres rutas devuelven 403 `rights_blocked` (`no-store`) y 400 ante parámetros inválidos                                                |
+
+### Lo que se encontró y cambió (honestamente)
+
+- Dos capas comparten fuente, así que el bloqueo parcial por derechos no se podía ejercer con el registro real: se hizo `layerAccess` parametrizable y se probó con capas sintéticas (una prueba mía prometía más de lo que comprobaba).
+- Una geometría **editorial** (nuestra) no tiene fuente de terceros: mi primera versión la retenía como «derechos»; ahora solo se retiene una fila **no editorial** sin fuente identificable.
+- `lon=` (vacío) devolvía un fallo **sin motivo**; corregido y blindado con un fuzz que exige ≥ 1 motivo en cada fallo.
+- Una de mis mutaciones «pasó» sin aplicarse (Prettier había cambiado las comillas); se repitió y quedó detectada.
+- Se **descartó el parámetro `version`** de `gis.md` §5 a favor del `ETag` del cuerpo (ADR-0016).
+
+### Qué no pudo verificarse
+
+- **Latencia, carga y comportamiento con un _pooler_ o una base remota**: sin medir ni probar.
+- **Limitación de tasa**: no existe (infraestructura, **DEFERRED**). **Rol de BD dedicado** para producción: documentado, no creado (no hay despliegue).
+- No hay E2E de la API **con datos** (BD temporal detrás de `next start`): llega con la selección de áreas (F3.d).
+
+### Pendiente de la Fase 3
+
+F3.c Layer Engine y Legend Engine declarativos · F3.d selección de áreas en el mapa (picking + lista por teclado + ficha) · F3.e cierre. Detalle en `docs/backlog.md`.

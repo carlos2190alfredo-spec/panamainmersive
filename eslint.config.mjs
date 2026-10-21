@@ -67,6 +67,9 @@ export default tseslint.config(
                 '@/components/*',
                 '@/app/*',
                 '@/adapters/*',
+                '@/server/*',
+                'pg',
+                'pg/*',
                 'react',
                 'react-dom',
                 'next',
@@ -76,6 +79,24 @@ export default tseslint.config(
               ],
               message:
                 'src/domains es lógica pura: no importa UI, framework ni adaptadores (ADR-0001).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // El código de servidor (BD, `pg`) no entra en componentes: acabaría en el bundle del navegador.
+  {
+    files: ['src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/server/*', 'pg', 'pg/*'],
+              message:
+                'El acceso a la BD es solo de servidor (src/server): no lo importes en componentes.',
             },
           ],
         },
