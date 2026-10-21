@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import {
   decideIndexing,
+  type Sensitivity,
   type SiteEnv,
   type TranslationStatus,
 } from '@/domains/editorial/publication';
@@ -9,8 +10,10 @@ import { DEFAULT_LOCALE, LOCALES, LOCALE_INFO, type Locale } from '@/i18n/locale
 
 export interface SitemapRoute<H> {
   readonly hrefFor: (locale: Locale) => H;
-  readonly hasRequiredFields: boolean;
+  /** Puede depender del idioma (la ficha solo se indexa donde su resumen verificado está en ese idioma). */
+  readonly hasRequiredFields: boolean | ((locale: Locale) => boolean);
   readonly statusFor?: (locale: Locale) => TranslationStatus;
+  readonly sensitivity?: Sensitivity;
   /** La home negocia idioma en `/`. */
   readonly isHome?: boolean;
 }
@@ -32,9 +35,12 @@ export function buildSitemap<H>(args: {
       (locale) =>
         decideIndexing({
           status: status(locale),
-          sensitivity: 'general',
+          sensitivity: route.sensitivity ?? 'general',
           siteEnv: args.siteEnv,
-          hasRequiredFields: route.hasRequiredFields,
+          hasRequiredFields:
+            typeof route.hasRequiredFields === 'function'
+              ? route.hasRequiredFields(locale)
+              : route.hasRequiredFields,
           ...SITE_PUBLICATION_POLICY,
         }).indexable,
     );

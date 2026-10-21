@@ -85,3 +85,23 @@ jobs:
         env:
           CI: 'true'
           SITE_ENV: development
+
+  e2e-content:
+    name: E2E de la ficha con contenido verificado (PostgreSQL temporal → exportación → build → Next)
+    runs-on: ubuntu-24.04
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Necesita los binarios de PostgreSQL (clúster temporal) y Chromium; construye su PROPIA copia de la aplicación
+      # con contenido sintético, así que no depende del build anterior ni de los datos del mapa.
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-16 postgresql-16-postgis-3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e:content
+        env:
+          CI: 'true'

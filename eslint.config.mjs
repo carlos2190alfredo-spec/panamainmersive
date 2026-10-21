@@ -10,6 +10,7 @@ export default tseslint.config(
   {
     ignores: [
       '.next/**',
+      '.e2e-content-app/**',
       'node_modules/**',
       'coverage/**',
       'playwright-report/**',

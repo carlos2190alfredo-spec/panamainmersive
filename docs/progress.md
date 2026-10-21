@@ -1,18 +1,19 @@
 # Progreso
 
-Última actualización: **2026-10-20**. Proyecto nuevo en `/home/user/panama-immersive` (`/home/user` estaba vacío: no se ha tocado nada fuera de esta carpeta).
+Última actualización: **2026-10-21**. Proyecto nuevo en `/home/user/panama-immersive` (`/home/user` estaba vacío: no se ha tocado nada fuera de esta carpeta).
 
 Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una prueba pasando) · **BLOCKED** (falta credencial/acceso/decisión externa) · **DEFERRED** (pospuesto a propósito).
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                      | Notas                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                  | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                     | Detalle abajo                                                         |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                    | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
-| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03) | Entregas 3, 3b, 3c y 3d; cierre abajo                                 |
-| 4–10                      | PENDIENTE                                                                                                   | Ver `docs/backlog.md`                                                 |
+| Fase                      | Estado                                                                                                                         | Notas                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                     | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00          |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                        | Detalle abajo                                                                  |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                       | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                    |
+| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                    | Entregas 3, 3b, 3c y 3d; cierre abajo                                          |
+| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019); **sin ninguna afirmación verificada real** | Entrega 4a; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
+| 5–10                      | PENDIENTE                                                                                                                      | Ver `docs/backlog.md`                                                          |
 
 ## Entrega 1 — Foundation
 
@@ -367,3 +368,64 @@ Definición del documento rector (§22): _importación controlada, geometrías, 
 ### Siguiente acción concreta
 
 **Fase 4 (Destinos)** no puede rellenarse con contenido sin revisión editorial y derechos (L-01/L-02/L-03). Lo **independiente** que sí puede avanzar: (1) el modelo de contenido de la ficha de destino con **evidencia por afirmación** (`field_assertions`, `source_records`) y los estados «sin datos verificados» ya establecidos en F3.d; (2) la maquetación de las nueve fichas con campos vacíos honestos; (3) resolver F3-10 antes de añadir interactividad a Explorar. Antes de empezar, **pedir a la persona responsable** que decida el orden: ¿desbloquear primero los derechos (requiere acceso de red a las fuentes primarias) o avanzar el modelo de contenido?
+
+## Entrega 4a — Fase 4: modelo de contenido de la ficha (F4.a–e)
+
+Alcance de esta entrega: **lo independiente** de la Fase 4. El contenido real (redactar y verificar afirmaciones con fuentes primarias, traducirlas, revisarlas) es trabajo editorial humano y sigue **bloqueado** (L-01…L-03). Aquí está el modelo que lo hará **posible sin poder inventar nada**, y la ficha que lo muestra.
+
+### Qué funciona (VERIFIED en local, 2026-10-21)
+
+- **Registro de 8 campos** (`overview.summary`, `access.how_to_get_there`, `restrictions.entry_rules`, `restrictions.legal_status`, `safety.hazards`, `visit.best_season`, `visit.accessibility`, `facts.elevation_m`) con tipo, sensibilidad, clases de fuente admitidas, nº de fuentes, antigüedad máxima, vigencia máxima y tipos de destino. Sembrado en `content_fields`; una prueba de contrato comprueba que coincide con el código.
+- **Dominio puro** (`src/domains/content/`): estado **derivado** VERIFIED/EXPIRED/DISPUTED/UNKNOWN (no existe un booleano), **23 puertas de verificación** con códigos de máquina, texto por idioma que **nunca finge traducción**, vista de la ficha, instantánea estricta y determinista.
+- **Migración `0007`**: `content_fields`, `source_records`, `field_assertions`, `assertion_evidence`, `assertion_translations` y la vista `field_public_state`; flujo `draft → in_review → verified` (+ `disputed/rejected/retracted`), **lo verificado es inmutable** (también para el propietario), versiones que se reemplazan, verificador = persona del JWT y hora del servidor, verificador ≠ autor, **privilegios por columna** (`anon` no puede ni pedir identidades), RLS, auditoría y `TRUNCATE` bloqueado. Las puertas están **en la BD y en el dominio** y una prueba comprueba que coinciden código por código.
+- **Exportador** `pnpm content:export` (rol `anon`, solo lectura, determinista, **revalida y no escribe nada si algo falla**) y **cargador** que rompe el build ante una instantánea inválida. Hoy `data/content/published.json` está **vacío**: la ficha dice «sin datos verificados».
+- **Ficha**: por campo verificado, texto + fecha de verificación + vigencia + confianza + **fuentes** (enlaces `https`); **avisos por campo** de lo vencido y lo disputado **sin su contenido**; lista compacta de lo no verificado («no significa que no exista»); **original con indicador del motivo** cuando no hay traducción humana publicada; fechas en zona de Panamá; cantidades sin convertir. SEO por idioma (`destinationSeo`) y `revalidate = 3600` para que la caducidad se recalcule.
+- **E2E con contenido** `pnpm test:e2e:content`: PostgreSQL temporal → contenido sintético por el flujo real → exportación → **copia temporal de la app** → Next en producción, con axe en cinco idiomas y dos temas y sin violaciones de CSP.
+- Mensajes `Content.*` en los **cinco** idiomas (español `draft`; el resto, traducción automática sin revisar, como el resto de la interfaz).
+
+### Cómo ejecutarlo
+
+```bash
+pnpm typecheck && pnpm lint && pnpm format && pnpm test        # 688 unitarias
+pnpm test:integration                                           # 234 (incluye el modelo de contenido y el exportador)
+pnpm test:e2e:content                                           # 21; solo necesita binarios de PostgreSQL
+pnpm content:export --dry-run                                   # con DATABASE_URL: qué se publicaría (docs/setup.md §8)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-21)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **688** (36 ficheros; **133** del dominio de contenido, **23** de renderizado de la ficha, **11** de SEO/sitemap/cargador) · `pnpm test:pipelines`: **90** · `pnpm test:integration`: **234** (13 ficheros; **89** nuevas: 31 de flujo y roles, 51 de paridad de puertas y transiciones, 7 del exportador; 0 clústeres huérfanos) · `pnpm test:e2e`: **160** (incluye axe de la ficha vacía) · `pnpm test:e2e:db`: **7** · `pnpm test:e2e:content`: **21** · `pnpm check:bundle`: OK (ficha 191,1 KB de JS: el contenido es de servidor; Explorar 205,4 KB, sin cambios).
+
+**Mutaciones: 93** (11 puertas del dominio, 21 estado/texto/vista/instantánea, 33 migración SQL, 9 exportador, 15 presentación, 4 E2E). Las que sobrevivían señalaron huecos de **mis pruebas** y se cerraron (ver `docs/testing.md`).
+
+### Lo que se encontró y cambió (honestamente)
+
+- **Errores reales cazados por las pruebas** (no por leer el código): `Date.parse` acepta `2026-02-31T…` (E-52); `text[] || 'literal'` en PL/pgSQL es un literal de array (E-53); una columna ambigua en una política RLS dejaba a `anon` sin ver ninguna fuente (E-54); el orden disparador/RLS que yo había supuesto al revés (E-55); `pg` devuelve `enum[]` como texto (E-56).
+- **Mi verificación de las mutaciones estuvo contaminada una vez**: un `import` que no se aplicó dejó 4 pruebas rojas de base y yo leí «1 failed» como si la mutación hubiera muerto. Detectado al ver que `minCount` «moría» con exactamente 4 fallos (la línea base). Desde entonces cada serie exige una base verde y avisa si la mutación no se aplicó; y una mutación que rompe los tipos no cuenta (me pasó dos veces en el E2E).
+- **Cambios de diseño sobre la marcha**: descarté `verification_events` (la auditoría y `status_note` ya cubren quién, qué, cuándo y por qué); descarté una variable de entorno para cambiar la ruta de la instantánea en el E2E (un camino alternativo para publicar dentro del código de producción) y construí una **copia temporal** de la app; añadí `revalidate` porque una página prerrenderizada congelaría «hoy».
+- **README desactualizado** (decía «Fase 3 en curso» tras cerrarla): corregido.
+- Mis primeras pruebas suponían que la RLS rechaza siempre con `42501`; en realidad un disparador `BEFORE` salta antes y un `UPDATE`/`DELETE` invisible afecta 0 filas. Se rehicieron con el orden real de defensas.
+
+### Qué no pudo verificarse
+
+- **Nada con contenido real**: todo usa datos sintéticos; la instantánea publicada está vacía.
+- **Los umbrales por campo** (clases, nº de fuentes, antigüedad, vigencia) son **míos**; hasta que la persona responsable los valide no hay que fiarse de ellos (F4-1).
+- **CI**: el job `e2e-content` está definido y **no se ha podido ejecutar fuera de este entorno**.
+- **Lectores de pantalla reales y personas usuarias** con la ficha poblada (axe sí).
+- **Concurrencia** de la asignación de versión, **rendimiento** de las políticas con más datos y la vista `field_public_state` en **Supabase real** (su asesor de seguridad puede advertir de una vista con derechos del propietario; aquí es deliberado).
+- **Obsolescencia**: una disputa o retirada hecha en la BD **no llega a la web hasta exportar y desplegar**; nada vigila la edad de la instantánea (F4-4).
+
+### Decisiones que necesitan a una persona (no puedo tomarlas yo)
+
+1. **F4-1** validar los umbrales de evidencia por campo (¿basta **una** fuente oficial para un peligro?).
+2. **F4-3** ¿se muestran traducciones automáticas etiquetadas del contenido, o solo original/humana (hoy)?
+3. **F4-5** criterio legal sobre citar fuentes y política de derechos por fuente.
+4. **F4-4** cadencia de exportación y despliegue (importa sobre todo para seguridad).
+
+### Pendiente de la Fase 4
+
+Contenido real (F4-6), interfaz de autoría y revisión (F4-2), medios e historias (F4-7), más campos (F4-11) y las decisiones de arriba. Ver `docs/backlog.md`.
+
+### Siguiente acción concreta
+
+Con una persona editora: (1) validar o cambiar los umbrales de `src/domains/content/fields.ts` (y su espejo en la migración, con una migración **nueva**); (2) elegir **un** destino y redactar su resumen con una fuente primaria oficial, verificarlo por el flujo y ejecutar `pnpm content:export` para ver la primera ficha real. Lo siguiente que más valor da sin depender de nadie es la **interfaz de autoría** (F4-2): hoy el cuello de botella es cargar contenido por SQL.

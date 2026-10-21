@@ -17,3 +17,4 @@ __pycache__/
 .DS_Store
 next-env.d.ts
 /public/data/*.manifest.json
+/.e2e-content-app/

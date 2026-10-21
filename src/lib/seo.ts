@@ -27,8 +27,8 @@ export interface PageSeoInput {
   readonly description: string;
   /** Ruta (con sus parámetros) de la MISMA página en cada idioma. */
   readonly hrefFor: (locale: Locale) => Href;
-  /** ¿Hay contenido mínimo en ese idioma? Las páginas vacías no se indexan. */
-  readonly hasRequiredFields: boolean;
+  /** ¿Hay contenido mínimo en ese idioma? Las páginas vacías no se indexan. Puede depender del idioma. */
+  readonly hasRequiredFields: boolean | ((locale: Locale) => boolean);
   readonly sensitivity?: Sensitivity;
   /** Estado editorial por idioma; por defecto el de la interfaz. */
   readonly statusFor?: (locale: Locale) => TranslationStatus;
@@ -48,7 +48,10 @@ export function pageMetadata(input: PageSeoInput): Metadata {
       status: statusFor(locale),
       sensitivity: input.sensitivity ?? 'general',
       siteEnv,
-      hasRequiredFields: input.hasRequiredFields,
+      hasRequiredFields:
+        typeof input.hasRequiredFields === 'function'
+          ? input.hasRequiredFields(locale)
+          : input.hasRequiredFields,
       ...SITE_PUBLICATION_POLICY,
     }).indexable,
   }));

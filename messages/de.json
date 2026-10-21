@@ -366,5 +366,52 @@
     "body": "Wir haben nicht gefunden, wonach Sie suchen. Möglicherweise hat sich der Link geändert.",
     "home": "Zur Startseite",
     "destinations": "Reiseziele ansehen"
+  },
+  "Content": {
+    "fields": {
+      "overview": {
+        "summary": "Überblick"
+      },
+      "access": {
+        "how_to_get_there": "Anreise"
+      },
+      "restrictions": {
+        "entry_rules": "Einreise- und Zutrittsregeln",
+        "legal_status": "Rechtlicher Status"
+      },
+      "safety": {
+        "hazards": "Gefahren und Sicherheit"
+      },
+      "visit": {
+        "best_season": "Beste Reisezeit",
+        "accessibility": "Barrierefreiheit des Ortes"
+      },
+      "facts": {
+        "elevation_m": "Höhe"
+      }
+    },
+    "verifiedOn": "Geprüft am {date}",
+    "validUntil": "Gültig bis {date}",
+    "confidence": {
+      "label": "Verlässlichkeit",
+      "low": "gering",
+      "medium": "mittel",
+      "high": "hoch"
+    },
+    "sources": "Quellen",
+    "sourceMeta": "Abgerufen am {date} · Lizenz: {license}",
+    "locator": "Fundstelle in der Quelle: {locator}",
+    "translationReviewed": "Übersetzung von einer Person geprüft.",
+    "originalShown": "Der Originaltext wird auf {language} angezeigt: {reason}",
+    "reason": {
+      "no_translation": "es gibt noch keine Übersetzung in diese Sprache.",
+      "translation_not_published": "die Übersetzung wurde noch nicht von einer Person geprüft.",
+      "translation_outdated": "die Übersetzung ist veraltet."
+    },
+    "expired": "{field}: Die geprüften Informationen sind am {date} abgelaufen. Wir zeigen sie nicht an, weil sie sich geändert haben können.",
+    "disputed": "{field}: Es werden widersprüchliche Informationen geprüft. Wir zeigen sie erst an, wenn das geklärt ist.",
+    "unknownHeading": "Noch keine geprüften Daten",
+    "unknownLead": "Zu diesen Themen gibt es noch keine geprüften Informationen. Das heißt nicht, dass es keine gibt: Wir haben sie nur noch nicht mit einer Quelle abgeglichen.",
+    "publishedOn": "Inhalt veröffentlicht am {date}."
   }
 }

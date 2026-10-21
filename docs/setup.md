@@ -101,3 +101,22 @@ curl 'http://localhost:3000/api/spatial/areas?bbox=-81,7.5,-77,9.5&zoom=6&layers
 ### 7.2 E2E con base de datos (`pnpm test:e2e:db`)
 
 Prueba la **ficha de un área con datos reales** de punta a punta. Necesita: el build (`SITE_ENV=development pnpm build`), el mapa base (`pnpm data:build`, §6), los artefactos de ingesta (`pnpm data:ingest`, §7) y los binarios de PostgreSQL 16 + PostGIS (los mismos que la integración). El script `scripts/e2e-db.ts` levanta un clúster **temporal** (socket Unix, directorio propio), migra, importa y **publica** las áreas, despublica una a propósito, arranca `next start` apuntando a esa BD (puerto `E2E_DB_PORT`, 3200 por defecto), ejecuta Playwright con `playwright.db.config.ts` y lo destruye todo al terminar (también con Ctrl-C). Si falta algo, **se omite y lo dice** (no cuenta como «pasó»). **No toca ninguna base remota.**
+
+## 8. Contenido verificado de las fichas (Fase 4, ADR-0019)
+
+La aplicación **no lee la base de datos para mostrar el contenido**: lee `data/content/published.json`, una instantánea que escribe `pnpm content:export`. **Hoy está vacía** (`"assertions": []`): cada ficha dice que no hay datos verificados.
+
+```bash
+pnpm db:migrate                                         # crea las tablas del modelo de contenido (migración 0007)
+# … el contenido se redacta y verifica por el flujo editorial (hoy por SQL; interfaz pendiente: F4-2) …
+DATABASE_URL=postgresql://… pnpm content:export --dry-run   # resumen, sin escribir
+DATABASE_URL=postgresql://… pnpm content:export             # escribe data/content/published.json
+DATABASE_URL=postgresql://… pnpm content:export --check     # sale con 1 si el archivo difiere de la BD
+```
+
+- **Solo lee**, con el rol `anon` y en una transacción de solo lectura: sale únicamente lo verificado, vigente, no reemplazado y de destinos publicados, sin identidades de personas.
+- **Revalida** todo con las puertas del dominio. Si algo no cuadra **lanza y no escribe nada** (no repara ni recorta). Lo mismo hace el build con un `published.json` inválido.
+- Una base que **no** sea local exige `CONTENT_CONFIRM_REMOTE=<host>`. **No se ha exportado desde ninguna base remota.**
+- Revisa el `git diff` de `data/content/published.json` antes de desplegar: es el contenido que verá el público.
+- **Una disputa o retirada hecha en la BD no llega a la web hasta exportar y desplegar** (F4-4).
+- `pnpm test:e2e:content` prueba todo el recorrido con contenido **sintético** en una base temporal y una copia temporal de la app (`.e2e-content-app/`, ignorada por git y borrada al terminar): no toca `data/content/published.json` ni el build del proyecto.

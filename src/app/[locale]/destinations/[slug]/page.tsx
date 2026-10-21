@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ButtonLink } from '@/components/ButtonLink';
+import { ContentSections } from '@/components/content/ContentSections';
 import { Notice } from '@/components/Notice';
 import { ScrollRegion } from '@/components/ScrollRegion';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SITE } from '@/config/site';
+import { PUBLISHED_CONTENT, contentFor } from '@/lib/content-snapshot';
+import { destinationSeo } from '@/lib/destination-content';
 import { getTodayIsoDate } from '@/lib/today';
 import { COVERAGE, effectiveStatus } from '@/domains/tourism/coverage-evidence';
 import {
@@ -23,6 +26,13 @@ import { pageMetadata } from '@/lib/seo';
 import styles from './page.module.css';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
+
+/**
+ * La caducidad se evalúa por día calendario: una página prerrenderizada la congelaría en la fecha del build. Se
+ * regenera cada hora (ISR), así un dato vigente «hasta ayer» deja de mostrarse en cuanto se regenera, no en el
+ * próximo despliegue. El contenido en sí solo cambia con `pnpm content:export` + despliegue.
+ */
+export const revalidate = 3600;
 
 /** Se prerrenderizan los slugs ACTUALES de cada idioma; alias y slugs de otros idiomas se resuelven bajo demanda. */
 export async function generateStaticParams({ params }: { params: Promise<{ locale: string }> }) {
@@ -44,6 +54,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const { locale, entry } = await resolve(props);
   const t = await getTranslations({ locale, namespace: 'Meta' });
   const name = destinationName(entry, locale);
+  const seo = destinationSeo(contentFor(entry.key), entry.kind, getTodayIsoDate());
   return pageMetadata({
     locale,
     title: t('destination.title', { name }),
@@ -52,8 +63,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       pathname: '/destinations/[slug]',
       params: { slug: destinationSlug(entry, l) },
     }),
-    // La ficha editorial aún no existe: no se indexan páginas vacías.
-    hasRequiredFields: false,
+    // Se indexa solo en los idiomas donde el resumen VERIFICADO existe (original o traducción humana publicada),
+    // y solo si la interfaz de ese idioma también es publicable (hoy es borrador/automática: nada se indexa).
+    hasRequiredFields: seo.hasRequiredFields,
+    statusFor: seo.statusFor,
+    sensitivity: seo.sensitivity,
   });
 }
 
@@ -77,6 +91,7 @@ export default async function DestinationPage(props: Props) {
 
   const name = destinationName(entry, locale);
   const today = getTodayIsoDate();
+  const seo = destinationSeo(contentFor(entry.key), entry.kind, today);
   const evidence = COVERAGE[entry.key];
   const first = evidence[0];
   const isMachineTranslated = entry.names[locale].provenance === 'ai_translation_2026-10-20';
@@ -111,9 +126,11 @@ export default async function DestinationPage(props: Props) {
 
       <section aria-labelledby="content-title" className={styles.section}>
         <h2 id="content-title">{t('contentHeading')}</h2>
-        <Notice>
-          <p>{t('contentPending')}</p>
-        </Notice>
+        <ContentSections
+          view={seo.views[locale]}
+          locale={locale}
+          generatedAt={PUBLISHED_CONTENT.generatedAt}
+        />
       </section>
 
       <section aria-labelledby="data-title" className={styles.section}>

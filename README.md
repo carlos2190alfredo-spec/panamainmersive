@@ -2,7 +2,7 @@
 
 Plataforma turística geoespacial, multilingüe y honesta con sus datos, para explorar Panamá con mapas, relieve y fuentes verificables. Nombre **provisional** (centralizado en `src/config/site.ts`).
 
-> **Estado:** Fases 0 (Discovery), 1 (Foundation) y 2 (mapa real de Panamá) completadas en local; Fase 3 (GIS) **en curso**: ingesta controlada de áreas a PostGIS (F3.a), API espacial acotada (F3.b), capas/leyenda declarativas (F3.c) y selección de áreas con ficha (F3.d) verificadas. El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
+> **Estado:** Fases 0 (Discovery), 1 (Foundation), 2 (mapa real de Panamá) y 3 (GIS: ingesta controlada de áreas, API espacial, capas/leyenda declarativas y selección de áreas) completadas en local. **Fase 4 (Destinos) en curso**: está hecho el **modelo de contenido** (afirmaciones con evidencia, estado derivado, puertas de verificación en BD y dominio, publicación por instantánea) y la ficha que lo muestra; **todavía no hay ninguna afirmación verificada real**, así que cada ficha dice «sin datos verificados». El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
 > Documento rector del proyecto: [`docs/PROMPT-MAESTRO.md`](docs/PROMPT-MAESTRO.md) (copia literal).
 
 ## Qué funciona hoy
@@ -46,31 +46,35 @@ pnpm start                        # NO añadir -H 127.0.0.1 (ver docs/testing.md
 
 ## Comandos
 
-| Comando                                        | Qué hace                                                                                                   |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Tipos (TS 6, estricto), ESLint (incl. a11y y fronteras de dominio), Prettier                               |
-| `pnpm test`                                    | Unitarias (Vitest): i18n, dominio, configuración, contraste WCAG, SEO                                      |
-| `pnpm test:integration`                        | PostgreSQL+PostGIS reales: migraciones, RLS por rol, restricciones, GIS, auditoría                         |
-| `pnpm build && pnpm check:bundle`              | Compilación + escaneo de secretos en el bundle + presupuesto de JS por página                              |
-| `pnpm test:e2e`                                | Playwright contra el build de producción (escritorio y móvil, axe, CSP)                                    |
-| `pnpm db:migrate`                              | Aplica `db/migrations` a `DATABASE_URL` (rechaza bases remotas sin confirmación)                           |
-| `pnpm data:anchors` · `pnpm data:build`        | Anclas por ID de Overture y basemap PMTiles verificado (Python + tippecanoe)                               |
-| `pnpm test:e2e:db`                             | E2E con PostgreSQL **temporal** y datos reales (necesita build y datos; si falta algo, se omite y lo dice) |
-| `pnpm test:pipelines`                          | Pruebas del ETL de Python (`.venv` activado; sin red)                                                      |
-| `pnpm data:ingest` · `pnpm db:import-areas`    | Ingesta controlada de áreas a PostGIS (`docs/setup.md` §7); no publica                                     |
+| Comando                                         | Qué hace                                                                                                                                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format`  | Tipos (TS 6, estricto), ESLint (incl. a11y y fronteras de dominio), Prettier                                                                                                                                       |
+| `pnpm test`                                     | Unitarias (Vitest): i18n, dominio, configuración, contraste WCAG, SEO                                                                                                                                              |
+| `pnpm test:integration`                         | PostgreSQL+PostGIS reales: migraciones, RLS por rol, restricciones, GIS, auditoría                                                                                                                                 |
+| `pnpm build && pnpm check:bundle`               | Compilación + escaneo de secretos en el bundle + presupuesto de JS por página                                                                                                                                      |
+| `pnpm test:e2e`                                 | Playwright contra el build de producción (escritorio y móvil, axe, CSP)                                                                                                                                            |
+| `pnpm db:migrate`                               | Aplica `db/migrations` a `DATABASE_URL` (rechaza bases remotas sin confirmación)                                                                                                                                   |
+| `pnpm data:anchors` · `pnpm data:build`         | Anclas por ID de Overture y basemap PMTiles verificado (Python + tippecanoe)                                                                                                                                       |
+| `pnpm test:e2e:db`                              | E2E con PostgreSQL **temporal** y datos reales (necesita build y datos; si falta algo, se omite y lo dice)                                                                                                         |
+| `pnpm test:pipelines`                           | Pruebas del ETL de Python (`.venv` activado; sin red)                                                                                                                                                              |
+| `pnpm test:e2e:content` · `pnpm content:export` | Ficha con contenido verificado de punta a punta (PostgreSQL temporal → exportación → copia de la app → Next) · exporta el contenido público de `DATABASE_URL` a `data/content/published.json` (`docs/setup.md` §8) |
+| `pnpm data:ingest` · `pnpm db:import-areas`     | Ingesta controlada de áreas a PostGIS (`docs/setup.md` §7); no publica                                                                                                                                             |
 
 ## Estructura
 
 ```
 src/app/[locale]/…     rutas (SSR/estático), un layout raíz por idioma
-src/domains/…          lógica pura por dominio (sin UI ni framework): editorial, tourism, geography
+src/domains/…          lógica pura por dominio (sin UI ni framework): editorial, tourism, geography, content
 src/components/        componentes accesibles (CSS Modules + tokens)
 src/i18n/              registro de idiomas, rutas, navegación, formatos (Intl)
 src/config/            entorno validado (zod), marca, cabeceras de seguridad
 messages/              textos de interfaz por idioma (ICU)
-db/migrations/         SQL versionado con checksum (PostGIS, RLS, auditoría)
+db/migrations/         SQL versionado con checksum (PostGIS, RLS, auditoría, modelo de contenido)
+data/content/          instantánea del contenido verificado y público (la escribe `pnpm content:export`; hoy vacía)
+scripts/               migraciones, importación de áreas, exportación de contenido, orquestadores de E2E
 pipelines/             ETL en Python: anclas, basemap PMTiles y sondeos (spikes)
-e2e/ tests/            Playwright · Vitest (unit e integration)
+e2e/ e2e-db/ e2e-content/  Playwright (sin BD · con áreas reales · con contenido verificado)
+tests/                 Vitest (unit e integration)
 docs/                  arquitectura, ADR, cobertura, derechos, i18n, GIS, seguridad, costes, progreso
 ```
 

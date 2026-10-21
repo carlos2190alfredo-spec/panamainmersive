@@ -366,5 +366,52 @@
     "body": "Nous n’avons pas trouvé ce que vous cherchiez. Le lien a peut-être changé.",
     "home": "Aller à l’accueil",
     "destinations": "Voir les destinations"
+  },
+  "Content": {
+    "fields": {
+      "overview": {
+        "summary": "Présentation"
+      },
+      "access": {
+        "how_to_get_there": "Comment s’y rendre"
+      },
+      "restrictions": {
+        "entry_rules": "Règles d’entrée",
+        "legal_status": "Statut juridique"
+      },
+      "safety": {
+        "hazards": "Risques et sécurité"
+      },
+      "visit": {
+        "best_season": "Meilleure période pour visiter",
+        "accessibility": "Accessibilité du lieu"
+      },
+      "facts": {
+        "elevation_m": "Altitude"
+      }
+    },
+    "verifiedOn": "Vérifié le {date}",
+    "validUntil": "Valable jusqu’au {date}",
+    "confidence": {
+      "label": "Fiabilité",
+      "low": "faible",
+      "medium": "moyenne",
+      "high": "élevée"
+    },
+    "sources": "Sources",
+    "sourceMeta": "Consultée le {date} · Licence\u00a0: {license}",
+    "locator": "Où, dans la source\u00a0: {locator}",
+    "translationReviewed": "Traduction relue par une personne.",
+    "originalShown": "Texte original affiché en {language}\u00a0: {reason}",
+    "reason": {
+      "no_translation": "il n’existe pas encore de traduction dans cette langue.",
+      "translation_not_published": "la traduction n’a pas encore été relue par une personne.",
+      "translation_outdated": "la traduction n’est plus à jour."
+    },
+    "expired": "{field}\u00a0: l’information vérifiée a expiré le {date}. Nous ne l’affichons pas car elle a pu changer.",
+    "disputed": "{field}\u00a0: des informations contradictoires sont en cours d’examen. Nous ne les affichons pas tant que ce n’est pas résolu.",
+    "unknownHeading": "Pas encore de données vérifiées",
+    "unknownLead": "Il n’y a pas encore d’information vérifiée sur ces sujets. Cela ne signifie pas qu’elle n’existe pas\u00a0: cela signifie que nous ne l’avons pas encore confrontée à une source.",
+    "publishedOn": "Contenu publié le {date}."
   }
 }

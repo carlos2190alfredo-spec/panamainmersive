@@ -366,5 +366,52 @@
     "body": "Não encontramos o que você procurava. O link pode ter mudado.",
     "home": "Ir para o início",
     "destinations": "Ver os destinos"
+  },
+  "Content": {
+    "fields": {
+      "overview": {
+        "summary": "Resumo"
+      },
+      "access": {
+        "how_to_get_there": "Como chegar"
+      },
+      "restrictions": {
+        "entry_rules": "Regras de entrada",
+        "legal_status": "Situação legal"
+      },
+      "safety": {
+        "hazards": "Riscos e segurança"
+      },
+      "visit": {
+        "best_season": "Melhor época para visitar",
+        "accessibility": "Acessibilidade do local"
+      },
+      "facts": {
+        "elevation_m": "Altitude"
+      }
+    },
+    "verifiedOn": "Verificado em {date}",
+    "validUntil": "Válido até {date}",
+    "confidence": {
+      "label": "Confiança",
+      "low": "baixa",
+      "medium": "média",
+      "high": "alta"
+    },
+    "sources": "Fontes",
+    "sourceMeta": "Consultada em {date} · Licença: {license}",
+    "locator": "Onde, na fonte: {locator}",
+    "translationReviewed": "Tradução revisada por uma pessoa.",
+    "originalShown": "Exibindo o texto original em {language}: {reason}",
+    "reason": {
+      "no_translation": "ainda não existe uma tradução para este idioma.",
+      "translation_not_published": "a tradução ainda não foi revisada por uma pessoa.",
+      "translation_outdated": "a tradução está desatualizada."
+    },
+    "expired": "{field}: a informação verificada venceu em {date}. Não a exibimos porque pode ter mudado.",
+    "disputed": "{field}: há informações conflitantes em revisão. Não as exibimos até que isso seja resolvido.",
+    "unknownHeading": "Ainda sem dados verificados",
+    "unknownLead": "Ainda não há informação verificada sobre estes temas. Isso não significa que não exista: significa que ainda não a confirmamos com uma fonte.",
+    "publishedOn": "Conteúdo publicado em {date}."
   }
 }

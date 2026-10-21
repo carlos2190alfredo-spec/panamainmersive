@@ -60,6 +60,24 @@ Pipeline de importación controlada y reproducible; geometrías versionadas; Lay
 
 Nueve fichas con fuentes, traducciones, medios autorizados, SEO. **Sin rellenar huecos con afirmaciones inventadas.** Depende de L-01…L-03.
 
+**IMPLEMENTED y VERIFIED en local** (ver `docs/progress.md`, Entrega 4a y ADR-0019): el **modelo de contenido** (afirmaciones por campo con evidencia, vigencia y verificación humana; estado derivado; puertas en BD y dominio con paridad comprobada; traducciones sin fingir; publicación por instantánea revalidada) y la **ficha** que lo muestra. **No hay ninguna afirmación verificada real**: redactarlas y verificarlas es trabajo editorial humano con fuentes primarias (L-01…L-03).
+
+**Pendiente en esta fase**:
+
+| ID    | Tema                                                                                                                                                                                                                                      | Estado                                |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| F4-1  | **Validar con la persona responsable de la edición los umbrales de cada campo** (clases de fuente, nº de fuentes, antigüedad máxima, vigencia): son una propuesta de ingeniería (p. ej. hoy basta **una** fuente oficial para un peligro) | BLOCKED (decisión editorial)          |
+| F4-2  | **Interfaz o CLI de autoría y revisión** (cola de revisión, alta de fuentes, vista previa de las puertas). Hoy el contenido se carga por SQL                                                                                              | PENDING                               |
+| F4-3  | Decidir si se muestran **traducciones automáticas etiquetadas** del contenido de la ficha (hoy no, ni con aviso: solo original o traducción humana publicada)                                                                             | BLOCKED (decisión editorial)          |
+| F4-4  | **Cadencia de exportación y despliegue** (o disparador manual): una disputa o retirada en la BD no llega a la web hasta `pnpm content:export` + despliegue. Vigilar `snapshotAgeDays` en CI o en el build                                 | PENDING (antes de publicar seguridad) |
+| F4-5  | Criterio legal sobre **citar fuentes** (título y enlace sí; `excerpt` solo si la licencia lo permite) y política de derechos por fuente (`source_records`)                                                                                | BLOCKED (criterio legal)              |
+| F4-6  | Redactar y verificar las **primeras afirmaciones reales** (resumen de cada destino) con fuentes primarias oficiales; traducirlas y revisarlas por personas                                                                                | BLOCKED (L-01…L-03, L-02)             |
+| F4-7  | **Medios** (`media_assets`, `media_links`) y **historias** (`story_translations`) con derechos por activo                                                                                                                                 | PENDING                               |
+| F4-8  | Probar la **concurrencia** de la asignación de versión (dos borradores simultáneos del mismo campo) y medir el coste de las políticas RLS con más datos                                                                                   | DEFERRED                              |
+| F4-9  | `pnpm test:e2e:content` en CI: el job está definido y **no se ha podido ejecutar fuera de este entorno**                                                                                                                                  | IMPLEMENTED, no VERIFIED              |
+| F4-10 | Evaluar la ficha poblada con **lectores de pantalla reales y personas usuarias** (axe sí pasa)                                                                                                                                            | PENDING                               |
+| F4-11 | Más campos (horarios, tarifas, actividades, acceso a pie): cada uno exige registro + migración + umbrales + mensajes en cinco idiomas (la prueba de contrato lo vigila)                                                                   | DEFERRED                              |
+
 ### Fases 5–10
 
 Street imagery e historias · Empresas · Actividades · Rutas y viajes · IA · Offline/PWA. Ver `docs/PROMPT-MAESTRO.md` §22.

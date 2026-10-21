@@ -366,5 +366,52 @@
     "body": "We could not find what you were looking for. The link may have changed.",
     "home": "Go to the home page",
     "destinations": "See the destinations"
+  },
+  "Content": {
+    "fields": {
+      "overview": {
+        "summary": "Overview"
+      },
+      "access": {
+        "how_to_get_there": "How to get there"
+      },
+      "restrictions": {
+        "entry_rules": "Entry rules",
+        "legal_status": "Legal status"
+      },
+      "safety": {
+        "hazards": "Hazards and safety"
+      },
+      "visit": {
+        "best_season": "Best time to visit",
+        "accessibility": "Accessibility of the place"
+      },
+      "facts": {
+        "elevation_m": "Elevation"
+      }
+    },
+    "verifiedOn": "Verified on {date}",
+    "validUntil": "Valid until {date}",
+    "confidence": {
+      "label": "Confidence",
+      "low": "low",
+      "medium": "medium",
+      "high": "high"
+    },
+    "sources": "Sources",
+    "sourceMeta": "Consulted on {date} · License: {license}",
+    "locator": "Where in the source: {locator}",
+    "translationReviewed": "Translation reviewed by a person.",
+    "originalShown": "Showing the original text in {language}: {reason}",
+    "reason": {
+      "no_translation": "there is no translation into this language yet.",
+      "translation_not_published": "the translation has not been reviewed by a person yet.",
+      "translation_outdated": "the translation is out of date."
+    },
+    "expired": "{field}: the verified information expired on {date}. We do not show it because it may have changed.",
+    "disputed": "{field}: there is conflicting information under review. We do not show it until it is resolved.",
+    "unknownHeading": "No verified data yet",
+    "unknownLead": "There is no verified information on these topics yet. That does not mean it does not exist: it means we have not yet checked it against a source.",
+    "publishedOn": "Content published on {date}."
   }
 }
