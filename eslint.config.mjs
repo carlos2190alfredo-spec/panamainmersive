@@ -114,6 +114,7 @@ export default tseslint.config(
       'tests/**/*.ts',
       'tests/**/*.tsx',
       'e2e/**/*.ts',
+      'e2e-db/**/*.ts',
     ],
     rules: { 'no-console': 'off' },
   },

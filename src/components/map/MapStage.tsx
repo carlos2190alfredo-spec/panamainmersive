@@ -10,7 +10,9 @@ import { GLYPHS_URL_PATH } from '@/config/map-urls';
 import { publicEnv } from '@/config/public-env';
 import { WORKING_BBOX } from '@/domains/geography/bounds';
 import { fromMapView, toMapView } from '@/domains/geography/camera';
+import { candidatesFromFeatures } from '@/domains/geography/area-selection';
 import { clusterByScreenDistance, type Cluster } from '@/domains/geography/clustering';
+import { SELECTION_LAYER_IDS, pickableLayers, selectionFilter } from '@/domains/geography/layers';
 import {
   PALETTE_KEYS,
   buildMapStyle,
@@ -19,12 +21,25 @@ import {
   type LabelLanguage,
   type MapPalette,
 } from '@/domains/geography/map-style';
-import { DEFAULT_MAP_LAYERS, allowedLayers, formatCamera } from '@/domains/geography/map-url-state';
+import {
+  DEFAULT_MAP_LAYERS,
+  MAP_LAYER_IDS,
+  allowedLayers,
+  formatCamera,
+} from '@/domains/geography/map-url-state';
 import type { DestinationKey } from '@/domains/tourism/destinations';
 import styles from './MapStage.module.css';
+import {
+  markMapUnavailable,
+  publishVisibleAreas,
+  rememberAreas,
+  resetAreaStore,
+  useAreaStore,
+} from './area-selection-store';
 import type { MapDestination } from './map-data';
 import {
   readMapUrlState,
+  selectArea,
   selectDestination,
   useHydrated,
   useMapUrlState,
@@ -42,6 +57,8 @@ const LABELS_FROM_ZOOM = 10;
 const CLUSTER_RADIUS_PX = 52;
 const CAMERA_WRITE_DELAY_MS = 350;
 const FLY_DURATION_MS = 1600;
+/** Áreas que se listan como alternativa al clic (el total real se informa aparte: nunca se recorta en silencio). */
+const AREA_LIST_LIMIT = 30;
 const MAX_PITCH = 60;
 const MAX_PITCH_TERRAIN = 75;
 
@@ -128,13 +145,15 @@ export function MapStage({
   const layers = allowedLayers(state.layers ?? DEFAULT_MAP_LAYERS, terrainAllowed);
   const layersKey = layers.join(',');
   const cameraText = state.camera ? formatCamera(state.camera) : null;
+  const selectedAreaId = state.area ?? null;
+  const { frameRequest } = useAreaStore();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const lastWrittenRef = useRef<string | null>(null);
   const appliedDestinationRef = useRef<DestinationKey | undefined>(undefined);
   const destinationsRef = useRef(destinations);
-  const styleInputsRef = useRef({ language, layers });
+  const styleInputsRef = useRef({ language, layers, selectedAreaId, locale });
   const markerStoreRef = useRef(new Map<string, { marker: MapLibreMarker; host: HTMLElement }>());
   const [status, setStatus] = useState<Status>(blocked ? 'blocked' : 'loading');
   const [attempt, setAttempt] = useState(0);
@@ -146,7 +165,7 @@ export function MapStage({
 
   useEffect(() => {
     destinationsRef.current = destinations;
-    styleInputsRef.current = { language, layers };
+    styleInputsRef.current = { language, layers, selectedAreaId, locale };
   });
 
   // Tema claro/oscuro: se releen los tokens y se reaplica el estilo.
@@ -213,6 +232,7 @@ export function MapStage({
           buildMapStyle({
             language: styleInputsRef.current.language,
             layers: styleInputsRef.current.layers,
+            selectedAreaId: styleInputsRef.current.selectedAreaId,
             palette: readPalette(),
             basemapUrl: archiveUrl,
             glyphsUrl: new URL(GLYPHS_URL_PATH, window.location.href).href
@@ -340,8 +360,65 @@ export function MapStage({
           recluster();
           setStatus('ready');
         });
+        // Selección de áreas: capas de MapLibre sobre las que se consulta, solo las que existen ahora mismo
+        // (el registro dice cuáles admiten clic; si la capa está apagada no hay nada que elegir).
+        const pickingNow = () => {
+          const picking = pickableLayers(styleInputsRef.current.layers)[0];
+          const ids = picking?.styleLayerIds.filter((id) => current.getLayer(id) !== undefined);
+          return picking && ids && ids.length > 0 ? { picking, ids } : null;
+        };
+        // La lista por teclado: las áreas dibujadas en la vista actual (alternativa al clic).
+        const publishAreas = () => {
+          if (disposed) return;
+          const now = pickingNow();
+          if (!now) {
+            publishVisibleAreas([], 0);
+            return;
+          }
+          const features = current.queryRenderedFeatures({ layers: now.ids });
+          const { items, total } = candidatesFromFeatures(
+            features,
+            now.picking.idProperty,
+            styleInputsRef.current.locale,
+            AREA_LIST_LIMIT,
+          );
+          publishVisibleAreas(items, total);
+        };
+        // Clic: solo si cae sobre el lienzo (un clic en un marcador de destino o en un control no es una
+        // selección de área). Con áreas superpuestas se elige la de más arriba; las demás, desde la lista.
+        current.on('click', (event) => {
+          if (event.originalEvent.target !== current.getCanvas()) return;
+          const now = pickingNow();
+          if (!now) return;
+          const [top] = current.queryRenderedFeatures(event.point, { layers: now.ids });
+          const [candidate] = top
+            ? candidatesFromFeatures(
+                [top],
+                now.picking.idProperty,
+                styleInputsRef.current.locale,
+                1,
+              ).items
+            : [];
+          if (!candidate) return;
+          rememberAreas([candidate]);
+          selectArea(candidate.id);
+        });
+        const canvas = current.getCanvas();
+        for (const picking of pickableLayers([...MAP_LAYER_IDS])) {
+          for (const id of picking.styleLayerIds) {
+            current.on('mouseenter', id, () => {
+              canvas.style.cursor = 'pointer';
+            });
+            current.on('mouseleave', id, () => {
+              canvas.style.cursor = '';
+            });
+          }
+        }
         current.on('resize', recluster);
-        current.on('idle', updateData);
+        current.on('idle', () => {
+          updateData();
+          publishAreas();
+        });
         current.on('moveend', () => {
           recluster();
           window.clearTimeout(debounce);
@@ -386,6 +463,7 @@ export function MapStage({
       store.clear();
       map?.remove();
       mapRef.current = null;
+      resetAreaStore();
       removeProtocol?.();
     };
     // `t` cambia de identidad entre renders pero el idioma es fijo por página; el mapa no debe recrearse por eso.
@@ -426,6 +504,8 @@ export function MapStage({
         buildMapStyle({
           language,
           layers,
+          // La selección también va aquí: al cambiar idioma, tema o capas el resalte no se pierde.
+          selectedAreaId: styleInputsRef.current.selectedAreaId,
           palette: readPalette(),
           basemapUrl: new URL(publicEnv.basemapUrl, window.location.href).href,
           glyphsUrl: new URL(GLYPHS_URL_PATH, window.location.href).href
@@ -445,11 +525,47 @@ export function MapStage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layersKey, language, paletteVersion, status]);
 
+  // Si el mapa no se puede mostrar, la lista de áreas lo dice (no se queda «esperando» para siempre).
+  useEffect(() => {
+    if (
+      status === 'unsupported' ||
+      status === 'error' ||
+      status === 'dataMissing' ||
+      status === 'blocked'
+    ) {
+      markMapUnavailable();
+    }
+  }, [status]);
+
+  // Selección: solo cambia el filtro del resalte (no se reaplica el estilo entero).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || status !== 'ready') return;
+    for (const id of SELECTION_LAYER_IDS) {
+      if (map.getLayer(id)) map.setFilter(id, selectionFilter(selectedAreaId));
+    }
+  }, [selectedAreaId, status, layersKey]);
+
+  // La ficha pide mostrar el área (no se mueve la cámara sola).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || status !== 'ready' || !frameRequest) return;
+    const [west, south, east, north] = frameRequest.bounds;
+    map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      { padding: 48, maxZoom: 12, duration: prefersReducedMotion() ? 0 : FLY_DURATION_MS },
+    );
+  }, [frameRequest, status]);
+
   return (
     <div
       className={styles.stage}
       data-map-status={status}
       data-map-layers={layersKey}
+      data-selected-area={selectedAreaId ?? undefined}
       data-map-terrain-failed={terrainFailed ? 'true' : undefined}
     >
       <p id="map-keyboard-help" className="visually-hidden">

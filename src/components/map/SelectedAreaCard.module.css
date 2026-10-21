@@ -1,0 +1,101 @@
+.region {
+  margin-block-end: var(--space-4);
+}
+
+.card {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.name {
+  margin-block: var(--space-1);
+  font-size: var(--text-l);
+  overflow-wrap: anywhere;
+}
+
+.kind,
+.badge,
+.note {
+  margin-block: var(--space-2) 0;
+}
+
+.badge {
+  font-weight: 600;
+}
+
+.note {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.facts {
+  margin: var(--space-3) 0 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.fact {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.fact dt {
+  font-weight: 700;
+}
+
+.fact dd {
+  margin: 0;
+  display: grid;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.method {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-block-start: var(--space-4);
+}
+
+.button,
+.clear {
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-m);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border: 1px solid var(--color-accent);
+  font-weight: 700;
+}
+
+.clear {
+  background: transparent;
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-strong);
+}
+
+.clear:hover {
+  background: var(--color-sunken);
+}

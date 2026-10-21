@@ -113,6 +113,24 @@ export async function findAreaById(
   return rows[0] ?? null;
 }
 
+/**
+ * Una área por su ID de Overture (lo que llevan las teselas en `ovid`); el índice único de `external_ref` la
+ * resuelve. La identidad es el ID, nunca el nombre.
+ */
+export async function findAreaByOvertureId(
+  q: Queryable,
+  input: { overtureId: string; zoom: number },
+): Promise<AreaRow | null> {
+  const { rows } = await q.query<AreaRow>(
+    `select ${SELECT_COLUMNS},
+            ${geometryExpression('$2', '$3')} as geometry_json
+       ${FROM}
+      where ${CURRENT} and a.external_ref ->> 'overture_id' = $1::text`,
+    [input.overtureId, simplifyToleranceDegrees(input.zoom), coordinateDecimals(input.zoom)],
+  );
+  return rows[0] ?? null;
+}
+
 export async function namesForAreas(
   q: Queryable,
   areaIds: readonly string[],

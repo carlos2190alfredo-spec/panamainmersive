@@ -39,17 +39,21 @@ Ver `docs/progress.md` para el estado exacto de cada elemento.
 
 Pipeline de importación controlada y reproducible; geometrías versionadas; Layer Engine y Legend Engine; clustering; consultas espaciales con API acotada.
 
-| ID   | Tarea                                                                                                                                                    | Estado                    |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| F3-1 | Ingesta controlada de áreas a PostGIS (ADR-0015)                                                                                                         | **VERIFIED** (F3.a)       |
-| F3-2 | API espacial acotada (`/api/spatial/areas`, `/areas/[id]`, `/locate`): validación pura, rol `anon`, tiempo máximo, simplificación por zoom (ADR-0016)    | **VERIFIED** (F3.b)       |
-| F3-3 | Layer Engine y Legend Engine declarativos; siete capas seleccionables (límites, ríos, cobertura, lugares, áreas protegidas y relieve) (ADR-0017)         | **VERIFIED** (F3.c)       |
-| F3-4 | Selección de área en el mapa + lista equivalente por teclado + ficha con fuente, método de superficie y «sin datos verificados»                          | PENDING (F3.d)            |
-| F3-5 | Importar y publicar áreas (requiere L-01) · límites oficiales (requiere L-03) · ingesta incremental entre _releases_ · ingesta en CI sin depender de red | BLOCKED / DEFERRED        |
-| F3-6 | Limitación de tasa de la API espacial (cortafuegos/CDN) y rol de BD dedicado, miembro solo de `anon`, antes de publicar                                  | DEFERRED (con despliegue) |
-| F3-7 | Medir latencia/carga de la API y probarla con _pooler_/base remota                                                                                       | DEFERRED (con despliegue) |
-| F3-8 | Leyenda sensible al zoom (el registro ya conoce el `minzoom` de cada capa)                                                                               | DEFERRED                  |
-| F3-9 | Capas editables en la BD (`layers`, `style_versions`) y origen `geojson` para capas servidas por la API espacial                                         | DEFERRED                  |
+| ID    | Tarea                                                                                                                                                                | Estado                    |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| F3-1  | Ingesta controlada de áreas a PostGIS (ADR-0015)                                                                                                                     | **VERIFIED** (F3.a)       |
+| F3-2  | API espacial acotada (`/api/spatial/areas`, `/areas/[id]`, `/locate`): validación pura, rol `anon`, tiempo máximo, simplificación por zoom (ADR-0016)                | **VERIFIED** (F3.b)       |
+| F3-3  | Layer Engine y Legend Engine declarativos; siete capas seleccionables (límites, ríos, cobertura, lugares, áreas protegidas y relieve) (ADR-0017)                     | **VERIFIED** (F3.c)       |
+| F3-4  | Selección de área en el mapa (clic + lista por teclado equivalente) + ficha con fuente, método de superficie y «sin datos verificados» (ADR-0018)                    | **VERIFIED** (F3.d)       |
+| F3-5  | Importar y publicar áreas (requiere L-01) · límites oficiales (requiere L-03) · ingesta incremental entre _releases_ · ingesta en CI sin depender de red             | BLOCKED / DEFERRED        |
+| F3-6  | Limitación de tasa de la API espacial (cortafuegos/CDN) y rol de BD dedicado, miembro solo de `anon`, antes de publicar                                              | DEFERRED (con despliegue) |
+| F3-7  | Medir latencia/carga de la API y probarla con _pooler_/base remota                                                                                                   | DEFERRED (con despliegue) |
+| F3-8  | Leyenda sensible al zoom (el registro ya conoce el `minzoom` de cada capa)                                                                                           | DEFERRED                  |
+| F3-9  | Capas editables en la BD (`layers`, `style_versions`) y origen `geojson` para capas servidas por la API espacial                                                     | DEFERRED                  |
+| F3-10 | **Riesgo**: margen de ≈ 4,6 KB en el JS inicial de Explorar (205,4 de 210 KB): diferir el panel o recalibrar el presupuesto con evidencia antes de la próxima mejora | OPEN                      |
+| F3-11 | Desambiguar áreas superpuestas (por tamaño, con BD) o con un selector explícito; hoy el clic elige la de más arriba                                                  | DEFERRED                  |
+| F3-12 | `pnpm test:e2e:db` en CI (necesita publicar o generar los artefactos de datos)                                                                                       | DEFERRED                  |
+| F3-13 | Evaluar la lista y la ficha con lectores de pantalla reales y personas usuarias                                                                                      | PENDING                   |
 
 ### Fase 4 — Destinos
 

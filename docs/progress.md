@@ -6,13 +6,13 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                     | Notas                                                                 |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                 | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                    | Detalle abajo                                                         |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                   | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
-| 3 — GIS                   | **EN CURSO**: F3.a (ingesta), F3.b (API espacial) y F3.c (capas y leyenda) **VERIFIED**; F3.d–e pendientes | Entregas 3, 3b y 3c (abajo)                                           |
-| 4–10                      | PENDIENTE                                                                                                  | Ver `docs/backlog.md`                                                 |
+| Fase                      | Estado                                                                                                                 | Notas                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                             | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                | Detalle abajo                                                         |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                               | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
+| 3 — GIS                   | **EN CURSO**: F3.a (ingesta), F3.b (API), F3.c (capas y leyenda) y F3.d (selección de áreas) **VERIFIED**; F3.e cierre | Entregas 3, 3b, 3c y 3d (abajo)                                       |
+| 4–10                      | PENDIENTE                                                                                                              | Ver `docs/backlog.md`                                                 |
 
 ## Entrega 1 — Foundation
 
@@ -275,3 +275,56 @@ pnpm test && SITE_ENV=development pnpm build && pnpm test:e2e
 ### Pendiente de la Fase 3
 
 F3.d selección de áreas en el mapa (picking sobre `protected-fill` + lista equivalente por teclado + ficha con fuente, método de superficie y «sin datos verificados»; necesita resolver el ID de Overture de la tesela contra la BD) · F3.e cierre (documentación, puertas completas, commit). Detalle en `docs/backlog.md`.
+
+## Entrega 3d — Fase 3: selección de áreas en el mapa (F3.d)
+
+### Qué funciona (VERIFIED, 2026-10-21)
+
+- **Elegir un área protegida** por **clic** en el mapa o desde una **lista por teclado equivalente** («Áreas protegidas en esta vista», botones con `aria-pressed`, ≥ 44 px). La selección vive en la URL (`a=<ID de Overture>`, validado; nunca un nombre) y se **resalta** con un contorno sólido grueso con halo (no solo color).
+- **Ficha en dos niveles de verdad** (ADR-0018): siempre lo que lleva el mapa (nombre local; «derivado de OpenStreetMap, no oficial») y «no hay datos verificados de actividades, restricciones ni cómo llegar»; **con BD**, además: superficie **con su método**, versión de la geometría, fuente, versión, fecha, licencia (enlace `https`) y derechos. Estados honestos: cargando · no disponible · bloqueada por derechos · sin ficha publicada.
+- **Endpoint nuevo** `GET /api/spatial/areas/by-overture/{ovid}` (las teselas llevan el ID de Overture); «Mostrar el área en el mapa» encuadra a petición.
+- **Suite E2E con base de datos** (`pnpm test:e2e:db`): PostgreSQL temporal con las **137 áreas reales** importadas y publicadas (y una despublicada) detrás de `next start`.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm dev                       # /es/explorar?d=coiba → haz clic en el parque, o usa la lista «Áreas protegidas en esta vista»
+# Con datos de BD (docs/setup.md §7, §7.1):  DATABASE_URL=postgresql://… pnpm dev   → la ficha muestra superficie, fuente y licencia
+SITE_ENV=development pnpm build && pnpm test:e2e && pnpm test:e2e:db
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-21)
+
+| Comando                                        | Resultado                                                                                                                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Sin errores                                                                                                                                                               |
+| `pnpm test`                                    | 29 ficheros / **521** (+67)                                                                                                                                               |
+| `pnpm test:integration`                        | 10 ficheros / **145** (+3: búsqueda por ID de Overture con RLS y derechos); **0 clústeres huérfanos** al terminar                                                         |
+| `pnpm test:e2e`                                | **160** (127 escritorio + 33 móvil; +13)                                                                                                                                  |
+| `pnpm test:e2e:db`                             | **7** con PostgreSQL+PostGIS temporal y datos reales: ficha contra la API, enlace profundo, encuadre, despublicada = sin ficha, API por HTTP real (ETag/304), inglés, axe |
+| `pnpm check:bundle`                            | Explorar **205,4 KB** (+4,0; margen ≈ 4,6 KB), mapa diferido 460,7 KB: dentro de presupuesto                                                                              |
+| Mutaciones                                     | Se rompió a propósito y fallaron pruebas: clic sin la guarda del lienzo (E2E), título «sin nombre» sin saberlo (E2E), token CSS inexistente (unitaria)                    |
+| Revisión visual                                | Capturas del mapa con el área resaltada y la ficha (clic real sobre el Parque Nacional Coiba)                                                                             |
+
+### Lo que se encontró y cambió (honestamente)
+
+- **zod 4 en el cliente violaba la CSP** (`script-src eval`, sin error de consola): lo cazó `watchPage` en los E2E. El validador de la respuesta se reescribió a mano (E-51).
+- Mi primera ficha decía «sin nombre en la fuente» cuando **solo no se conocía** el nombre (enlace profundo): corregido a un título neutro y probado.
+- Usé un **token CSS que no existe** (`--color-accent-contrast`): el navegador lo ignora en silencio. Añadí una guarda (`css-tokens.test.ts`) y comprobé que habría fallado.
+- **Fuga en mi infraestructura de pruebas**: 32 PostgreSQL huérfanos y 2,3 GB en `/tmp` tras ejecuciones repetidas de la integración (el `teardown` con nombre junto a un `setup` por defecto no se ejecutaba en Vitest). Corregido en la raíz, con limpieza al salir (probado matando una ejecución con SIGTERM) y medida antes/después.
+- Los E2E sin BD ven en la consola el 503 de la API (es el estado probado): el test exige que sea **el único** error, no los ignora.
+- El orquestador del E2E con BD no fijaba `search_path` (PostGIS vive en `extensions`): corregido.
+- Textos de F3.c: alineé el portugués a la variante brasileña ya usada y el francés al espacio duro; un texto idéntico en pt/es («Mostrando {shown} de {total}.») entró como excepción **justificada** de la heurística de traducciones, sin relajar el umbral.
+- Diferir el componente de datos **no** redujo la medición total (205,2 → 205,4 KB), aunque su _chunk_ no está en el HTML inicial: lo dejé (es correcto y no cuesta) y lo documenté tal cual.
+
+### Qué no pudo verificarse
+
+- **Lectores de pantalla reales y personas usuarias** con la lista y la ficha (axe y teclado sí).
+- **Áreas superpuestas**: el clic elige la de más arriba (no necesariamente la más específica); la lista es la vía completa.
+- **La ficha con una BD remota o con _pooler_**, la **latencia** de la ficha y el coste de consultar las entidades en cada `idle`.
+- **Producción**: mientras los derechos sean `provisional` el mapa se bloquea y la API responde 403; la ficha **no** se ha visto en ese entorno.
+- `pnpm test:e2e:db` **no está en CI** (necesita artefactos de datos gitignorados).
+
+### Pendiente de la Fase 3
+
+F3.e: cierre (estado final de la fase, revisión de lo pendiente y entrega). Riesgo abierto: margen de ≈ 4,6 KB en el JS inicial de Explorar (F3-10).

@@ -97,3 +97,7 @@ curl 'http://localhost:3000/api/spatial/areas?bbox=-81,7.5,-77,9.5&zoom=6&layers
 
 - Las áreas importadas **no son públicas** (`is_public = false`): la API no las devuelve hasta que alguien las publique (decisión editorial) **y** la política de derechos lo permita. En producción con la política `provisional` responde `403 rights_blocked`.
 - **Pendiente con el despliegue** (no hecho; no hay base remota): (1) crear un rol de login **dedicado** miembro solo de `anon` y usar su cadena en `DATABASE_URL` en lugar del propietario; (2) usar un _pooler_ de conexiones si el entorno es sin servidor (el pool es de 5 por proceso); (3) limitación de tasa en la infraestructura. Las migraciones **no** crean roles ni contraseñas.
+
+### 7.2 E2E con base de datos (`pnpm test:e2e:db`)
+
+Prueba la **ficha de un área con datos reales** de punta a punta. Necesita: el build (`SITE_ENV=development pnpm build`), el mapa base (`pnpm data:build`, §6), los artefactos de ingesta (`pnpm data:ingest`, §7) y los binarios de PostgreSQL 16 + PostGIS (los mismos que la integración). El script `scripts/e2e-db.ts` levanta un clúster **temporal** (socket Unix, directorio propio), migra, importa y **publica** las áreas, despublica una a propósito, arranca `next start` apuntando a esa BD (puerto `E2E_DB_PORT`, 3200 por defecto), ejecuta Playwright con `playwright.db.config.ts` y lo destruye todo al terminar (también con Ctrl-C). Si falta algo, **se omite y lo dice** (no cuenta como «pasó»). **No toca ninguna base remota.**

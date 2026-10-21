@@ -3,6 +3,7 @@ import type { RightsPolicy } from '@/domains/geography/rights';
 import type { AreaRow } from '@/domains/geography/spatial-response';
 import { DatabaseUnavailableError, type Queryable, type RunAnon } from '@/server/spatial/db';
 import {
+  handleAreaByOvertureId,
   handleAreaDetail,
   handleAreas,
   handleLocate,
@@ -346,5 +347,54 @@ describe('derechos por capa (layerAccess)', () => {
     ];
     const access = layerAccess({ siteEnv: 'development', policies: partial }, both, registry);
     expect(access.blocked).toEqual([{ layer: 'protected_areas', reason: 'action-not-allowed' }]);
+  });
+});
+
+describe('GET /api/spatial/areas/by-overture/[ovid]', () => {
+  const OVID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+  it('200: busca por el ID de Overture (el `ovid` de las teselas) con consulta parametrizada', async () => {
+    const log: Recorded[] = [];
+    const res = await handleAreaByOvertureId(
+      get(`/api/spatial/areas/by-overture/${OVID.toUpperCase()}?locale=en`),
+      OVID.toUpperCase(),
+      deps({ runAnon: fakeRun([areaRow()], log) }),
+    );
+    expect(res.status).toBe(200);
+    const main = log.find((l) => l.text.includes("external_ref ->> 'overture_id'"));
+    expect(main).toBeDefined();
+    // Normaliza a minúsculas y el valor va como PARÁMETRO, nunca en el SQL
+    expect(main?.values?.[0]).toBe(OVID);
+    expect(main?.text).not.toContain(OVID);
+  });
+
+  it('400 con códigos de máquina si no es un UUID: se nombra el parámetro `ovid`; nunca se busca por nombre', async () => {
+    const res = await handleAreaByOvertureId(
+      get('/api/spatial/areas/by-overture/Parque%20Nacional%20Coiba'),
+      'Parque Nacional Coiba',
+      deps({ runAnon: neverCalled }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: { code: 'invalid_parameters', issues: [{ field: 'ovid', code: 'id.format' }] },
+    });
+  });
+
+  it('404 idéntico para inexistente y no visible; 403 en producción con política provisional sin tocar la BD', async () => {
+    const missing = await handleAreaByOvertureId(get('/x'), OVID, deps({ runAnon: fakeRun([]) }));
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: { code: 'not_found' } });
+    const blocked = await handleAreaByOvertureId(
+      get('/x'),
+      OVID,
+      deps({ siteEnv: 'production', runAnon: neverCalled }),
+    );
+    expect(blocked.status).toBe(403);
+  });
+
+  it('la ficha por ID interno y por ID de Overture devuelven lo mismo', async () => {
+    const a = await handleAreaDetail(get(`/x/${ID}`), ID, deps());
+    const b = await handleAreaByOvertureId(get(`/x/${ID}`), ID, deps());
+    expect(await a.text()).toBe(await b.text());
   });
 });

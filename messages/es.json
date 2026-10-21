@@ -178,6 +178,51 @@
     "blocked": {
       "title": "El mapa está desactivado en producción",
       "body": "Los derechos de uso de los datos del mapa todavía no se han verificado en sus fuentes primarias. La lista de destinos sigue disponible."
+    },
+    "area": {
+      "eyebrow": "Área seleccionada",
+      "unnamed": "Área protegida sin nombre en la fuente",
+      "kind": {
+        "protected_area": "Área protegida",
+        "other": "Área"
+      },
+      "sourceClass": {
+        "official": "Geometría oficial",
+        "osm_derived": "Geometría derivada de OpenStreetMap (no oficial)",
+        "editorial": "Geometría editorial (no oficial)"
+      },
+      "tileNote": "El mapa base deriva de OpenStreetMap vía Overture; no es un límite oficial.",
+      "nameLocal": "Nombre local de la fuente, sin traducir.",
+      "nameCommon": "Nombre de la fuente en este idioma.",
+      "nameEditorial": "Nombre editorial.",
+      "areaHeading": "Superficie",
+      "areaMethod": "Calculada sobre la geometría original con {method}.",
+      "areaUnknown": "Superficie no disponible: no se conoce el método de cálculo.",
+      "geometryVersion": "Versión de la geometría: {version}",
+      "sourceHeading": "Fuente de la geometría",
+      "sourceLine": "{institution} · versión {version} · obtenida el {date}",
+      "license": "Licencia: {license}",
+      "licenseLink": "Texto de la licencia",
+      "rightsProvisional": "Derechos: provisionales (aún no leídos en la fuente primaria).",
+      "rightsVerified": "Derechos: verificados.",
+      "noVerifiedData": "No hay datos verificados de actividades, restricciones de acceso ni cómo llegar para esta área.",
+      "loading": "Cargando la ficha…",
+      "unavailable": "La ficha ampliada no está disponible ahora. Se muestra solo lo que lleva el mapa.",
+      "blocked": "La ficha está bloqueada hasta verificar los derechos de estos datos.",
+      "notFound": "Esta área no tiene ficha publicada.",
+      "frame": "Mostrar el área en el mapa",
+      "clear": "Quitar la selección del área",
+      "untitled": "Área protegida seleccionada"
+    },
+    "inView": {
+      "heading": "Áreas protegidas en esta vista",
+      "description": "Esta lista es la alternativa al clic en el mapa: contiene las áreas dibujadas en la vista actual.",
+      "count": "Mostrando {shown} de {total}.",
+      "zoomIn": "Acerca el mapa para ver menos áreas.",
+      "empty": "No hay áreas protegidas en esta vista.",
+      "layerOff": "Activa la capa «Áreas protegidas» para elegir áreas.",
+      "waiting": "Esperando a que el mapa termine de dibujar.",
+      "mapUnavailable": "El mapa no está disponible, así que no hay áreas que listar."
     }
   },
   "Destinations": {

@@ -11,6 +11,7 @@ import {
   layerDefinition,
   layerMessageKeys,
   legendFor,
+  pickableLayers,
   resolveLegend,
   ruleLayerIds,
   ruleLayers,
@@ -186,6 +187,78 @@ describe('motor de estilo', () => {
     expect(JSON.stringify(styleLayersFor([...SELECTABLE_LAYER_IDS], ctx))).toBe(
       JSON.stringify(styleLayersFor([...SELECTABLE_LAYER_IDS], ctx)),
     );
+  });
+});
+
+describe('selección de un área (resalte y clic)', () => {
+  const ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+  const OTHER = '4f2504e0-4f89-41d3-9a0c-0305e82c3301';
+  const withSelection = (selected: readonly SelectableLayerId[], id: string | null) =>
+    styleLayersFor(selected, { ...ctx, selectedAreaId: id });
+  const filterOf = (layers: ReturnType<typeof styleLayersFor>, id: string) =>
+    (layers.find((l) => l.id === id) as { filter?: unknown } | undefined)?.filter;
+
+  it('sin selección el resalte existe pero su filtro no coincide con ningún ID real', () => {
+    const layers = withSelection(['protectedAreas'], null);
+    expect(filterOf(layers, 'protected-selected')).toEqual(['==', ['get', 'ovid'], '']);
+    expect(filterOf(layers, 'protected-selected-halo')).toEqual(['==', ['get', 'ovid'], '']);
+  });
+
+  it('con selección el filtro es el ID, y solo cambia ESE filtro (el diff de estilo no recrea nada más)', () => {
+    const a = withSelection(['protectedAreas'], ID);
+    const b = withSelection(['protectedAreas'], OTHER);
+    expect(filterOf(a, 'protected-selected')).toEqual(['==', ['get', 'ovid'], ID]);
+    expect(a.map((l) => l.id)).toEqual(b.map((l) => l.id));
+    const differing = a
+      .filter((l, i) => JSON.stringify(l) !== JSON.stringify(b[i]))
+      .map((l) => l.id);
+    expect(differing).toEqual(['protected-selected-halo', 'protected-selected']);
+  });
+
+  it('el contorno seleccionado es SÓLIDO y más grueso que el borde discontinuo (no depende solo del color)', () => {
+    const layers = withSelection(['protectedAreas'], ID);
+    const paint = (id: string) =>
+      (layers.find((l) => l.id === id) as { paint?: Record<string, unknown> } | undefined)?.paint;
+    expect(paint('protected-selected')?.['line-dasharray']).toBeUndefined();
+    expect(Number(paint('protected-selected')?.['line-width'])).toBeGreaterThan(
+      Number(paint('protected-line')?.['line-width']) * 2,
+    );
+    expect(Number(paint('protected-selected-halo')?.['line-width'])).toBeGreaterThan(
+      Number(paint('protected-selected')?.['line-width']),
+    );
+  });
+
+  it('se dibuja entre el borde de las áreas y sus etiquetas, y desaparece con la capa apagada', () => {
+    const on = withSelection(['protectedAreas'], ID).map((l) => l.id);
+    expect(on.indexOf('protected-line')).toBeLessThan(on.indexOf('protected-selected-halo'));
+    expect(on.indexOf('protected-selected')).toBeLessThan(on.indexOf('protected-label'));
+    expect(
+      withSelection([], ID)
+        .map((l) => l.id)
+        .filter((id) => id.startsWith('protected')),
+    ).toEqual([]);
+  });
+
+  it('el estilo con selección sigue siendo válido', () => {
+    const style = buildMapStyle({
+      language: 'es',
+      palette,
+      basemapUrl: '/data/panama-basemap.pmtiles',
+      glyphsUrl: '/map-assets/glyphs/{fontstack}/{range}.pbf',
+      terrainTilesUrl: 'https://tiles.example/terrarium/{z}/{x}/{y}.png',
+      layers: [...DEFAULT_LAYER_IDS],
+      selectedAreaId: ID,
+    });
+    expect(validateStyleMin(style).map((e) => e.message)).toEqual([]);
+  });
+
+  it('solo las capas ACTIVAS con selección declarada son seleccionables por clic', () => {
+    expect(pickableLayers(['protectedAreas']).map((p) => p.styleLayerIds)).toEqual([
+      ['protected-fill'],
+    ]);
+    expect(pickableLayers(['protectedAreas']).map((p) => p.idProperty)).toEqual(['ovid']);
+    expect(pickableLayers(['boundaries', 'places', 'hillshade'])).toEqual([]);
+    expect(pickableLayers([])).toEqual([]);
   });
 });
 

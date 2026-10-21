@@ -33,6 +33,8 @@ export interface MapStyleOptions {
   readonly terrainTilesUrl: string;
   /** Capas SELECCIONABLES activas (las base están siempre). */
   readonly layers: readonly MapLayerId[];
+  /** ID de Overture del área seleccionada: se resalta en el mapa. */
+  readonly selectedAreaId?: string | null;
 }
 
 export function usesTerrain(layers: readonly MapLayerId[]): boolean {
@@ -40,7 +42,7 @@ export function usesTerrain(layers: readonly MapLayerId[]): boolean {
 }
 
 export function buildMapStyle(options: MapStyleOptions): StyleSpecification {
-  const { palette, language, layers } = options;
+  const { palette, language, layers, selectedAreaId } = options;
 
   const sources: Record<string, SourceSpecification> = {
     [BASEMAP_SOURCE_ID]: {
@@ -66,7 +68,7 @@ export function buildMapStyle(options: MapStyleOptions): StyleSpecification {
     glyphs: options.glyphsUrl,
     projection: { type: 'mercator' },
     sources,
-    layers: styleLayersFor(layers, { palette, language }),
+    layers: styleLayersFor(layers, { palette, language, selectedAreaId: selectedAreaId ?? null }),
   };
   const terrain = terrainFor(layers);
   if (terrain) style.terrain = { source: terrain.source, exaggeration: terrain.exaggeration };

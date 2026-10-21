@@ -7,14 +7,30 @@ import {
   createRunAnon,
   type Queryable,
 } from '@/server/spatial/db';
-import { handleAreaDetail, handleAreas, handleLocate } from '@/server/spatial/handlers';
-import { findAreaById, findAreas, locateAreas, namesForAreas } from '@/server/spatial/repository';
+import {
+  handleAreaByOvertureId,
+  handleAreaDetail,
+  handleAreas,
+  handleLocate,
+} from '@/server/spatial/handlers';
+import {
+  findAreaById,
+  findAreaByOvertureId,
+  findAreas,
+  locateAreas,
+  namesForAreas,
+} from '@/server/spatial/repository';
 import { createTestDb, type TestDb } from './helpers';
 import { seedWorld, square, type World } from './world';
 
 let db: TestDb;
 let w: World;
 const id: Record<string, string> = {};
+/** IDs de Overture de prueba (lo que llevan las teselas en `ovid`). */
+const OVID = {
+  P1: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+  P5: '5f2504e0-4f89-41d3-9a0c-0305e82c3305',
+} as const;
 
 const anon = <T>(fn: (q: Queryable) => Promise<T>) => db.as('anon', null, fn);
 const WHOLE = { west: -85, south: 5, east: -75, north: 11 };
@@ -36,10 +52,11 @@ async function addArea(
   isPublic: boolean,
   wkt: string,
   names: { locale: string | null; name: string; provenance: string }[] = [],
+  overtureId?: string,
 ): Promise<void> {
   const { rows } = await db.owner.query<{ id: string }>(
-    "insert into public.geographic_areas (kind, source_class, is_public) values ($1, 'osm_derived', $2) returning id",
-    [kind, isPublic],
+    "insert into public.geographic_areas (kind, source_class, is_public, external_ref) values ($1, 'osm_derived', $2, $3::jsonb) returning id",
+    [kind, isPublic, JSON.stringify(overtureId ? { overture_id: overtureId } : {})],
   );
   const areaId = rows[0]?.id ?? '';
   id[key] = areaId;
@@ -59,14 +76,26 @@ beforeAll(async () => {
   db = await createTestDb();
   w = await seedWorld(db);
   // P1: grande y pública, con nombre local y en inglés. P2: pequeña DENTRO de P1. P5: privada DENTRO de P1.
-  await addArea('P1', 'protected_area', true, square(-80.5, 8.0, 1.0), [
-    { locale: null, name: 'Parque Uno', provenance: 'source_local' },
-    { locale: 'en', name: 'Park One', provenance: 'source_common' },
-  ]);
+  await addArea(
+    'P1',
+    'protected_area',
+    true,
+    square(-80.5, 8.0, 1.0),
+    [
+      { locale: null, name: 'Parque Uno', provenance: 'source_local' },
+      { locale: 'en', name: 'Park One', provenance: 'source_common' },
+    ],
+    OVID.P1,
+  );
   await addArea('P2', 'protected_area', true, square(-80.2, 8.3, 0.05));
-  await addArea('P5', 'protected_area', false, square(-80.4, 8.1, 0.1), [
-    { locale: null, name: 'Privada', provenance: 'source_local' },
-  ]);
+  await addArea(
+    'P5',
+    'protected_area',
+    false,
+    square(-80.4, 8.1, 0.1),
+    [{ locale: null, name: 'Privada', provenance: 'source_local' }],
+    OVID.P5,
+  );
   // P3: círculo con ~1 200 vértices (para comprobar la simplificación).
   await addArea(
     'P3',
@@ -258,6 +287,31 @@ describe('findAreaById y nombres', () => {
   });
 });
 
+describe('findAreaByOvertureId (lo que llevan las teselas)', () => {
+  it('resuelve el área pública por su ID de Overture; la privada y la inexistente son indistinguibles (null)', async () => {
+    const row = await anon((q) => findAreaByOvertureId(q, { overtureId: OVID.P1, zoom: 10 }));
+    expect(row?.id).toBe(id.P1);
+    expect(row?.geometry_json).toContain('Polygon');
+    expect(row?.source_key).toBe('overture');
+    // P5 existe pero NO es pública: la RLS la oculta igual que a lo inexistente
+    expect(
+      await anon((q) => findAreaByOvertureId(q, { overtureId: OVID.P5, zoom: 10 })),
+    ).toBeNull();
+    expect(
+      await anon((q) =>
+        findAreaByOvertureId(q, { overtureId: '00000000-0000-4000-8000-000000000000', zoom: 10 }),
+      ),
+    ).toBeNull();
+  });
+
+  it('el ID de Overture tiene un índice ÚNICO (la búsqueda por teselas es exacta y barata)', async () => {
+    const idx = await db.owner.query<{ indexdef: string }>(
+      "select indexdef from pg_indexes where indexname = 'geographic_areas_overture_id_uq'",
+    );
+    expect(idx.rows[0]?.indexdef).toMatch(/UNIQUE INDEX.*overture_id/);
+  });
+});
+
 describe('createRunAnon: el ejecutor real', () => {
   it('corre como `anon`, en una transacción de SOLO LECTURA y con tiempos máximos', async () => {
     const run = createRunAnon(db.connectionString);
@@ -419,6 +473,29 @@ describe('API completa (manejadores + BD real)', () => {
       expect(res.status).toBe(403);
       expect(await res.text()).not.toContain(id.P1 as string);
     }
+  });
+
+  it('GET /areas/by-overture/[ovid] bajo RLS y con derechos', async () => {
+    const ok = await handleAreaByOvertureId(
+      req(`/api/spatial/areas/by-overture/${OVID.P1}?locale=en`),
+      OVID.P1.toUpperCase(),
+      deps(),
+    );
+    expect(ok.status).toBe(200);
+    const d = (await ok.json()) as {
+      id: string;
+      properties: { name: { value: string }; overtureId: string; area: { method: string } | null };
+    };
+    expect(d.id).toBe(id.P1);
+    expect(d.properties.name.value).toBe('Park One');
+    expect(d.properties.overtureId).toBe(OVID.P1);
+    expect(d.properties.area?.method).toBe('ST_Area(geography, EPSG:4326)');
+
+    const hidden = await handleAreaByOvertureId(req('/x'), OVID.P5, deps());
+    expect(hidden.status).toBe(404);
+    const blocked = await handleAreaByOvertureId(req('/x'), OVID.P1, deps('production'));
+    expect(blocked.status).toBe(403);
+    expect(await blocked.text()).not.toContain('Park One');
   });
 
   it('con ETag, una segunda petición idéntica devuelve 304', async () => {

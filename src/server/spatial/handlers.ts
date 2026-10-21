@@ -18,9 +18,15 @@ import {
   type SpatialIssue,
   type SpatialLayerId,
 } from '@/domains/geography/spatial-query';
-import { assembleAreas, type Assembled } from '@/domains/geography/spatial-response';
-import { DatabaseUnavailableError, type RunAnon } from './db';
-import { findAreaById, findAreas, locateAreas, namesForAreas } from './repository';
+import { assembleAreas, type Assembled, type AreaRow } from '@/domains/geography/spatial-response';
+import { DatabaseUnavailableError, type Queryable, type RunAnon } from './db';
+import {
+  findAreaById,
+  findAreaByOvertureId,
+  findAreas,
+  locateAreas,
+  namesForAreas,
+} from './repository';
 
 /**
  * Manejadores HTTP de la API espacial (ADR-0016). Reciben sus dependencias (entorno, políticas de derechos,
@@ -239,12 +245,16 @@ export async function handleLocate(request: Request, deps: SpatialDeps): Promise
   }
 }
 
-export async function handleAreaDetail(
+type AreaLookup = (q: Queryable, query: { id: string; zoom: number }) => Promise<AreaRow | null>;
+
+async function serveArea(
   request: Request,
   id: string,
+  field: string,
   deps: SpatialDeps,
+  lookup: AreaLookup,
 ): Promise<Response> {
-  const parsed = parseAreaDetailQuery(id, new URL(request.url).searchParams);
+  const parsed = parseAreaDetailQuery(id, new URL(request.url).searchParams, field);
   if (!parsed.ok) return invalid(parsed.issues);
   const query = parsed.value;
 
@@ -254,7 +264,7 @@ export async function handleAreaDetail(
 
   try {
     const { row, names } = await deps.runAnon(async (q) => {
-      const row = await findAreaById(q, { id: query.id, zoom: query.zoom });
+      const row = await lookup(q, { id: query.id, zoom: query.zoom });
       return { row, names: row ? await namesForAreas(q, [row.id]) : [] };
     });
     // Misma respuesta para «no existe» y «no es visible»: no se revela la existencia de lo no público.
@@ -281,4 +291,24 @@ export async function handleAreaDetail(
   } catch (error) {
     return mapError(error);
   }
+}
+
+/** Ficha por el ID interno (UUID de la BD). */
+export function handleAreaDetail(
+  request: Request,
+  id: string,
+  deps: SpatialDeps,
+): Promise<Response> {
+  return serveArea(request, id, 'id', deps, (q, query) => findAreaById(q, query));
+}
+
+/** Ficha por el ID de Overture (el que llevan las teselas en `ovid`). */
+export function handleAreaByOvertureId(
+  request: Request,
+  overtureId: string,
+  deps: SpatialDeps,
+): Promise<Response> {
+  return serveArea(request, overtureId, 'ovid', deps, (q, query) =>
+    findAreaByOvertureId(q, { overtureId: query.id, zoom: query.zoom }),
+  );
 }

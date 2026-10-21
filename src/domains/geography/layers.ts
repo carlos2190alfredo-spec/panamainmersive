@@ -53,6 +53,8 @@ export interface Symbolizer {
 export interface StyleContext {
   readonly palette: MapPalette;
   readonly language: LabelLanguage;
+  /** ID de Overture del área seleccionada (se resalta); `null`/ausente = ninguna. */
+  readonly selectedAreaId?: string | null;
 }
 
 /** Regla simbolizada: la capa de MapLibre y la muestra de leyenda salen del MISMO símbolo. */
@@ -288,6 +290,47 @@ const protectedLabelRule: CustomRule = {
   ],
 };
 
+/**
+ * Resalte del área seleccionada: contorno SÓLIDO y grueso (no depende solo del color, WCAG 1.4.1) con halo, sobre
+ * el discontinuo y fino de las áreas protegidas. Sin selección el filtro no coincide con nada (`ovid` real nunca
+ * es la cadena vacía). Cambiar la selección solo cambia este filtro: el diff de estilo no recrea nada más.
+ */
+/** Capas de MapLibre del resalte: su filtro es lo único que cambia al seleccionar. */
+export const SELECTION_LAYER_IDS = ['protected-selected-halo', 'protected-selected'] as const;
+
+/** Filtro del resalte: la entidad cuyo `ovid` es el área seleccionada (ninguna si no hay selección). */
+export function selectionFilter(
+  selectedAreaId: string | null | undefined,
+): ExpressionSpecification {
+  return ['==', ['get', 'ovid'], selectedAreaId ?? ''];
+}
+
+const protectedSelectedRule: CustomRule = {
+  kind: 'custom',
+  id: 'protected-selected',
+  emits: SELECTION_LAYER_IDS,
+  build: ({ palette: c, selectedAreaId }) => {
+    const filter = selectionFilter(selectedAreaId);
+    const line = { 'line-cap': 'round', 'line-join': 'round' } as const;
+    return [
+      {
+        ...vector('protected-selected-halo', 'protected'),
+        type: 'line',
+        filter,
+        layout: line,
+        paint: { 'line-color': c.halo, 'line-width': 6.5 },
+      },
+      {
+        ...vector('protected-selected', 'protected'),
+        type: 'line',
+        filter,
+        layout: line,
+        paint: { 'line-color': c.label, 'line-width': 3 },
+      },
+    ];
+  },
+};
+
 const PLACE_KINDS = [
   { kind: 'city', minzoom: 5, size: 16, font: FONT_BOLD },
   { kind: 'town', minzoom: 8, size: 14, font: FONT_REGULAR },
@@ -430,6 +473,7 @@ export const LAYERS = [
           line: { color: 'protectedLine', width: 1.4, dash: [3, 2] },
         },
       },
+      protectedSelectedRule,
       protectedLabelRule,
     ],
     legend: [{ id: 'protected', labelKey: 'protectedAreas', source: { fromRule: 'protected' } }],
@@ -715,6 +759,11 @@ export function resolveLegend(active: readonly LayerDefinition[]): LegendEntry[]
 /** Leyenda de las capas activas (base + seleccionadas), con la capa de más arriba primero. Cada entrada lleva texto, no solo color. */
 export function legendFor(selected: readonly string[]): LegendEntry[] {
   return resolveLegend(activeLayerDefinitions(selected));
+}
+
+/** Capas activas que admiten selección por clic, con las capas de MapLibre sobre las que consultar. */
+export function pickableLayers(selected: readonly string[]): Picking[] {
+  return activeLayerDefinitions(selected).flatMap((l) => (l.picking ? [l.picking] : []));
 }
 
 export function terrainFor(

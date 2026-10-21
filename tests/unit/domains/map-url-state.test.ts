@@ -203,3 +203,51 @@ describe('estado del mapa en la URL', () => {
     });
   });
 });
+
+describe('área seleccionada en la URL (`a`)', () => {
+  const ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+  it('acepta un ID de Overture (UUID) y lo normaliza a minúsculas', () => {
+    expect(parseMapUrlState({ a: ID.toUpperCase() })).toEqual({ state: { area: ID }, issues: [] });
+  });
+
+  it.each([
+    'bocas-del-toro',
+    'Parque Nacional Coiba',
+    `${ID}'; drop table x;--`,
+    '<img src=x onerror=alert(1)>',
+    '',
+    '../../etc/passwd',
+    ID.slice(0, 35),
+    'a'.repeat(5000),
+  ])('descarta e informa «%s» (nunca se selecciona por nombre ni se corrige adivinando)', (a) => {
+    expect(parseMapUrlState({ a })).toEqual({ state: {}, issues: ['invalid-area'] });
+  });
+
+  it('es independiente de destino, cámara y capas, y se serializa en el orden canónico', () => {
+    const state = parseMapUrlState({ d: 'coiba', a: ID, l: 'protectedAreas' }).state;
+    expect(state).toEqual({ destination: 'coiba', area: ID, layers: ['protectedAreas'] });
+    expect(serializeMapUrlState(state)).toEqual({
+      d: 'coiba',
+      c: undefined,
+      l: 'protectedAreas',
+      a: ID,
+    });
+  });
+
+  it('applyMapUrlState conserva lo ajeno y sustituye `a` (también la quita)', () => {
+    const search = new URLSearchParams(`x=1&a=${ID}&d=coiba`);
+    expect(applyMapUrlState(search, { area: ID.replace(/^3f/, '4f') }).toString()).toBe(
+      `x=1&a=${ID.replace(/^3f/, '4f')}`,
+    );
+    expect(applyMapUrlState(search, {}).toString()).toBe('x=1');
+  });
+
+  it('un `area` que no es un UUID jamás llega a la URL (defensa también al escribir)', () => {
+    expect(serializeMapUrlState({ area: 'no-es-un-uuid' }).a).toBeUndefined();
+  });
+
+  it('paramsFromSearch incluye `a`', () => {
+    expect(paramsFromSearch(new URLSearchParams(`a=${ID}&z=1`)).a).toBe(ID);
+  });
+});

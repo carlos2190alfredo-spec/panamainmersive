@@ -44,7 +44,10 @@ export function useMapUrlState(): ParsedMapUrlState {
   return useMemo(() => readMapUrlState(text), [text]);
 }
 
-/** Elegir un destino: entrada de historial nueva (Atrás vuelve) y se descarta la cámara anterior. */
+/**
+ * Elegir un destino: entrada de historial nueva (Atrás vuelve) y se descarta la cámara anterior. También se
+ * descarta el área seleccionada: es otro contexto (el destino encuadra otro lugar).
+ */
 export function selectDestination(key: DestinationKey): void {
   writeMapUrlState(
     (current) => ({ destination: key, ...(current.layers ? { layers: current.layers } : {}) }),
@@ -55,6 +58,23 @@ export function selectDestination(key: DestinationKey): void {
 export function clearDestination(): void {
   writeMapUrlState(
     (current) => ({
+      ...(current.camera ? { camera: current.camera } : {}),
+      ...(current.layers ? { layers: current.layers } : {}),
+      ...(current.area ? { area: current.area } : {}),
+    }),
+    'replace',
+  );
+}
+
+/** Elegir un área (ID de Overture): entrada de historial nueva; no mueve la cámara ni cambia el destino. */
+export function selectArea(id: string): void {
+  writeMapUrlState((current) => ({ ...current, area: id }), 'push');
+}
+
+export function clearArea(): void {
+  writeMapUrlState(
+    (current) => ({
+      ...(current.destination ? { destination: current.destination } : {}),
       ...(current.camera ? { camera: current.camera } : {}),
       ...(current.layers ? { layers: current.layers } : {}),
     }),

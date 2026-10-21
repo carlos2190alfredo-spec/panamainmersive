@@ -1,4 +1,5 @@
 import { DESTINATION_KEYS, type DestinationKey } from '@/domains/tourism/destinations';
+import { parseAreaId } from './area-selection';
 import {
   MAX_ALTITUDE_M,
   MAX_PITCH_DEG,
@@ -43,9 +44,12 @@ export interface MapUrlState {
   readonly destination?: DestinationKey;
   readonly camera?: CameraState;
   readonly layers?: readonly MapLayerId[];
+  /** ID de Overture del área seleccionada (nunca su nombre). */
+  readonly area?: string;
 }
 
-export type MapUrlIssue = 'invalid-destination' | 'invalid-camera' | 'unknown-layers';
+export type MapUrlIssue =
+  'invalid-destination' | 'invalid-camera' | 'unknown-layers' | 'invalid-area';
 
 export interface ParsedMapUrlState {
   readonly state: MapUrlState;
@@ -136,6 +140,7 @@ export function parseMapUrlState(params: RawParams): ParsedMapUrlState {
     destination?: DestinationKey;
     camera?: CameraState;
     layers?: readonly MapLayerId[];
+    area?: string;
   } = {};
 
   const d = first(params.d);
@@ -159,14 +164,24 @@ export function parseMapUrlState(params: RawParams): ParsedMapUrlState {
     if (unknown) issues.push('unknown-layers');
   }
 
+  const a = first(params.a);
+  if (a !== undefined) {
+    const area = parseAreaId(a);
+    if (area) state.area = area;
+    else issues.push('invalid-area');
+  }
+
   return { state, issues };
 }
 
+const MAP_PARAMS = ['d', 'c', 'l', 'a'] as const;
+
 export function serializeMapUrlState(
   state: MapUrlState,
-): Record<'d' | 'c' | 'l', string | undefined> {
+): Record<(typeof MAP_PARAMS)[number], string | undefined> {
   return {
     d: state.destination,
+    a: state.area ? (parseAreaId(state.area) ?? undefined) : undefined,
     c: state.camera ? formatCamera(state.camera) : undefined,
     l: state.layers
       ? MAP_LAYER_IDS.filter((id) => state.layers?.includes(id)).join(',')
@@ -174,12 +189,12 @@ export function serializeMapUrlState(
   };
 }
 
-/** Conserva los parámetros ajenos al mapa y sustituye solo `d`, `c` y `l`. */
+/** Conserva los parámetros ajenos al mapa y sustituye solo `d`, `c`, `l` y `a`. */
 export function applyMapUrlState(search: URLSearchParams, state: MapUrlState): URLSearchParams {
   const next = new URLSearchParams(search);
-  for (const key of ['d', 'c', 'l'] as const) next.delete(key);
+  for (const key of MAP_PARAMS) next.delete(key);
   const serialized = serializeMapUrlState(state);
-  for (const key of ['d', 'c', 'l'] as const) {
+  for (const key of MAP_PARAMS) {
     const value = serialized[key];
     if (value !== undefined) next.set(key, value);
   }
@@ -191,5 +206,6 @@ export function paramsFromSearch(search: URLSearchParams): RawParams {
     d: search.get('d') ?? undefined,
     c: search.get('c') ?? undefined,
     l: search.get('l') ?? undefined,
+    a: search.get('a') ?? undefined,
   };
 }

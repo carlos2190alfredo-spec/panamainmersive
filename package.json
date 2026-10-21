@@ -20,6 +20,7 @@
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
+    "test:e2e:db": "tsx scripts/e2e-db.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "db:migrate": "tsx scripts/db/migrate.ts",
     "check:bundle": "tsx scripts/check-bundle.ts",

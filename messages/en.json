@@ -178,6 +178,51 @@
     "blocked": {
       "title": "The map is disabled in production",
       "body": "The usage rights for the map data have not yet been verified at their primary sources. The destination list is still available."
+    },
+    "area": {
+      "eyebrow": "Selected area",
+      "unnamed": "Protected area with no name in the source",
+      "kind": {
+        "protected_area": "Protected area",
+        "other": "Area"
+      },
+      "sourceClass": {
+        "official": "Official geometry",
+        "osm_derived": "Geometry derived from OpenStreetMap (not official)",
+        "editorial": "Editorial geometry (not official)"
+      },
+      "tileNote": "The base map derives from OpenStreetMap via Overture; it is not an official boundary.",
+      "nameLocal": "Local name from the source, not translated.",
+      "nameCommon": "Name from the source in this language.",
+      "nameEditorial": "Editorial name.",
+      "areaHeading": "Area",
+      "areaMethod": "Calculated on the original geometry with {method}.",
+      "areaUnknown": "Area unavailable: the calculation method is not known.",
+      "geometryVersion": "Geometry version: {version}",
+      "sourceHeading": "Geometry source",
+      "sourceLine": "{institution} · version {version} · retrieved on {date}",
+      "license": "License: {license}",
+      "licenseLink": "License text",
+      "rightsProvisional": "Rights: provisional (not yet read at the primary source).",
+      "rightsVerified": "Rights: verified.",
+      "noVerifiedData": "There is no verified data on activities, access restrictions or how to get there for this area.",
+      "loading": "Loading the details…",
+      "unavailable": "The extended details are not available right now. Only what the map carries is shown.",
+      "blocked": "The details are blocked until the rights to this data are verified.",
+      "notFound": "This area has no published details.",
+      "frame": "Show the area on the map",
+      "clear": "Clear the area selection",
+      "untitled": "Selected protected area"
+    },
+    "inView": {
+      "heading": "Protected areas in this view",
+      "description": "This list is the alternative to clicking the map: it contains the areas drawn in the current view.",
+      "count": "Showing {shown} of {total}.",
+      "zoomIn": "Zoom in to see fewer areas.",
+      "empty": "There are no protected areas in this view.",
+      "layerOff": "Turn on the “Protected areas” layer to choose areas.",
+      "waiting": "Waiting for the map to finish drawing.",
+      "mapUnavailable": "The map is not available, so there are no areas to list."
     }
   },
   "Destinations": {

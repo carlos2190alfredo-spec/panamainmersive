@@ -141,7 +141,7 @@
       },
       "landcover": {
         "label": "Cobertura do solo",
-        "hint": "Floresta, zona húmida, areia e recife derivados do OpenStreetMap; visível a partir do zoom 8."
+        "hint": "Floresta, zona úmida, areia e recife derivados do OpenStreetMap; visível a partir do zoom 8."
       }
     },
     "legend": {
@@ -153,7 +153,7 @@
       "borderRegion": "Limite de província ou comarca (traços)",
       "borderCounty": "Limite de distrito (pontos)",
       "landcoverForest": "Floresta",
-      "landcoverWetland": "Zona húmida",
+      "landcoverWetland": "Zona úmida",
       "landcoverSand": "Areia",
       "landcoverReef": "Recife",
       "waterways": "Rio ou canal",
@@ -178,6 +178,51 @@
     "blocked": {
       "title": "O mapa está desativado em produção",
       "body": "Os direitos de uso dos dados do mapa ainda não foram verificados nas fontes primárias. A lista de destinos continua disponível."
+    },
+    "area": {
+      "eyebrow": "Área selecionada",
+      "unnamed": "Área protegida sem nome na fonte",
+      "kind": {
+        "protected_area": "Área protegida",
+        "other": "Área"
+      },
+      "sourceClass": {
+        "official": "Geometria oficial",
+        "osm_derived": "Geometria derivada do OpenStreetMap (não oficial)",
+        "editorial": "Geometria editorial (não oficial)"
+      },
+      "tileNote": "O mapa base deriva do OpenStreetMap via Overture; não é um limite oficial.",
+      "nameLocal": "Nome local da fonte, sem tradução.",
+      "nameCommon": "Nome da fonte neste idioma.",
+      "nameEditorial": "Nome editorial.",
+      "areaHeading": "Superfície",
+      "areaMethod": "Calculada sobre a geometria original com {method}.",
+      "areaUnknown": "Superfície indisponível: o método de cálculo não é conhecido.",
+      "geometryVersion": "Versão da geometria: {version}",
+      "sourceHeading": "Fonte da geometria",
+      "sourceLine": "{institution} · versão {version} · obtida em {date}",
+      "license": "Licença: {license}",
+      "licenseLink": "Texto da licença",
+      "rightsProvisional": "Direitos: provisórios (ainda não lidos na fonte primária).",
+      "rightsVerified": "Direitos: verificados.",
+      "noVerifiedData": "Não há dados verificados sobre atividades, restrições de acesso nem como chegar a esta área.",
+      "loading": "Carregando a ficha…",
+      "unavailable": "A ficha ampliada não está disponível agora. Mostra-se apenas o que o mapa traz.",
+      "blocked": "A ficha está bloqueada até que os direitos destes dados sejam verificados.",
+      "notFound": "Esta área não tem ficha publicada.",
+      "frame": "Mostrar a área no mapa",
+      "clear": "Remover a seleção da área",
+      "untitled": "Área protegida selecionada"
+    },
+    "inView": {
+      "heading": "Áreas protegidas nesta vista",
+      "description": "Esta lista é a alternativa ao clique no mapa: contém as áreas desenhadas na vista atual.",
+      "count": "Mostrando {shown} de {total}.",
+      "zoomIn": "Aproxime o mapa para ver menos áreas.",
+      "empty": "Não há áreas protegidas nesta vista.",
+      "layerOff": "Ative a camada «Áreas protegidas» para escolher áreas.",
+      "waiting": "Aguardando o mapa terminar de desenhar.",
+      "mapUnavailable": "O mapa não está disponível, por isso não há áreas para listar."
     }
   },
   "Destinations": {

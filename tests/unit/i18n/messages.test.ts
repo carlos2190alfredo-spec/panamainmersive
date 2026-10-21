@@ -88,8 +88,8 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
 
   // Coincidencias legítimas con el español (cada excepción se justifica; no se relaja el umbral).
   const IDENTICAL_TO_SPANISH_ALLOWED: Partial<Record<Locale, readonly string[]>> = {
-    // «destino/destinos» se escribe igual en portugués y en español.
-    pt: ['Explore.count'],
+    // «destino/destinos» se escribe igual en portugués y en español; «Mostrando {shown} de {total}.» también.
+    pt: ['Explore.count', 'Map.inView.count'],
   };
 
   it.each(LOCALES.filter((l) => l !== DEFAULT_LOCALE))(

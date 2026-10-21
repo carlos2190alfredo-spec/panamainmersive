@@ -178,6 +178,51 @@
     "blocked": {
       "title": "Die Karte ist in der Produktion deaktiviert",
       "body": "Die Nutzungsrechte an den Kartendaten wurden noch nicht an den Primärquellen überprüft. Die Zielliste bleibt verfügbar."
+    },
+    "area": {
+      "eyebrow": "Ausgewähltes Gebiet",
+      "unnamed": "Schutzgebiet ohne Namen in der Quelle",
+      "kind": {
+        "protected_area": "Schutzgebiet",
+        "other": "Gebiet"
+      },
+      "sourceClass": {
+        "official": "Amtliche Geometrie",
+        "osm_derived": "Aus OpenStreetMap abgeleitete Geometrie (nicht amtlich)",
+        "editorial": "Redaktionelle Geometrie (nicht amtlich)"
+      },
+      "tileNote": "Die Basiskarte stammt aus OpenStreetMap über Overture; sie ist keine amtliche Grenze.",
+      "nameLocal": "Lokaler Name aus der Quelle, nicht übersetzt.",
+      "nameCommon": "Name aus der Quelle in dieser Sprache.",
+      "nameEditorial": "Redaktioneller Name.",
+      "areaHeading": "Fläche",
+      "areaMethod": "Berechnet auf der Originalgeometrie mit {method}.",
+      "areaUnknown": "Fläche nicht verfügbar: Die Berechnungsmethode ist nicht bekannt.",
+      "geometryVersion": "Version der Geometrie: {version}",
+      "sourceHeading": "Quelle der Geometrie",
+      "sourceLine": "{institution} · Version {version} · abgerufen am {date}",
+      "license": "Lizenz: {license}",
+      "licenseLink": "Lizenztext",
+      "rightsProvisional": "Rechte: vorläufig (noch nicht an der Primärquelle gelesen).",
+      "rightsVerified": "Rechte: geprüft.",
+      "noVerifiedData": "Zu diesem Gebiet liegen keine geprüften Daten zu Aktivitäten, Zugangsbeschränkungen oder Anreise vor.",
+      "loading": "Steckbrief wird geladen …",
+      "unavailable": "Der erweiterte Steckbrief ist derzeit nicht verfügbar. Es wird nur angezeigt, was die Karte enthält.",
+      "blocked": "Der Steckbrief ist gesperrt, bis die Rechte an diesen Daten geprüft sind.",
+      "notFound": "Für dieses Gebiet gibt es keinen veröffentlichten Steckbrief.",
+      "frame": "Gebiet auf der Karte zeigen",
+      "clear": "Auswahl des Gebiets aufheben",
+      "untitled": "Ausgewähltes Schutzgebiet"
+    },
+    "inView": {
+      "heading": "Schutzgebiete in dieser Ansicht",
+      "description": "Diese Liste ist die Alternative zum Klick auf die Karte: Sie enthält die in der aktuellen Ansicht gezeichneten Gebiete.",
+      "count": "{shown} von {total} werden angezeigt.",
+      "zoomIn": "Zoomen Sie hinein, um weniger Gebiete zu sehen.",
+      "empty": "In dieser Ansicht gibt es keine Schutzgebiete.",
+      "layerOff": "Aktivieren Sie die Ebene „Schutzgebiete“, um Gebiete auszuwählen.",
+      "waiting": "Warten, bis die Karte fertig gezeichnet ist.",
+      "mapUnavailable": "Die Karte ist nicht verfügbar, daher gibt es keine Gebiete aufzulisten."
     }
   },
   "Destinations": {

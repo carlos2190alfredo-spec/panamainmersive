@@ -94,15 +94,31 @@ export async function startTestCluster(): Promise<TestCluster> {
     throw error;
   }
 
-  return {
-    host: dir,
-    port,
-    stop() {
-      try {
-        run('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
-    },
+  // Idempotente: lo llama el teardown y, como red de seguridad, la salida del proceso (un Ctrl-C o un `timeout`
+  // a mitad de una ejecución dejaban clústeres huérfanos de ≈ 70-90 MB cada uno).
+  let stopped = false;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    try {
+      run('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   };
+  process.once('exit', () => {
+    try {
+      stop();
+    } catch {
+      // mejor esfuerzo: ya se está saliendo
+    }
+  });
+  for (const [signal, code] of [
+    ['SIGINT', 130],
+    ['SIGTERM', 143],
+  ] as const) {
+    process.once(signal, () => process.exit(code));
+  }
+
+  return { host: dir, port, stop };
 }

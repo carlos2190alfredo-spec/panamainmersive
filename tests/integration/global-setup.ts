@@ -16,7 +16,7 @@ let cluster: TestCluster | undefined;
  * Levanta un PostgreSQL temporal, aplica TODAS las migraciones UNA vez en una base plantilla y la
  * publica a los ficheros de prueba (cada uno clona la plantilla: aislamiento sin repetir migraciones).
  */
-export default async function setup(project: TestProject) {
+export async function setup(project: TestProject) {
   cluster = await startTestCluster();
   const admin = new Client({
     host: cluster.host,

@@ -129,19 +129,19 @@
       "rightsPending": "Désactivée tant que les droits sur ces données ne sont pas vérifiés.",
       "boundaries": {
         "label": "Limites administratives",
-        "hint": "Pays, provinces et districts dérivés d’OpenStreetMap via Overture ; ce ne sont pas des limites officielles."
+        "hint": "Pays, provinces et districts dérivés d’OpenStreetMap via Overture\u00a0; ce ne sont pas des limites officielles."
       },
       "places": {
         "label": "Localités et noms de lieux",
-        "hint": "Noms tels que la source les fournit ; ils ne sont pas traduits."
+        "hint": "Noms tels que la source les fournit\u00a0; ils ne sont pas traduits."
       },
       "waterways": {
         "label": "Rivières et canaux",
-        "hint": "Cours d’eau dérivés d’OpenStreetMap ; visibles à partir du zoom 7."
+        "hint": "Cours d’eau dérivés d’OpenStreetMap\u00a0; visibles à partir du zoom 7."
       },
       "landcover": {
         "label": "Occupation du sol",
-        "hint": "Forêt, zone humide, sable et récif dérivés d’OpenStreetMap ; visible à partir du zoom 8."
+        "hint": "Forêt, zone humide, sable et récif dérivés d’OpenStreetMap\u00a0; visible à partir du zoom 8."
       }
     },
     "legend": {
@@ -178,6 +178,51 @@
     "blocked": {
       "title": "La carte est désactivée en production",
       "body": "Les droits d’utilisation des données de la carte n’ont pas encore été vérifiés auprès des sources primaires. La liste des destinations reste disponible."
+    },
+    "area": {
+      "eyebrow": "Zone sélectionnée",
+      "unnamed": "Aire protégée sans nom dans la source",
+      "kind": {
+        "protected_area": "Aire protégée",
+        "other": "Zone"
+      },
+      "sourceClass": {
+        "official": "Géométrie officielle",
+        "osm_derived": "Géométrie dérivée d’OpenStreetMap (non officielle)",
+        "editorial": "Géométrie éditoriale (non officielle)"
+      },
+      "tileNote": "Le fond de carte dérive d’OpenStreetMap via Overture\u00a0; ce n’est pas une limite officielle.",
+      "nameLocal": "Nom local de la source, non traduit.",
+      "nameCommon": "Nom de la source dans cette langue.",
+      "nameEditorial": "Nom éditorial.",
+      "areaHeading": "Superficie",
+      "areaMethod": "Calculée sur la géométrie d’origine avec {method}.",
+      "areaUnknown": "Superficie indisponible\u00a0: la méthode de calcul n’est pas connue.",
+      "geometryVersion": "Version de la géométrie\u00a0: {version}",
+      "sourceHeading": "Source de la géométrie",
+      "sourceLine": "{institution} · version {version} · obtenue le {date}",
+      "license": "Licence\u00a0: {license}",
+      "licenseLink": "Texte de la licence",
+      "rightsProvisional": "Droits\u00a0: provisoires (pas encore lus à la source primaire).",
+      "rightsVerified": "Droits\u00a0: vérifiés.",
+      "noVerifiedData": "Il n’existe pas de données vérifiées sur les activités, les restrictions d’accès ni l’itinéraire pour cette zone.",
+      "loading": "Chargement de la fiche…",
+      "unavailable": "La fiche détaillée n’est pas disponible pour le moment. Seul ce que contient la carte est affiché.",
+      "blocked": "La fiche est bloquée tant que les droits sur ces données ne sont pas vérifiés.",
+      "notFound": "Cette zone n’a pas de fiche publiée.",
+      "frame": "Afficher la zone sur la carte",
+      "clear": "Retirer la sélection de la zone",
+      "untitled": "Aire protégée sélectionnée"
+    },
+    "inView": {
+      "heading": "Aires protégées dans cette vue",
+      "description": "Cette liste est l’alternative au clic sur la carte\u00a0: elle contient les zones dessinées dans la vue actuelle.",
+      "count": "Affichage de {shown} sur {total}.",
+      "zoomIn": "Zoomez pour voir moins de zones.",
+      "empty": "Il n’y a pas d’aires protégées dans cette vue.",
+      "layerOff": "Activez la couche «\u00a0Aires protégées\u00a0» pour choisir des zones.",
+      "waiting": "En attente de la fin du dessin de la carte.",
+      "mapUnavailable": "La carte n’est pas disponible, il n’y a donc aucune zone à lister."
     }
   },
   "Destinations": {

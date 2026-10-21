@@ -1,0 +1,48 @@
+.section {
+  margin-block-start: var(--space-4);
+}
+
+.heading {
+  font-size: var(--text-l);
+}
+
+.help,
+.note {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  max-block-size: 18rem;
+  overflow-y: auto;
+}
+
+.item {
+  inline-size: 100%;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.item:hover:not(:disabled) {
+  background: var(--color-sunken);
+}
+
+/* Seleccionada: contorno grueso y negrita (no solo color). */
+.item[aria-pressed='true'] {
+  border-width: 3px;
+  border-color: var(--color-accent);
+  font-weight: 700;
+}

@@ -5,9 +5,11 @@ import { Suspense } from 'react';
 import { DestinationList } from '@/components/DestinationList';
 import { Notice } from '@/components/Notice';
 import { StatusBadge } from '@/components/StatusBadge';
+import { AreasInView } from '@/components/map/AreasInView';
 import { LayerControls } from '@/components/map/LayerControls';
 import { MapLegend } from '@/components/map/MapLegend';
 import { MapStage } from '@/components/map/MapStage';
+import { SelectedAreaCard } from '@/components/map/SelectedAreaCard';
 import { SelectedDestinationCard } from '@/components/map/SelectedDestinationCard';
 import { ShowOnMapButton } from '@/components/map/ShowOnMapButton';
 import type { MapDestination, SelectedItem } from '@/components/map/map-data';
@@ -98,6 +100,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
         <aside className={styles.panel} aria-label={t('panelLabel')}>
           <h1 className={styles.title}>{t('title')}</h1>
           <SelectedDestinationCard items={selectedItems} />
+          <SelectedAreaCard />
           <h2 className={styles.listHeading}>
             {t('listHeading')}{' '}
             <span className={styles.count}>({t('count', { count: DESTINATIONS.length })})</span>
@@ -108,6 +111,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
               <ShowOnMapButton destinationKey={entry.key} name={name} />
             )}
           />
+          <AreasInView />
           <div className={styles.section}>
             <LayerControls terrainAllowed={terrainAllowed} />
           </div>

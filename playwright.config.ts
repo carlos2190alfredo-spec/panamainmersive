@@ -1,19 +1,11 @@
-import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+import { launchOptions } from './e2e/launch-options';
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 // IMPORTANTE: `localhost`, no `127.0.0.1`. Con `next start -H 127.0.0.1` Next normaliza el host a
 // `localhost` en `nextUrl`, trata la reescritura del proxy como EXTERNA y las rutas localizadas
 // entran en bucle 307. No es un defecto de la aplicación (ver docs/testing.md).
 const baseURL = `http://localhost:${PORT}`;
-
-// Chromium: PLAYWRIGHT_CHROMIUM_EXECUTABLE lo fija; si no, se usa el preinstalado de este entorno cloud
-// (no se descarga) y, si tampoco existe (CI, máquina local), el que gestiona Playwright
-// (`pnpm exec playwright install chromium`).
-const PREINSTALLED = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const executablePath =
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ??
-  (existsSync(PREINSTALLED) ? PREINSTALLED : undefined);
 
 export default defineConfig({
   testDir: 'e2e',
@@ -24,10 +16,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'retain-on-failure',
-    launchOptions: {
-      ...(executablePath ? { executablePath } : {}),
-      args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
-    },
+    launchOptions,
   },
   projects: [
     {

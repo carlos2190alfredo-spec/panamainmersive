@@ -88,3 +88,11 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 
 - **Explorar 199,9 → 201,4 KB** de JS gzip y **mapa diferido 455,4 → 456,8 KB** (+1,4 KB en cada uno: el registro declarativo, el motor y el nuevo componente de leyenda). Resto de páginas sin cambio (191,1 KB). Dentro de presupuesto (210 / 500 KB); margen de Explorar ≈ 8,6 KB.
 - **Sin medir**: coste de reaplicar el estilo con `setStyle(…, { diff: true })` al conmutar capas, FPS con las siete capas activas en dispositivos reales, y la leyenda de 12 entradas en pantallas pequeñas más allá de la comprobación de desbordes en el emulador.
+
+### M-05 · Selección de áreas (2026-10-21)
+
+- **Explorar 201,4 → 205,4 KB** de JS gzip (presupuesto 210; **margen ≈ 4,6 KB**) y **mapa diferido 456,8 → 460,7 KB** (presupuesto 500). El chunk específico de la página pasó de 8,8 KB (F3.b) a 14,2 KB (F3.c +1,4; F3.d ≈ +4). Resto de páginas sin cambio (191,1 KB).
+- **Diferido y verificado**: el componente que dibuja los datos de la BD y el validador de la respuesta (≈ 1,8 KB gzip) van en un _chunk_ aparte **que no aparece en el HTML inicial**; sin embargo la medición total de Explorar no bajó (205,2 → 205,4 KB), así que el resto del código nuevo es el que pesa. No se investigó más allá de eso.
+- **Sin zod en el cliente** (E-51): evita una violación de CSP y su peso.
+- **Riesgo**: con ≈ 4,6 KB de margen, la siguiente mejora de Explorar obliga a diferir el panel o a recalibrar el presupuesto con evidencia (F3-10).
+- **Sin medir**: latencia de la ficha, coste de `queryRenderedFeatures` en cada `idle` con las siete capas, FPS al elegir áreas con geometrías grandes en dispositivos reales.

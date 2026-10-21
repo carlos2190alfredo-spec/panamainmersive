@@ -291,9 +291,14 @@ export function parseLocateQuery(params: URLSearchParams): Parsed<LocateQuery> {
   return { ok: true, value: { lon, lat, layers, locale } };
 }
 
-export function parseAreaDetailQuery(id: string, params: URLSearchParams): Parsed<AreaDetailQuery> {
+/** `field` es el nombre del parámetro de ruta en los errores (`id` o `ovid`); el código sigue siendo `id.format`. */
+export function parseAreaDetailQuery(
+  id: string,
+  params: URLSearchParams,
+  field = 'id',
+): Parsed<AreaDetailQuery> {
   const { values, issues } = collect(params, ['zoom', 'locale']);
-  if (!UUID.test(id)) issues.push({ field: 'id', code: 'id.format' });
+  if (!UUID.test(id)) issues.push({ field, code: 'id.format' });
   const zoom =
     parseInteger(
       values.get('zoom'),

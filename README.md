@@ -2,7 +2,7 @@
 
 Plataforma turística geoespacial, multilingüe y honesta con sus datos, para explorar Panamá con mapas, relieve y fuentes verificables. Nombre **provisional** (centralizado en `src/config/site.ts`).
 
-> **Estado:** Fases 0 (Discovery), 1 (Foundation) y 2 (mapa real de Panamá) completadas en local; Fase 3 (GIS) **en curso**: ingesta controlada de áreas a PostGIS (F3.a), API espacial acotada (F3.b) y capas/leyenda declarativas (F3.c) verificadas. El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
+> **Estado:** Fases 0 (Discovery), 1 (Foundation) y 2 (mapa real de Panamá) completadas en local; Fase 3 (GIS) **en curso**: ingesta controlada de áreas a PostGIS (F3.a), API espacial acotada (F3.b), capas/leyenda declarativas (F3.c) y selección de áreas con ficha (F3.d) verificadas. El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
 > Documento rector del proyecto: [`docs/PROMPT-MAESTRO.md`](docs/PROMPT-MAESTRO.md) (copia literal).
 
 ## Qué funciona hoy
@@ -18,6 +18,7 @@ Plataforma turística geoespacial, multilingüe y honesta con sus datos, para ex
 - **Ingesta controlada de áreas protegidas** (Overture → PostGIS) con cuarentena, manifiesto con hash, derechos ejecutables, versionado y superficie geodésica; **137 áreas** importadas en pruebas, todas **no oficiales** y **no públicas** (`pnpm data:ingest`, `pnpm db:import-areas`, ADR-0015).
 - **API espacial** (`/api/spatial/areas`, `/areas/{id}`, `/locate`) bajo el rol `anon` con RLS, límites duros, derechos antes que datos y errores sin fugas (ADR-0016, `docs/gis.md` §12). Con la política `provisional` **no sirve nada en producción**.
 - **Siete capas seleccionables** (cinco propias activas por defecto, dos de relieve de un tercero apagadas) con un **registro declarativo** del que salen el estilo y la leyenda (ADR-0017, `docs/gis.md` §13).
+- **Selección de áreas protegidas** por clic o por una lista equivalente por teclado, con resalte, enlace compartible (`a`) y una **ficha honesta en dos niveles** (lo que lleva el mapa / lo que dice la BD, con superficie **con su método**, fuente y licencia; y siempre «no hay datos verificados de actividades ni accesos») (ADR-0018, `docs/gis.md` §14).
 
 **Lo que NO existe todavía** (no hay que darlo por hecho): datos turísticos editoriales, imágenes, 3D, rutas, IA, offline, carreteras en el mapa. Detalle y motivos en [`docs/progress.md`](docs/progress.md) y [`docs/backlog.md`](docs/backlog.md).
 
@@ -45,17 +46,18 @@ pnpm start                        # NO añadir -H 127.0.0.1 (ver docs/testing.md
 
 ## Comandos
 
-| Comando                                        | Qué hace                                                                           |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Tipos (TS 6, estricto), ESLint (incl. a11y y fronteras de dominio), Prettier       |
-| `pnpm test`                                    | Unitarias (Vitest): i18n, dominio, configuración, contraste WCAG, SEO              |
-| `pnpm test:integration`                        | PostgreSQL+PostGIS reales: migraciones, RLS por rol, restricciones, GIS, auditoría |
-| `pnpm build && pnpm check:bundle`              | Compilación + escaneo de secretos en el bundle + presupuesto de JS por página      |
-| `pnpm test:e2e`                                | Playwright contra el build de producción (escritorio y móvil, axe, CSP)            |
-| `pnpm db:migrate`                              | Aplica `db/migrations` a `DATABASE_URL` (rechaza bases remotas sin confirmación)   |
-| `pnpm data:anchors` · `pnpm data:build`        | Anclas por ID de Overture y basemap PMTiles verificado (Python + tippecanoe)       |
-| `pnpm test:pipelines`                          | Pruebas del ETL de Python (`.venv` activado; sin red)                              |
-| `pnpm data:ingest` · `pnpm db:import-areas`    | Ingesta controlada de áreas a PostGIS (`docs/setup.md` §7); no publica             |
+| Comando                                        | Qué hace                                                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Tipos (TS 6, estricto), ESLint (incl. a11y y fronteras de dominio), Prettier                               |
+| `pnpm test`                                    | Unitarias (Vitest): i18n, dominio, configuración, contraste WCAG, SEO                                      |
+| `pnpm test:integration`                        | PostgreSQL+PostGIS reales: migraciones, RLS por rol, restricciones, GIS, auditoría                         |
+| `pnpm build && pnpm check:bundle`              | Compilación + escaneo de secretos en el bundle + presupuesto de JS por página                              |
+| `pnpm test:e2e`                                | Playwright contra el build de producción (escritorio y móvil, axe, CSP)                                    |
+| `pnpm db:migrate`                              | Aplica `db/migrations` a `DATABASE_URL` (rechaza bases remotas sin confirmación)                           |
+| `pnpm data:anchors` · `pnpm data:build`        | Anclas por ID de Overture y basemap PMTiles verificado (Python + tippecanoe)                               |
+| `pnpm test:e2e:db`                             | E2E con PostgreSQL **temporal** y datos reales (necesita build y datos; si falta algo, se omite y lo dice) |
+| `pnpm test:pipelines`                          | Pruebas del ETL de Python (`.venv` activado; sin red)                                                      |
+| `pnpm data:ingest` · `pnpm db:import-areas`    | Ingesta controlada de áreas a PostGIS (`docs/setup.md` §7); no publica                                     |
 
 ## Estructura
 

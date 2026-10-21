@@ -21,6 +21,7 @@ Un ADR registra **una** decisión, su contexto, las alternativas descartadas y c
 | [0015](0015-ingesta-controlada-de-areas.md)        | Ingesta controlada de áreas: cuarentena en lugar de reparación, derechos ejecutables con una sola fuente, defensa en profundidad en la BD             | Aceptada |
 | [0016](0016-api-espacial-acotada.md)               | API espacial acotada: rol `anon` bajo RLS, derechos antes que datos, límites duros y errores sin fugas                                                | Aceptada |
 | [0017](0017-layer-y-legend-engine-declarativos.md) | Layer Engine y Legend Engine declarativos: un registro de capas del que salen el estilo y la leyenda (símbolo compartido), siete capas seleccionables | Aceptada |
+| [0018](0018-seleccion-de-areas.md)                 | Selección de áreas: clic y lista por teclado equivalentes, `a` en la URL, ficha en dos niveles de verdad (mapa / BD) sin afirmar lo que no se sabe    | Aceptada |
 
 ## Cuándo se revisa un ADR
 

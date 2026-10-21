@@ -187,3 +187,14 @@ Decisiones y alternativas: ADR-0017. Código: `layers.ts` (registro y motores), 
 - **Orden de dibujo** por prioridad; el océano va encima del relieve. **Leyenda**: la capa de más arriba primero, con texto en cada entrada.
 - **Versión de la fuente**: se lee del manifiesto del PMTiles (`release`), no se copia al registro.
 - **Qué NO hace**: la leyenda **no es sensible al zoom** (muestra lo que cada capa activa dibuja, no lo visible a ese zoom); solo `protectedAreas` declara selección por clic y **la interacción es de la F3.d**; no hay capas desde la API espacial (origen `geojson`); no hay tablas de capas en la BD.
+
+## 14. Selección de áreas en el mapa (Fase 3.d — IMPLEMENTADA y VERIFICADA)
+
+Decisiones y alternativas: ADR-0018. Código: lógica pura en `area-selection.ts` y `area-detail.ts`; resalte en `layers.ts` (`SELECTION_LAYER_IDS`, `selectionFilter`); interfaz en `components/map/{MapStage,AreasInView,SelectedAreaCard,AreaFacts,area-selection-store,use-area-detail}`; ruta `GET /api/spatial/areas/by-overture/{ovid}`.
+
+- **Qué se selecciona**: las **áreas protegidas** (única capa con `picking`: capa `protected-fill`, propiedad de teselas `ovid` = ID de Overture). `a=<ID de Overture>` en la URL (UUID validado; nunca un nombre).
+- **Clic** sobre el lienzo → el área de más arriba. **Lista equivalente** («Áreas protegidas en esta vista»): botones con `aria-pressed`, hasta 30 con el total real, ordenadas con las reglas del idioma. Con áreas superpuestas, el clic elige una y las demás se eligen desde la lista.
+- **Resalte**: contorno sólido grueso con halo sobre el borde discontinuo; solo cambia el filtro de dos capas.
+- **Ficha**: _siempre_ lo que lleva el mapa (nombre local, «derivado de OpenStreetMap; no es un límite oficial») y «no hay datos verificados de actividades, restricciones de acceso ni cómo llegar»; _con BD_: superficie **con su método** (`ST_Area(geography)` sobre el original), versión de la geometría, fuente, versión, fecha, licencia (enlace `https`) y derechos, y el nombre con su procedencia. Estados: cargando · no disponible · bloqueada por derechos · sin ficha publicada (404 uniforme).
+- **«Mostrar el área en el mapa»** encuadra a petición; la cámara nunca se mueve sola.
+- **Qué NO hace** (no darlo por hecho): no se pueden seleccionar límites administrativos, lugares ni destinos como «área»; no desambigua áreas superpuestas por tamaño; no hay ficha en producción mientras los derechos sean `provisional` (el mapa mismo se bloquea); no hay actividades, accesos, restricciones ni fotos (no existen datos verificados); no se ha probado con lectores de pantalla reales.
