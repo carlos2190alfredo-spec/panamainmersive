@@ -13,7 +13,11 @@ import {
   type MapPalette,
   type MapStyleOptions,
 } from '@/domains/geography/map-style';
-import { MAP_LAYER_IDS, type MapLayerId } from '@/domains/geography/map-url-state';
+import {
+  DEFAULT_MAP_LAYERS,
+  MAP_LAYER_IDS,
+  type MapLayerId,
+} from '@/domains/geography/map-url-state';
 
 const palette = Object.fromEntries(
   PALETTE_KEYS.map((key, i) => [
@@ -36,6 +40,7 @@ function options(layers: readonly MapLayerId[], language: LabelLanguage = 'es'):
 const combinations: MapLayerId[][] = [
   [],
   ['protectedAreas'],
+  [...DEFAULT_MAP_LAYERS],
   ['hillshade'],
   ['terrain3d'],
   ['hillshade', 'terrain3d'],
@@ -99,7 +104,7 @@ describe('estilo del mapa', () => {
   });
 
   it('el borde de áreas protegidas es DISCONTINUO y las fronteras se distinguen por trazo, no solo por color', () => {
-    const layers = buildMapStyle(options(['protectedAreas'])).layers;
+    const layers = buildMapStyle(options([...DEFAULT_MAP_LAYERS])).layers;
     const dash = (id: string) =>
       (layers.find((l) => l.id === id) as { paint?: { 'line-dasharray'?: number[] } } | undefined)
         ?.paint?.['line-dasharray'];
@@ -112,7 +117,7 @@ describe('estilo del mapa', () => {
 
   it('las etiquetas usan el nombre del idioma SOLO si la fuente lo trae y, si no, el nombre local', () => {
     for (const language of ['es', 'en', 'pt', 'fr', 'de'] as const) {
-      const style = buildMapStyle(options([], language));
+      const style = buildMapStyle(options([...DEFAULT_MAP_LAYERS], language));
       const layer = style.layers.find((l) => l.id === 'place-town') as
         { layout?: Record<string, unknown> } | undefined;
       expect(layer?.layout?.['text-field']).toEqual([
@@ -124,7 +129,9 @@ describe('estilo del mapa', () => {
   });
 
   it('el océano va ENCIMA del relieve (Terrarium trae batimetría ruidosa en el mar) y bajo el agua dulce', () => {
-    const ids = buildMapStyle(options(['hillshade'])).layers.map((l) => l.id);
+    const ids = buildMapStyle(options([...DEFAULT_MAP_LAYERS, 'hillshade'])).layers.map(
+      (l) => l.id,
+    );
     expect(ids.indexOf('land')).toBeLessThan(ids.indexOf('hillshade'));
     expect(ids.indexOf('hillshade')).toBeLessThan(ids.indexOf('ocean'));
     // Las fronteras siguen el litoral: bajo el océano no trazan líneas rectas sobre el mar.
@@ -134,7 +141,10 @@ describe('estilo del mapa', () => {
   });
 
   it('los puntos de lugares tienen el mismo minzoom que su etiqueta (no hay miles de puntos a zoom bajo)', () => {
-    const layers = buildMapStyle(options([])).layers as { id: string; minzoom?: number }[];
+    const layers = buildMapStyle(options([...DEFAULT_MAP_LAYERS])).layers as {
+      id: string;
+      minzoom?: number;
+    }[];
     for (const kind of ['city', 'town', 'village', 'hamlet', 'locality']) {
       const dot = layers.find((l) => l.id === `place-dot-${kind}`);
       const label = layers.find((l) => l.id === `place-${kind}`);
@@ -191,9 +201,13 @@ describe('paleta', () => {
 });
 
 describe('leyenda', () => {
-  it('se deriva de las capas activas y cada entrada usa una clave de paleta del estilo', () => {
-    const on = buildLegend(['protectedAreas', 'hillshade']);
-    expect(on.map((e) => e.labelKey)).toEqual(
+  const styleLayer = (layers: readonly MapLayerId[], id: string) =>
+    buildMapStyle(options(layers)).layers.find((l) => l.id === id) as
+      { paint?: Record<string, unknown> } | undefined;
+
+  it('se deriva de las capas activas: lo que se apaga desaparece de la leyenda', () => {
+    const on = buildLegend([...MAP_LAYER_IDS]).map((e) => e.labelKey);
+    expect(on).toEqual(
       expect.arrayContaining([
         'water',
         'protectedAreas',
@@ -201,24 +215,53 @@ describe('leyenda', () => {
         'borderCountry',
         'borderRegion',
         'borderCounty',
+        'places',
+        'waterways',
+        'landcoverForest',
       ]),
     );
-    const off = buildLegend([]);
-    expect(off.map((e) => e.labelKey)).not.toContain('protectedAreas');
-    expect(off.map((e) => e.labelKey)).not.toContain('hillshade');
-    for (const entry of on) {
-      for (const key of [entry.fill, entry.line?.color]) {
+    const off = buildLegend([]).map((e) => e.labelKey);
+    expect(off).toEqual(['water']); // solo el agua (capa base) queda sin capas seleccionadas
+    expect(buildLegend(['hillshade']).map((e) => e.labelKey)).toContain('hillshade');
+    expect(buildLegend(['protectedAreas']).map((e) => e.labelKey)).not.toContain('hillshade');
+  });
+
+  it('cada color de cada muestra es una clave de paleta REAL del estilo', () => {
+    for (const entry of buildLegend([...MAP_LAYER_IDS])) {
+      const { fill, line, point } = entry.swatch;
+      for (const key of [fill?.color, line?.color, point?.color]) {
         if (key) expect(PALETTE_KEYS).toContain(key);
       }
     }
   });
 
-  it('las tres fronteras tienen patrón de trazo distinto (no solo color) y el mismo que el estilo', () => {
-    const patterns = buildLegend([])
-      .filter((e) => e.id.startsWith('border-'))
-      .map((e) => e.line?.pattern);
-    expect(new Set(patterns).size).toBe(3);
-    const protectedEntry = buildLegend(['protectedAreas']).find((e) => e.id === 'protected');
-    expect(protectedEntry?.line?.pattern).toBe('dashed');
+  it('el trazo y el color de la leyenda son LOS MISMOS que los de la capa que se dibuja (no una copia)', () => {
+    const legend = buildLegend([...DEFAULT_MAP_LAYERS]);
+    const byId = (id: string) => legend.find((e) => e.id === id);
+    for (const [entryId, layerId] of [
+      ['border-country', 'boundary-country'],
+      ['border-region', 'boundary-region'],
+      ['border-county', 'boundary-county'],
+      ['protected', 'protected-line'],
+    ] as const) {
+      const line = byId(entryId)?.swatch.line;
+      const paint = styleLayer(DEFAULT_MAP_LAYERS, layerId)?.paint;
+      expect(line, entryId).toBeDefined();
+      expect(paint?.['line-width'], entryId).toBe(line?.width);
+      expect(paint?.['line-dasharray'], entryId).toEqual(line?.dash);
+    }
+    expect(styleLayer(DEFAULT_MAP_LAYERS, 'protected-fill')?.paint?.['fill-opacity']).toBe(
+      byId('protected')?.swatch.fill?.opacity,
+    );
+  });
+
+  it('las tres fronteras y el borde protegido se distinguen por patrón de trazo, no solo por color', () => {
+    const legend = buildLegend([...DEFAULT_MAP_LAYERS]);
+    const dashes = legend.filter((e) => e.id.startsWith('border-')).map((e) => e.swatch.line?.dash);
+    expect(dashes[0]).toBeUndefined(); // país: continuo
+    expect(dashes[1]).toBeDefined();
+    expect(dashes[2]).toBeDefined();
+    expect(dashes[1]).not.toEqual(dashes[2]);
+    expect(legend.find((e) => e.id === 'protected')?.swatch.line?.dash).toBeDefined();
   });
 });

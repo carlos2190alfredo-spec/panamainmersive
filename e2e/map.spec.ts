@@ -258,7 +258,9 @@ test.describe('mapa: capas y relieve de terceros', () => {
     expect(terrain.requests).toEqual([]); // antes de activar nada: cero peticiones a AWS
 
     await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
-    await expect(page).toHaveURL(/[?&]l=protectedAreas,hillshade(&|$)/);
+    await expect(page).toHaveURL(
+      /[?&]l=protectedAreas,boundaries,places,waterways,landcover,hillshade(&|$)/,
+    );
     await expect(
       page.getByText('Con una capa de relieve activa, Amazon Web Services recibe tu dirección IP'),
     ).toBeVisible();
@@ -270,12 +272,12 @@ test.describe('mapa: capas y relieve de terceros', () => {
       .catch(() => undefined);
     await expect(page.locator('[data-map-layers]')).toHaveAttribute(
       'data-map-layers',
-      'protectedAreas,hillshade',
+      'protectedAreas,boundaries,places,waterways,landcover,hillshade',
     );
     await expect(page.getByText('Relieve: AWS Terrain Tiles (SRTM, GMTED, ETOPO1)')).toBeAttached();
 
     await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).uncheck();
-    await expect(page).toHaveURL(/[?&]l=protectedAreas(&|$)/);
+    await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,places,waterways,landcover(&|$)/);
     await expect(page.getByText('Con una capa de relieve activa')).toHaveCount(0);
     await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
     // La CSP deja pasar el origen del relieve (connect-src) y nada más.
@@ -321,6 +323,136 @@ test.describe('mapa: capas y relieve de terceros', () => {
     await page.getByRole('checkbox', { name: 'Áreas protegidas' }).uncheck();
     await expect(legend.getByText('Área protegida (borde discontinuo)')).toHaveCount(0);
   });
+});
+
+const styleLayers = async (page: Page): Promise<string[]> =>
+  ((await mapCanvas(page).getAttribute('data-style-layers')) ?? '').split(',').filter(Boolean);
+
+test.describe('mapa: capas propias y leyenda (registro declarativo)', () => {
+  const FIRST_PARTY = [
+    'Áreas protegidas',
+    'Límites administrativos',
+    'Localidades y nombres de lugares',
+    'Ríos y canales',
+    'Cobertura del suelo',
+  ];
+
+  test('las cinco capas propias vienen activas, las de terceros apagadas, y el mapa lo confirma', async ({
+    page,
+  }) => {
+    const terrain = await routeTerrain(page, 'ok');
+    await openMap(page, EXPLORE);
+    for (const name of FIRST_PARTY) {
+      await expect(page.getByRole('checkbox', { name }), name).toBeChecked();
+    }
+    await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).not.toBeChecked();
+    await expect
+      .poll(() => styleLayers(page), { timeout: 20_000 })
+      .toEqual(
+        expect.arrayContaining([
+          'land',
+          'landcover',
+          'boundary-country',
+          'ocean',
+          'waterway',
+          'protected-fill',
+          'place-city',
+        ]),
+      );
+    expect(await styleLayers(page)).not.toContain('hillshade');
+    expect(terrain.requests).toEqual([]); // sin pedirlo, ni un byte a un tercero
+  });
+
+  const cases: { name: string; prefixes: string[]; keeps: string[]; legendGone: string[] }[] = [
+    {
+      name: 'Límites administrativos',
+      prefixes: ['boundary-'],
+      keeps: ['place-city', 'protected-fill', 'ocean'],
+      legendGone: ['Límite del país (línea continua)', 'Límite de distrito (puntos)'],
+    },
+    {
+      name: 'Localidades y nombres de lugares',
+      prefixes: ['place-'],
+      keeps: ['boundary-country', 'protected-fill', 'waterway'],
+      legendGone: ['Localidad (punto)'],
+    },
+    {
+      name: 'Ríos y canales',
+      prefixes: ['waterway'],
+      keeps: ['boundary-country', 'place-city', 'water'],
+      legendGone: ['Río o canal'],
+    },
+    {
+      name: 'Cobertura del suelo',
+      prefixes: ['landcover'],
+      keeps: ['land', 'boundary-country', 'place-city'],
+      legendGone: ['Bosque', 'Arrecife'],
+    },
+  ];
+
+  for (const c of cases) {
+    test(`apagar «${c.name}» quita exactamente sus capas del mapa, de la leyenda y de la URL`, async ({
+      page,
+    }) => {
+      await openMap(page, EXPLORE);
+      const legend = page.getByRole('region', { name: 'Leyenda' });
+      for (const text of c.legendGone) await expect(legend.getByText(text)).toBeVisible();
+
+      await page.getByRole('checkbox', { name: c.name }).uncheck();
+      await expect(page).toHaveURL(/[?&]l=/);
+      await expect
+        .poll(
+          async () =>
+            (await styleLayers(page)).filter((id) => c.prefixes.some((p) => id.startsWith(p))),
+          { timeout: 20_000 },
+        )
+        .toEqual([]);
+      const after = await styleLayers(page);
+      for (const keep of c.keeps) expect(after, keep).toContain(keep);
+      for (const text of c.legendGone) await expect(legend.getByText(text)).toHaveCount(0);
+      await expect(legend.getByText('Agua', { exact: true })).toBeVisible(); // la base no se apaga
+
+      await page.getByRole('checkbox', { name: c.name }).check();
+      await expect
+        .poll(
+          async () =>
+            (await styleLayers(page)).some((id) => c.prefixes.some((p) => id.startsWith(p))),
+          { timeout: 20_000 },
+        )
+        .toBe(true);
+      for (const text of c.legendGone) await expect(legend.getByText(text)).toBeVisible();
+    });
+  }
+
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`cada muestra de la leyenda se pinta con un color real del tema ${scheme} (no el negro por defecto de un SVG)`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openMap(page, EXPLORE);
+      const legend = page.getByRole('region', { name: 'Leyenda' });
+      const items = legend.getByRole('listitem');
+      expect(await items.count()).toBeGreaterThanOrEqual(10);
+      const painted = await items.evaluateAll((lis) =>
+        lis.map((li) => {
+          const shapes = [...li.querySelectorAll('svg rect, svg line, svg circle')];
+          const colors = shapes.map((el) => {
+            const cs = getComputedStyle(el);
+            return el.tagName === 'line' || cs.fill === 'none' ? cs.stroke : cs.fill;
+          });
+          return { text: li.textContent ?? '', colors };
+        }),
+      );
+      for (const entry of painted) {
+        expect(entry.colors.length, entry.text).toBeGreaterThan(0);
+        for (const color of entry.colors) {
+          expect(color, entry.text).not.toBe('none');
+          expect(color, entry.text).not.toBe('rgb(0, 0, 0)');
+        }
+      }
+    });
+  }
 });
 
 test.describe('mapa: estados de error y alternativas', () => {

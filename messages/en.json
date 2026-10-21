@@ -126,7 +126,23 @@
         "hint": "Third-party data: loads tiles from Amazon Web Services. Tilt the map to see it."
       },
       "thirdPartyNotice": "With a terrain layer on, Amazon Web Services receives your IP address when tiles are requested.",
-      "rightsPending": "Turned off until the rights to this data are verified."
+      "rightsPending": "Turned off until the rights to this data are verified.",
+      "boundaries": {
+        "label": "Administrative boundaries",
+        "hint": "Country, province and district boundaries derived from OpenStreetMap via Overture; not official boundaries."
+      },
+      "places": {
+        "label": "Places and place names",
+        "hint": "Names as the source provides them; they are not translated."
+      },
+      "waterways": {
+        "label": "Rivers and canals",
+        "hint": "Waterways derived from OpenStreetMap; visible from zoom 7."
+      },
+      "landcover": {
+        "label": "Land cover",
+        "hint": "Forest, wetland, sand and reef derived from OpenStreetMap; visible from zoom 8."
+      }
     },
     "legend": {
       "heading": "Legend",
@@ -135,7 +151,13 @@
       "hillshade": "Terrain shading",
       "borderCountry": "Country boundary (solid line)",
       "borderRegion": "Province or comarca boundary (dashes)",
-      "borderCounty": "District boundary (dots)"
+      "borderCounty": "District boundary (dots)",
+      "landcoverForest": "Forest",
+      "landcoverWetland": "Wetland",
+      "landcoverSand": "Sand",
+      "landcoverReef": "Reef",
+      "waterways": "River or canal",
+      "places": "Place (dot)"
     },
     "attribution": "Base map: © OpenStreetMap contributors, Overture Maps Foundation (release {release}). Reference cartography: contains no official boundaries.",
     "controls": {

@@ -70,7 +70,7 @@ flowchart LR
 
 ## 6. Capas y leyendas
 
-Una capa referencia un **dataset** y un **estilo declarativo** (`style_versions`). La **leyenda se genera de las mismas reglas**; usa tokens semánticos de color **más** patrón/símbolo/texto. Ver `docs/architecture.md` §K–L.
+**IMPLEMENTADO (Fase 3.c, ADR-0017; ver §13).** Una capa se declara en un registro en código (`src/domains/geography/layers.ts`) y de él salen el estilo y la leyenda; usa tokens semánticos de color **más** patrón/símbolo/texto. Las tablas `layers`, `layer_translations` y `style_versions` de `docs/architecture.md` §K–L **no se han creado** (DEFERRED: no hay edición de capas en caliente).
 
 ## 7. Selección de un área: qué se muestra
 
@@ -165,3 +165,25 @@ Decisiones y alternativas: ADR-0016. Código: validación pura en `src/domains/g
 - **Códigos**: 200 · 304 · 400 `invalid_parameters` (con `issues[{field,code}]`) · 403 `rights_blocked` · 404 `not_found` (igual para inexistente, no público o inválida) · 503 `database_unavailable` · 504 `query_timeout` · 500 `internal_error`.
 
 **Qué NO hace** (no darlo por hecho): no pagina (trunca de forma explícita lo más pequeño); no limita la **frecuencia** de peticiones (infraestructura, pendiente); no se ha medido la latencia; no se ha probado con un _pooler_ ni con una base remota; no ofrece `version` ni filtros por atributos.
+
+## 13. Layer Engine y Legend Engine (Fase 3.c — IMPLEMENTADO y VERIFICADO)
+
+Decisiones y alternativas: ADR-0017. Código: `layers.ts` (registro y motores), `map-core.ts` (constantes), `map-style.ts` (`buildMapStyle`/`buildLegend`, capas finas sobre el motor), `components/map/{LayerControls,MapLegend}`.
+
+| Capa (`l`)       | Grupo      | Defecto | Prioridad | Geometría | Zoom mín. | Fuente / derechos             | Selección por clic                 |
+| ---------------- | ---------- | ------- | --------: | --------- | --------: | ----------------------------- | ---------------------------------- |
+| `land` (base)    | base       | —       |        10 | polígono  |         0 | basemap / `overture`          | —                                  |
+| `landcover`      | propia     | **sí**  |        20 | polígono  |         8 | basemap / `overture`          | —                                  |
+| `hillshade`      | de tercero | no      |        30 | ráster    |         0 | `terrain-dem` / `aws-terrain` | —                                  |
+| `terrain3d`      | de tercero | no      |        35 | ráster    |         0 | `terrain-dem` / `aws-terrain` | —                                  |
+| `boundaries`     | propia     | **sí**  |        40 | línea     |         0 | basemap / `overture`          | —                                  |
+| `water` (base)   | base       | —       |        50 | polígono  |         0 | basemap / `overture`          | —                                  |
+| `waterways`      | propia     | **sí**  |        60 | línea     |         7 | basemap / `overture`          | —                                  |
+| `protectedAreas` | propia     | **sí**  |        70 | polígono  |         0 | basemap / `overture`          | `protected-fill`, propiedad `ovid` |
+| `places`         | propia     | **sí**  |        80 | punto     |         0 | basemap / `overture`          | —                                  |
+
+- **Símbolo compartido**: color de paleta, grosor, opacidad y trazo se declaran una vez; de ahí salen la capa de MapLibre y la muestra de leyenda (misma referencia). Las reglas `custom` declaran `emits`.
+- **`l` en la URL** es la lista **completa** de capas seleccionables activas, en el orden del registro; sin `l`, los valores por defecto. Los datos de terceros se filtran si los derechos no los permiten (también si vienen en el enlace).
+- **Orden de dibujo** por prioridad; el océano va encima del relieve. **Leyenda**: la capa de más arriba primero, con texto en cada entrada.
+- **Versión de la fuente**: se lee del manifiesto del PMTiles (`release`), no se copia al registro.
+- **Qué NO hace**: la leyenda **no es sensible al zoom** (muestra lo que cada capa activa dibuja, no lo visible a ese zoom); solo `protectedAreas` declara selección por clic y **la interacción es de la F3.d**; no hay capas desde la API espacial (origen `geojson`); no hay tablas de capas en la BD.

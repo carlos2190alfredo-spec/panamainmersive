@@ -112,6 +112,8 @@ Pruebas de integración contra PostgreSQL real verifican cada celda relevante (v
 
 Una empresa será **una** entidad con establecimientos y servicios (no tres registros: hotel, restaurante, operador).
 
+> **Nota (F3.c):** `layers`, `layer_translations` y `style_versions` se resolvieron **en código** (registro declarativo, ADR-0017) y las traducciones viven en `messages/*.json`. Las tablas siguen siendo una opción **DEFERRED** si algún día hace falta editar capas sin desplegar.
+
 ## Retención y privacidad
 
 - No se almacenan ubicaciones precisas ni prompts con datos personales sin necesidad y protección.

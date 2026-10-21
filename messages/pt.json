@@ -126,7 +126,23 @@
         "hint": "Dados de terceiros: carrega blocos da Amazon Web Services. Incline o mapa para vê-lo."
       },
       "thirdPartyNotice": "Com uma camada de relevo ativa, a Amazon Web Services recebe seu endereço IP ao solicitar os blocos.",
-      "rightsPending": "Desativada até que os direitos destes dados sejam verificados."
+      "rightsPending": "Desativada até que os direitos destes dados sejam verificados.",
+      "boundaries": {
+        "label": "Limites administrativos",
+        "hint": "País, províncias e distritos derivados do OpenStreetMap via Overture; não são limites oficiais."
+      },
+      "places": {
+        "label": "Localidades e nomes de lugares",
+        "hint": "Nomes como a fonte os fornece; não são traduzidos."
+      },
+      "waterways": {
+        "label": "Rios e canais",
+        "hint": "Cursos de água derivados do OpenStreetMap; visíveis a partir do zoom 7."
+      },
+      "landcover": {
+        "label": "Cobertura do solo",
+        "hint": "Floresta, zona húmida, areia e recife derivados do OpenStreetMap; visível a partir do zoom 8."
+      }
     },
     "legend": {
       "heading": "Legenda",
@@ -135,7 +151,13 @@
       "hillshade": "Sombreamento do relevo",
       "borderCountry": "Limite do país (linha contínua)",
       "borderRegion": "Limite de província ou comarca (traços)",
-      "borderCounty": "Limite de distrito (pontos)"
+      "borderCounty": "Limite de distrito (pontos)",
+      "landcoverForest": "Floresta",
+      "landcoverWetland": "Zona húmida",
+      "landcoverSand": "Areia",
+      "landcoverReef": "Recife",
+      "waterways": "Rio ou canal",
+      "places": "Localidade (ponto)"
     },
     "attribution": "Mapa base: © OpenStreetMap contributors, Overture Maps Foundation (versão {release}). Cartografia de referência: não contém limites oficiais.",
     "controls": {

@@ -126,7 +126,23 @@
         "hint": "Données tierces\u00a0: charge des tuiles depuis Amazon Web Services. Inclinez la carte pour le voir."
       },
       "thirdPartyNotice": "Lorsqu’une couche de relief est active, Amazon Web Services reçoit votre adresse IP lors de la demande des tuiles.",
-      "rightsPending": "Désactivée tant que les droits sur ces données ne sont pas vérifiés."
+      "rightsPending": "Désactivée tant que les droits sur ces données ne sont pas vérifiés.",
+      "boundaries": {
+        "label": "Limites administratives",
+        "hint": "Pays, provinces et districts dérivés d’OpenStreetMap via Overture ; ce ne sont pas des limites officielles."
+      },
+      "places": {
+        "label": "Localités et noms de lieux",
+        "hint": "Noms tels que la source les fournit ; ils ne sont pas traduits."
+      },
+      "waterways": {
+        "label": "Rivières et canaux",
+        "hint": "Cours d’eau dérivés d’OpenStreetMap ; visibles à partir du zoom 7."
+      },
+      "landcover": {
+        "label": "Occupation du sol",
+        "hint": "Forêt, zone humide, sable et récif dérivés d’OpenStreetMap ; visible à partir du zoom 8."
+      }
     },
     "legend": {
       "heading": "Légende",
@@ -135,7 +151,13 @@
       "hillshade": "Ombrage du relief",
       "borderCountry": "Limite du pays (trait continu)",
       "borderRegion": "Limite de province ou de comarque (tirets)",
-      "borderCounty": "Limite de district (pointillés)"
+      "borderCounty": "Limite de district (pointillés)",
+      "landcoverForest": "Forêt",
+      "landcoverWetland": "Zone humide",
+      "landcoverSand": "Sable",
+      "landcoverReef": "Récif",
+      "waterways": "Rivière ou canal",
+      "places": "Localité (point)"
     },
     "attribution": "Fond de carte\u00a0: © OpenStreetMap contributors, Overture Maps Foundation (version {release}). Cartographie de référence\u00a0: ne contient aucune limite officielle.",
     "controls": {

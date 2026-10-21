@@ -6,13 +6,13 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                             | Notas                                                                 |
-| ------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)         | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                            | Detalle abajo                                                         |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**           | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
-| 3 — GIS                   | **EN CURSO**: F3.a (ingesta) y F3.b (API espacial) **VERIFIED**; F3.c–e pendientes | Entrega 3 y 3b (abajo)                                                |
-| 4–10                      | PENDIENTE                                                                          | Ver `docs/backlog.md`                                                 |
+| Fase                      | Estado                                                                                                     | Notas                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                 | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                    | Detalle abajo                                                         |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                   | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
+| 3 — GIS                   | **EN CURSO**: F3.a (ingesta), F3.b (API espacial) y F3.c (capas y leyenda) **VERIFIED**; F3.d–e pendientes | Entregas 3, 3b y 3c (abajo)                                           |
+| 4–10                      | PENDIENTE                                                                                                  | Ver `docs/backlog.md`                                                 |
 
 ## Entrega 1 — Foundation
 
@@ -228,3 +228,50 @@ pnpm test && pnpm test:integration            # pruebas de la API (unitarias + P
 ### Pendiente de la Fase 3
 
 F3.c Layer Engine y Legend Engine declarativos · F3.d selección de áreas en el mapa (picking + lista por teclado + ficha) · F3.e cierre. Detalle en `docs/backlog.md`.
+
+## Entrega 3c — Fase 3: Layer Engine y Legend Engine declarativos (F3.c)
+
+### Qué funciona (VERIFIED, 2026-10-21)
+
+- **Un registro de capas en código** (`src/domains/geography/layers.ts`, ADR-0017, `docs/gis.md` §13) del que salen **el estilo de MapLibre y la leyenda**: cada capa declara id, grupo, prioridad de dibujo, geometrías, fuente (con su sujeto de derechos y el origen de su versión), zoom, selección por clic, reglas y leyenda. El símbolo (color, grosor, opacidad, trazo) se declara **una vez** y la leyenda recibe la misma referencia que la regla que dibuja.
+- **Siete capas seleccionables** en la interfaz y en la URL: las cinco propias (áreas protegidas, límites administrativos, lugares, ríos y canales, cobertura del suelo) **activas por defecto**, y las dos de relieve (de un tercero) **apagadas por defecto**. La cartografía base (tierra, agua) no se apaga.
+- **Leyenda con las muestras dibujadas desde el símbolo** y cuatro entradas más de cobertura, ríos y lugares; textos de 4 capas y 6 entradas en los **cinco idiomas**.
+- **Selección por clic declarada** solo en áreas protegidas (propiedad `ovid` real de las teselas); la interacción llega en F3.d.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm dev          # abrir /es/explorar: panel «Capas» con siete casillas y leyenda que sigue a las activas
+# Enlace de ejemplo (solo fronteras y lugares):  /es/explorar?l=boundaries,places
+pnpm test && SITE_ENV=development pnpm build && pnpm test:e2e
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-21)
+
+| Comando                                        | Resultado                                                                                                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm typecheck` · `pnpm lint` · `pnpm format` | Sin errores                                                                                                                                                              |
+| `pnpm test`                                    | 27 ficheros / **454** (+26: 23 del registro; estilo y leyenda adaptados)                                                                                                 |
+| `pnpm test:integration`                        | 10 ficheros / **142** (sin cambios)                                                                                                                                      |
+| `pnpm test:e2e`                                | **147** (115 escritorio + 32 móvil; +7: valores por defecto, 4 interruptores, color de las muestras en claro y oscuro)                                                   |
+| `pnpm check:bundle`                            | Explorar 201,4 KB (+1,4), mapa diferido 456,8 KB (+1,4): dentro de presupuesto                                                                                           |
+| Oráculo de regresión                           | Se volcó el estilo de **40 combinaciones** (5 idiomas × 8 conjuntos de capas) **antes** del refactor: el motor nuevo da el **mismo** estilo en las 40 (también el orden) |
+| Mutaciones                                     | Se rompió a propósito y fallaron pruebas: quitar la clase CSS de una muestra (unitaria **y** E2E: «Arrecife» salía en negro), `boundaries` ignorando su interruptor (3)  |
+
+### Lo que se encontró y cambió (honestamente)
+
+- La leyenda **ya divergía** del mapa (guiones `6 3` / `1.5 3` frente a `[5,2]` / `[1,2]`; el borde protegido con `4 2` horneado en CSS frente a `[3,2]`), aunque el código decía derivarse de las mismas reglas. Ahora salen del mismo símbolo y una prueba lo comprueba.
+- La prueba de derivación **cazó un error mío**: `places` declaraba `minzoom: 5` y sus etiquetas de región se dibujan desde el zoom 0. Corregí el dato, no la prueba.
+- **Cambio de significado de `l`** en la URL: ahora es la lista completa de capas seleccionables activas (antes, «extras» sobre cartografía siempre activa). Un enlace viejo `l=protectedAreas` queda válido pero muestra menos. Se aceptó porque no hay enlaces públicos; está probado y documentado. Un E2E (URL esperada tras activar el relieve) tuvo que actualizarse por esto, y es el único.
+- Mi primer volcado JSON de los mensajes **convirtió los 34 escapes `\u00a0`** (espacio duro del francés) de `fr.json` en caracteres literales invisibles; lo vi en la revisión del diff y los restauré.
+- Una de mis pruebas («falla en voz alta») era un marcador sin sentido; la sustituí por una que sí ejerce el motor con una definición rota.
+
+### Qué no pudo verificarse
+
+- **La leyenda no es sensible al zoom** (DEFERRED): «Bosque» aparece aunque la cobertura del suelo solo se dibuja desde el zoom 8.
+- Rendimiento al conmutar capas, FPS con las siete activas en dispositivos reales, lectores de pantalla reales con la leyenda de 12 entradas.
+- Las tablas `layers`/`style_versions` de la arquitectura **no existen** (DEFERRED: el registro está en código; ADR-0017).
+
+### Pendiente de la Fase 3
+
+F3.d selección de áreas en el mapa (picking sobre `protected-fill` + lista equivalente por teclado + ficha con fuente, método de superficie y «sin datos verificados»; necesita resolver el ID de Overture de la tesela contra la BD) · F3.e cierre (documentación, puertas completas, commit). Detalle en `docs/backlog.md`.

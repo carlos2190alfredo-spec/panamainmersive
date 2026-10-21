@@ -126,7 +126,23 @@
         "hint": "Daten Dritter: lädt Kacheln von Amazon Web Services. Neigen Sie die Karte, um es zu sehen."
       },
       "thirdPartyNotice": "Bei aktiver Reliefebene erhält Amazon Web Services beim Anfordern der Kacheln Ihre IP-Adresse.",
-      "rightsPending": "Deaktiviert, bis die Rechte an diesen Daten überprüft sind."
+      "rightsPending": "Deaktiviert, bis die Rechte an diesen Daten überprüft sind.",
+      "boundaries": {
+        "label": "Verwaltungsgrenzen",
+        "hint": "Aus OpenStreetMap über Overture abgeleitete Grenzen von Land, Provinzen und Distrikten; keine amtlichen Grenzen."
+      },
+      "places": {
+        "label": "Orte und Ortsnamen",
+        "hint": "Namen so, wie die Quelle sie liefert; sie werden nicht übersetzt."
+      },
+      "waterways": {
+        "label": "Flüsse und Kanäle",
+        "hint": "Aus OpenStreetMap abgeleitete Gewässer; sichtbar ab Zoomstufe 7."
+      },
+      "landcover": {
+        "label": "Landbedeckung",
+        "hint": "Wald, Feuchtgebiet, Sand und Riff, aus OpenStreetMap abgeleitet; sichtbar ab Zoomstufe 8."
+      }
     },
     "legend": {
       "heading": "Legende",
@@ -135,7 +151,13 @@
       "hillshade": "Reliefschattierung",
       "borderCountry": "Landesgrenze (durchgezogene Linie)",
       "borderRegion": "Provinz- oder Comarca-Grenze (Striche)",
-      "borderCounty": "Distriktgrenze (Punkte)"
+      "borderCounty": "Distriktgrenze (Punkte)",
+      "landcoverForest": "Wald",
+      "landcoverWetland": "Feuchtgebiet",
+      "landcoverSand": "Sand",
+      "landcoverReef": "Riff",
+      "waterways": "Fluss oder Kanal",
+      "places": "Ort (Punkt)"
     },
     "attribution": "Basiskarte: © OpenStreetMap contributors, Overture Maps Foundation (Version {release}). Referenzkartografie: enthält keine offiziellen Grenzen.",
     "controls": {

@@ -83,3 +83,8 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 - Al añadir las tres rutas `/api/spatial/*` el JS compartido pasó de **190,6 a 191,1 KB** (Explorar 199,5 → **199,9 KB**), +0,4–0,5 KB. Comparación por _chunk_ con y sin los cambios: **todos los ficheros de código de la aplicación son idénticos**; solo cambia el _chunk_ de _runtime_ de Turbopack (`turbopack-*.js`, 3 972 → 4 423 B gzip, **+451 B**). Es coste de infraestructura de la compilación, no código del cliente. No se investigó la causa exacta más allá de aislarla (hipótesis: el registro de _chunks_ crece con las nuevas entradas). Margen restante frente al presupuesto de 210 KB: ≈ 18,9 KB.
 - El servidor (`pg`, consultas) no entra en el bundle del navegador (comprobado por `pnpm check:bundle` y por una regla de ESLint).
 - **Latencia de la API y carga: sin medir** (ver `docs/testing.md`).
+
+### M-04 · Efecto del registro de capas (2026-10-21)
+
+- **Explorar 199,9 → 201,4 KB** de JS gzip y **mapa diferido 455,4 → 456,8 KB** (+1,4 KB en cada uno: el registro declarativo, el motor y el nuevo componente de leyenda). Resto de páginas sin cambio (191,1 KB). Dentro de presupuesto (210 / 500 KB); margen de Explorar ≈ 8,6 KB.
+- **Sin medir**: coste de reaplicar el estilo con `setStyle(…, { diff: true })` al conmutar capas, FPS con las siete capas activas en dispositivos reales, y la leyenda de 12 entradas en pantallas pequeñas más allá de la comprobación de desbordes en el emulador.

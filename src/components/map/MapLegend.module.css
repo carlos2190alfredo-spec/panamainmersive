@@ -29,26 +29,52 @@
   overflow: visible;
 }
 
+/*
+ * Colores de las muestras: UNA clase por clave de la paleta del mapa. La convención `fill<Clave>` /
+ * `stroke<Clave>` la usa el componente y la comprueba una prueba contra el registro de capas: si una muestra
+ * necesita una clase que no está aquí, la prueba falla (un SVG sin clase se pinta de negro).
+ * El trazo, el grosor y la opacidad NO viven aquí: salen del símbolo declarado de la capa.
+ */
 .fillWater {
   fill: var(--color-map-water);
 }
 
-.fillProtected {
+.fillForest {
+  fill: var(--color-map-forest);
+}
+
+.fillWetland {
+  fill: var(--color-map-wetland);
+}
+
+.fillSand {
+  fill: var(--color-map-sand);
+}
+
+.fillReef {
+  fill: var(--color-map-reef);
+}
+
+.fillProtectedFill {
   fill: var(--color-map-protected-fill);
-  stroke: var(--color-map-protected-line);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 2;
 }
 
 .fillShade {
   fill: var(--color-map-shade);
-  opacity: 0.45;
+}
+
+.fillLabel {
+  fill: var(--color-map-label);
 }
 
 .strokeBoundary {
   stroke: var(--color-map-boundary);
 }
 
-.strokeProtected {
+.strokeProtectedLine {
   stroke: var(--color-map-protected-line);
+}
+
+.strokeWater {
+  stroke: var(--color-map-water);
 }

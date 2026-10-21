@@ -6,21 +6,30 @@ import {
   normalizeRoll,
   type CameraState,
 } from './camera';
+import {
+  DEFAULT_LAYER_IDS,
+  SELECTABLE_LAYER_IDS,
+  THIRD_PARTY_LAYER_IDS,
+  type SelectableLayerId,
+} from './layers';
 
 /**
  * Estado del mapa en la URL (query): `d` destino (clave estable, no el slug traducido), `c` cámara, `l` capas.
  * Todo valor llega de fuera, así que se valida: lo inválido se descarta y se informa en `issues`; nunca se
  * «corrige» adivinando (un enlace roto vuelve al estado por defecto, no a uno inventado).
  */
-export const MAP_LAYER_IDS = ['protectedAreas', 'hillshade', 'terrain3d'] as const;
-export type MapLayerId = (typeof MAP_LAYER_IDS)[number];
+export const MAP_LAYER_IDS = SELECTABLE_LAYER_IDS;
+export type MapLayerId = SelectableLayerId;
 
-/** Capas activas cuando la URL no trae `l`. Si trae `l` (aunque esté vacío), manda `l`. */
-/** El relieve NO va por defecto: carga datos de un tercero (AWS) y le revela la IP; se activa a propósito. */
-export const DEFAULT_MAP_LAYERS: readonly MapLayerId[] = ['protectedAreas'];
+/**
+ * Capas activas cuando la URL no trae `l`. Si trae `l` (aunque esté vacío), manda `l`: es la lista COMPLETA de
+ * capas seleccionables activas. El relieve NO va por defecto: carga datos de un tercero (AWS) y le revela la
+ * IP; se activa a propósito.
+ */
+export const DEFAULT_MAP_LAYERS: readonly MapLayerId[] = DEFAULT_LAYER_IDS;
 
 /** Capas que cargan datos de un tercero (hoy, el terreno de AWS). */
-export const THIRD_PARTY_LAYERS: readonly MapLayerId[] = ['hillshade', 'terrain3d'];
+export const THIRD_PARTY_LAYERS: readonly MapLayerId[] = THIRD_PARTY_LAYER_IDS;
 
 /** Quita las capas de terceros cuando los derechos no permiten mostrarlas (también si vienen en el enlace). */
 export function allowedLayers(

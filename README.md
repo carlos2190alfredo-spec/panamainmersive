@@ -2,7 +2,7 @@
 
 Plataforma turística geoespacial, multilingüe y honesta con sus datos, para explorar Panamá con mapas, relieve y fuentes verificables. Nombre **provisional** (centralizado en `src/config/site.ts`).
 
-> **Estado:** Fases 0 (Discovery), 1 (Foundation) y 2 (mapa real de Panamá) completadas en local; Fase 3 (GIS) **en curso**: ingesta controlada de áreas a PostGIS (F3.a) y API espacial acotada (F3.b) verificadas. El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
+> **Estado:** Fases 0 (Discovery), 1 (Foundation) y 2 (mapa real de Panamá) completadas en local; Fase 3 (GIS) **en curso**: ingesta controlada de áreas a PostGIS (F3.a), API espacial acotada (F3.b) y capas/leyenda declarativas (F3.c) verificadas. El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
 > Documento rector del proyecto: [`docs/PROMPT-MAESTRO.md`](docs/PROMPT-MAESTRO.md) (copia literal).
 
 ## Qué funciona hoy
@@ -17,6 +17,7 @@ Plataforma turística geoespacial, multilingüe y honesta con sus datos, para ex
 - Pipeline reproducible de datos con **puerta de verificación** (`pnpm data:build`).
 - **Ingesta controlada de áreas protegidas** (Overture → PostGIS) con cuarentena, manifiesto con hash, derechos ejecutables, versionado y superficie geodésica; **137 áreas** importadas en pruebas, todas **no oficiales** y **no públicas** (`pnpm data:ingest`, `pnpm db:import-areas`, ADR-0015).
 - **API espacial** (`/api/spatial/areas`, `/areas/{id}`, `/locate`) bajo el rol `anon` con RLS, límites duros, derechos antes que datos y errores sin fugas (ADR-0016, `docs/gis.md` §12). Con la política `provisional` **no sirve nada en producción**.
+- **Siete capas seleccionables** (cinco propias activas por defecto, dos de relieve de un tercero apagadas) con un **registro declarativo** del que salen el estilo y la leyenda (ADR-0017, `docs/gis.md` §13).
 
 **Lo que NO existe todavía** (no hay que darlo por hecho): datos turísticos editoriales, imágenes, 3D, rutas, IA, offline, carreteras en el mapa. Detalle y motivos en [`docs/progress.md`](docs/progress.md) y [`docs/backlog.md`](docs/backlog.md).
 

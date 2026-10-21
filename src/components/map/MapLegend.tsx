@@ -2,45 +2,64 @@
 
 import { useTranslations } from 'next-intl';
 import { Suspense } from 'react';
-import { buildLegend, type LegendEntry, type PaletteKey } from '@/domains/geography/map-style';
+import type { LegendEntry, Symbolizer } from '@/domains/geography/layers';
+import { paletteClassSuffix, type PaletteKey } from '@/domains/geography/map-core';
+import { buildLegend } from '@/domains/geography/map-style';
 import { DEFAULT_MAP_LAYERS, allowedLayers } from '@/domains/geography/map-url-state';
 import styles from './MapLegend.module.css';
 import { useMapUrlState } from './use-map-url-state';
 
-const DASH: Record<'solid' | 'dashed' | 'dotted', string | undefined> = {
-  solid: undefined,
-  dashed: '6 3',
-  dotted: '1.5 3',
-};
+/** Los colores salen de los tokens por CLASE (nunca por atributos `style`: la CSP los prohíbe). */
+const fillClass = (key: PaletteKey) => styles[`fill${paletteClassSuffix(key)}`];
+const strokeClass = (key: PaletteKey) => styles[`stroke${paletteClassSuffix(key)}`];
 
-/** Clase de color por clave de paleta (los colores salen de los tokens, nunca de atributos `style`: CSP). */
-const FILL: Partial<Record<PaletteKey, string | undefined>> = {
-  water: styles.fillWater,
-  protectedFill: styles.fillProtected,
-  shade: styles.fillShade,
-};
-const STROKE: Partial<Record<PaletteKey, string | undefined>> = {
-  boundary: styles.strokeBoundary,
-  protectedLine: styles.strokeProtected,
-};
-
-function Swatch({ entry }: { entry: LegendEntry }) {
-  const dash = entry.line ? DASH[entry.line.pattern] : undefined;
+/**
+ * Muestra de la leyenda dibujada DESDE el símbolo declarado (el mismo que genera la capa de MapLibre):
+ * color, opacidad, grosor y trazo. El trazo discontinuo se escala con el grosor, como en el mapa.
+ */
+function Swatch({ symbol }: { symbol: Symbolizer }) {
+  const { fill, line, point } = symbol;
+  const width = line ? Math.max(2, line.width * 1.5) : 0;
+  const dash = line?.dash ? line.dash.map((n) => n * width).join(' ') : undefined;
   return (
     <svg className={styles.swatch} viewBox="0 0 32 16" aria-hidden="true" focusable="false">
-      {entry.fill ? (
-        <rect x="1" y="1" width="30" height="14" rx="2" className={FILL[entry.fill]} />
+      {fill ? (
+        <rect
+          x="1"
+          y="1"
+          width="30"
+          height="14"
+          rx="2"
+          className={fillClass(fill.color)}
+          {...(fill.opacity === undefined ? {} : { fillOpacity: fill.opacity })}
+        />
       ) : null}
-      {entry.line ? (
+      {line && fill ? (
+        <rect
+          x="1"
+          y="1"
+          width="30"
+          height="14"
+          rx="2"
+          fill="none"
+          strokeWidth={width}
+          {...(dash ? { strokeDasharray: dash } : {})}
+          className={strokeClass(line.color)}
+        />
+      ) : null}
+      {line && !fill ? (
         <line
           x1="1"
-          y1={entry.fill ? 1 : 8}
+          y1="8"
           x2="31"
-          y2={entry.fill ? 1 : 8}
-          strokeWidth="2"
+          y2="8"
+          strokeWidth={width}
           {...(dash ? { strokeDasharray: dash } : {})}
-          className={STROKE[entry.line.color]}
+          className={strokeClass(line.color)}
         />
+      ) : null}
+      {point ? (
+        <circle cx="16" cy="8" r={point.radius * 1.2} className={fillClass(point.color)} />
       ) : null}
     </svg>
   );
@@ -49,7 +68,9 @@ function Swatch({ entry }: { entry: LegendEntry }) {
 function Legend({ terrainAllowed }: { terrainAllowed: boolean }) {
   const t = useTranslations('Map.legend');
   const { state } = useMapUrlState();
-  const entries = buildLegend(allowedLayers(state.layers ?? DEFAULT_MAP_LAYERS, terrainAllowed));
+  const entries: readonly LegendEntry[] = buildLegend(
+    allowedLayers(state.layers ?? DEFAULT_MAP_LAYERS, terrainAllowed),
+  );
   return (
     <section className={styles.legend} aria-labelledby="map-legend-heading">
       <h2 id="map-legend-heading" className={styles.heading}>
@@ -58,7 +79,7 @@ function Legend({ terrainAllowed }: { terrainAllowed: boolean }) {
       <ul className={styles.list}>
         {entries.map((entry) => (
           <li key={entry.id} className={styles.entry}>
-            <Swatch entry={entry} />
+            <Swatch symbol={entry.swatch} />
             <span>{t(entry.labelKey)}</span>
           </li>
         ))}

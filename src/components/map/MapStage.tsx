@@ -329,6 +329,8 @@ export function MapStage({
           container.dataset.zoom = current.getZoom().toFixed(2);
           container.dataset.center = `${c.lng.toFixed(4)},${c.lat.toFixed(4)}`;
           container.dataset.pitch = current.getPitch().toFixed(1);
+          // Capas que MapLibre tiene de verdad (tras el diff de estilo): lo que se dibuja, no lo que se pidió.
+          container.dataset.styleLayers = current.getLayersOrder().join(',');
           setLabelsOpen(current.getZoom() >= LABELS_FROM_ZOOM);
         };
 
