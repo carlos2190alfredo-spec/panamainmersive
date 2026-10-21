@@ -81,3 +81,7 @@ Se rompieron a propósito cuatro garantías en las migraciones y se comprobó qu
 - **PMTiles desde otro origen** (CDN/bucket): Range y CORS cruzados no se han probado.
 - **Dispositivos reales, red de referencia y rendimiento (LCP/INP/FPS, tiempo de mapa utilizable)**: no medidos; SwiftShader no es representativo.
 - **Pruebas visuales de regresión del mapa** (capturas): no hay; las capturas de esta fase se revisaron a mano.
+
+## El mapa real en CI (limitación conocida)
+
+El mapa base real (`public/data/panama-basemap.pmtiles`) **no se versiona** y el flujo de CI **no lo genera**. Sin él, las pruebas E2E que necesitan el mapa dibujado se **omiten diciéndolo** (`MAP_DATA_SKIP_REASON`); no fallan ni «pasan en falso». Comprobado el 2026-10-21 ocultando el fichero: **104 pasan, 56 omitidas, 0 fallan**; con el fichero, **160 pasan y 0 omitidas**. Mientras no haya un paso de CI que produzca el mapa (backlog F3-14), el mapa real y la selección de áreas **solo se verifican en local**.

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { LOCALES, PAGE_NAMES, PATHS, watchPage } from './helpers';
+import { MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON } from './map-helpers';
 
 test.describe('cabeceras de seguridad (ADR-0010)', () => {
   test('toda respuesta lleva CSP estricta y cabeceras de endurecimiento', async ({ request }) => {
@@ -35,6 +36,8 @@ test.describe('CSP sin violaciones y con hidratación real', () => {
     test(`${name}: ninguna violación de CSP ni error de consola en los 5 idiomas`, async ({
       page,
     }) => {
+      // En Explorar, sin el mapa base el navegador registra el 404 del PMTiles como error de consola.
+      test.skip(name === 'explore' && !MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
       const watch = watchPage(page, { expectNotFound: name === 'notFound' });
       for (const locale of LOCALES) {
         await page.goto(PATHS[name][locale]);

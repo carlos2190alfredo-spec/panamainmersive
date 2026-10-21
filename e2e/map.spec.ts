@@ -3,6 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { fromMapView, zoomFromAltitude } from '../src/domains/geography/camera';
 import { LOCALES, PATHS, watchPage } from './helpers';
 import {
+  MAP_DATA_PRESENT,
+  MAP_DATA_SKIP_REASON,
   TERRAIN_HOST,
   mapCanvas,
   mapState,
@@ -21,6 +23,7 @@ const mapAlert = (page: Page) =>
 const cardHeading = (page: Page) => page.locator('#selected-destination-name');
 
 test.describe('mapa: carga y dibujo', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('carga el mapa base real sin violaciones de CSP ni errores de consola', async ({ page }) => {
     const watch = watchPage(page);
     await openMap(page, EXPLORE);
@@ -71,6 +74,7 @@ test.describe('mapa: carga y dibujo', () => {
 });
 
 test.describe('mapa: selección de destino', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('«Ver en el mapa» selecciona, acerca, actualiza la URL y Atrás lo deshace', async ({
     page,
   }) => {
@@ -127,6 +131,7 @@ test.describe('mapa: selección de destino', () => {
 });
 
 test.describe('mapa: marcadores cercanos', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('a zoom bajo se agrupan en un botón accesible y al pulsarlo se separan', async ({
     page,
   }) => {
@@ -173,6 +178,7 @@ test.describe('mapa: marcadores cercanos', () => {
 });
 
 test.describe('mapa: enlaces profundos', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('?d=casco-antiguo encuadra el destino (zoom ≈ 15) y lo marca como seleccionado', async ({
     page,
   }) => {
@@ -249,6 +255,7 @@ test.describe('mapa: enlaces profundos', () => {
 });
 
 test.describe('mapa: capas y relieve de terceros', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('activar el relieve lo pide a AWS (solo entonces), lo anuncia y lo refleja en leyenda, URL y atribución', async ({
     page,
   }) => {
@@ -329,6 +336,7 @@ const styleLayers = async (page: Page): Promise<string[]> =>
   ((await mapCanvas(page).getAttribute('data-style-layers')) ?? '').split(',').filter(Boolean);
 
 test.describe('mapa: capas propias y leyenda (registro declarativo)', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   const FIRST_PARTY = [
     'Áreas protegidas',
     'Límites administrativos',
@@ -490,6 +498,7 @@ test.describe('mapa: estados de error y alternativas', () => {
   });
 
   test('un fallo de red al cargar el mapa ofrece «Reintentar» y se recupera', async ({ page }) => {
+    test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON); // se recupera cargando el mapa REAL
     let fail = true;
     await page.route('**/data/panama-basemap.pmtiles', async (route) => {
       if (fail) await route.abort('failed');
@@ -523,6 +532,7 @@ test.describe('mapa: estados de error y alternativas', () => {
 });
 
 test.describe('mapa: idiomas, teclado y movimiento', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   const ZOOM_IN: Record<(typeof LOCALES)[number], string> = {
     es: 'Acercar',
     en: 'Zoom in',
@@ -586,6 +596,7 @@ test.describe('mapa: idiomas, teclado y movimiento', () => {
 });
 
 test.describe('mapa: accesibilidad con el mapa listo', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   for (const [locale, scheme] of [
     ['es', 'light'],
     ['de', 'dark'],

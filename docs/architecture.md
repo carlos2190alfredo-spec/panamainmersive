@@ -230,7 +230,7 @@ Representaciones: `PHOTOREALISTIC_3D, SATELLITE_TERRAIN, TOPOGRAPHIC_TERRAIN, ST
 
 ## K. Layer Engine · L. Legend Engine
 
-Una capa = `{ id, nombre traducible, descripción, fuente, versión, geometrías admitidas, visibilidad, prioridad, escala mín/máx, picking, reglas de estilo declarativas }` referida a un dataset y a un `style_version`. **La leyenda se genera desde las mismas reglas de estilo y filtros** (nunca se escribe a mano), con tokens semánticos de color + patrón/símbolo + texto (no solo color). Fase 3.
+Una capa = `{ id, nombre traducible, descripción, fuente, versión, geometrías admitidas, visibilidad, prioridad, escala mín/máx, picking, reglas de estilo declarativas }` referida a un dataset y a un `style_version`. **La leyenda se genera desde las mismas reglas de estilo y filtros** (nunca se escribe a mano), con tokens semánticos de color + patrón/símbolo + texto (no solo color). **IMPLEMENTADO en la Fase 3.c (ADR-0017)**: como registro en código del que salen el estilo y la leyenda (símbolo compartido), no como filas de BD (las tablas `layers`/`style_versions` quedan DEFERRED); ver `docs/gis.md` §13.
 
 ## M. Recomendaciones
 

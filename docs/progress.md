@@ -6,13 +6,13 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                                 | Notas                                                                 |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                             | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                | Detalle abajo                                                         |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                               | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
-| 3 — GIS                   | **EN CURSO**: F3.a (ingesta), F3.b (API), F3.c (capas y leyenda) y F3.d (selección de áreas) **VERIFIED**; F3.e cierre | Entregas 3, 3b, 3c y 3d (abajo)                                       |
-| 4–10                      | PENDIENTE                                                                                                              | Ver `docs/backlog.md`                                                 |
+| Fase                      | Estado                                                                                                      | Notas                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                  | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00 |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                     | Detalle abajo                                                         |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                    | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos           |
+| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03) | Entregas 3, 3b, 3c y 3d; cierre abajo                                 |
+| 4–10                      | PENDIENTE                                                                                                   | Ver `docs/backlog.md`                                                 |
 
 ## Entrega 1 — Foundation
 
@@ -328,3 +328,42 @@ SITE_ENV=development pnpm build && pnpm test:e2e && pnpm test:e2e:db
 ### Pendiente de la Fase 3
 
 F3.e: cierre (estado final de la fase, revisión de lo pendiente y entrega). Riesgo abierto: margen de ≈ 4,6 KB en el JS inicial de Explorar (F3-10).
+
+## Cierre de la Fase 3 — GIS (2026-10-21)
+
+Definición del documento rector (§22): _importación controlada, geometrías, capas seleccionables, estilos, leyendas, clustering y consultas espaciales_. Estado por elemento, sin adornos:
+
+| Elemento                      | Estado                                                                                                                                                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Importación controlada        | **VERIFIED** (F3.a, ADR-0015): cuarentena, manifiesto con hash, derechos, versionado, defensa en profundidad; 137 áreas reales                                                                             |
+| Geometrías                    | **VERIFIED**: versionadas en PostGIS, validez registrada sin reparar, superficie con `geography`; todas `osm_derived`, **no oficiales**                                                                    |
+| Capas seleccionables          | **VERIFIED** (F3.c, ADR-0017): siete, con registro declarativo                                                                                                                                             |
+| Estilos y leyendas            | **VERIFIED**: salen del mismo registro (símbolo compartido); la leyenda **no** es sensible al zoom (DEFERRED)                                                                                              |
+| Clustering                    | **VERIFIED para los marcadores de destino** (Fase 2: agrupación por distancia en pantalla, prueba de propiedad). **No hay otro conjunto de puntos que agrupar** (los lugares son etiquetas de las teselas) |
+| Consultas espaciales          | **VERIFIED** (F3.b, ADR-0016): ventana, punto y ficha; **las rutas `areas` y `locate` aún no las consume ninguna pantalla** (solo se prueban por HTTP); la interfaz usa `by-overture`                      |
+| Selección de áreas en el mapa | **VERIFIED** (F3.d, ADR-0018): clic + lista por teclado + ficha honesta                                                                                                                                    |
+
+**Criterio de «terminada»** (flujo funciona · pruebas pasan · limitaciones documentadas · sin errores arquitectónicos críticos): cumplido **en local**. Las limitaciones están en cada entrega y en `docs/backlog.md` (F3-5…F3-14).
+
+### Estado final de las pruebas (observado el 2026-10-21)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **521** · `pnpm test:pipelines`: **90** · `pnpm test:integration`: **145** (0 clústeres huérfanos) · `pnpm test:e2e`: **160** · `pnpm test:e2e:db`: **7** · `pnpm check:bundle`: Explorar 205,4 KB (presupuesto 210), mapa diferido 460,7 KB (500).
+
+### Bloqueos que siguen abiertos (visibles; no impiden probar en local)
+
+- **L-01 derechos**: toda política es `provisional` → **en producción no se sirve el mapa ni la API** (por diseño). Hace falta leer los términos en las **fuentes primarias** (hosts bloqueados desde este entorno, E-00).
+- **L-03 límites oficiales** (IGN/ANATI, MiAmbiente): sin acceso; todo lo mostrado es OpenStreetMap derivado y se etiqueta **no oficial**.
+- **L-02 revisión editorial/humana**: ninguna traducción está revisada; el español es borrador de IA.
+- **Sin despliegue**: no hay base remota, rol de BD dedicado, _pooler_, limitación de tasa ni medición de latencia (F3-6, F3-7).
+- **CI**: definido, **no ejecutable aquí**, y **no genera el mapa base** (F3-14).
+- **Sin dispositivos reales, lectores de pantalla reales ni personas usuarias**; rendimiento (LCP/INP/FPS) sin medir.
+
+### Riesgos abiertos que conviene mirar antes de la Fase 4
+
+1. **Margen de JS inicial de Explorar ≈ 4,6 KB** (F3-10).
+2. **Dependencia total de Overture/OSM** como única fuente de geometrías hasta que haya acceso a fuentes oficiales.
+3. Los datos de un solo _release_ (`2026-09-23.1`) y sin actualización incremental.
+
+### Siguiente acción concreta
+
+**Fase 4 (Destinos)** no puede rellenarse con contenido sin revisión editorial y derechos (L-01/L-02/L-03). Lo **independiente** que sí puede avanzar: (1) el modelo de contenido de la ficha de destino con **evidencia por afirmación** (`field_assertions`, `source_records`) y los estados «sin datos verificados» ya establecidos en F3.d; (2) la maquetación de las nueve fichas con campos vacíos honestos; (3) resolver F3-10 antes de añadir interactividad a Explorar. Antes de empezar, **pedir a la persona responsable** que decida el orden: ¿desbloquear primero los derechos (requiere acceso de red a las fuentes primarias) o avanzar el modelo de contenido?

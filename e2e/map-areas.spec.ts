@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { PATHS, watchPage } from './helpers';
-import { mapCanvas, openMap } from './map-helpers';
+import { MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON, mapCanvas, openMap } from './map-helpers';
 
 /**
  * Selección de áreas protegidas (F3.d, ADR-0018) con el mapa REAL y SIN base de datos: se prueba lo que no
@@ -25,6 +25,7 @@ async function openCoiba(page: Page): Promise<void> {
 }
 
 test.describe('selección de áreas protegidas', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('la lista por teclado ofrece las áreas dibujadas y elegir una equivale al clic (Enter alterna)', async ({
     page,
   }) => {

@@ -35,6 +35,8 @@ Leyenda: ✅ permitido (verificado en fuente primaria) · 🟡 permitido **con c
 
 Hoy **ninguna** política es `verified`: Overture, Natural Earth y el terreno AWS están `provisional`. Es un **bloqueo de lanzamiento** registrado en `docs/backlog.md`, no un obstáculo para probar la aplicación localmente.
 
+Las políticas se leen de **un único fichero** (`data/rights/policies.json`) que comparten el evaluador de TypeScript y el pipeline de Python (ADR-0015). Con `provisional`: el importador no publica a producción; la **API espacial** exige poder mostrar, transformar y redistribuir y responde **403 sin consultar la BD** en producción (ADR-0016); y el **mapa** se bloquea (ADR-0014). El manifiesto de un conjunto **no puede mejorar** una política.
+
 ## Consecuencias de diseño
 
 - **Offline**: ningún paquete incluirá Google 3D, Street View ni teselas de OSM. Solo datos con `offline` ✅/🟡 **verificado**.

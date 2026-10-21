@@ -76,9 +76,20 @@ flowchart LR
 
 Información, **fuente de la geometría** (`official` / `osm_derived` / `editorial`), superficie con método identificado, actividades, restricciones **verificadas**, accesos y fotos. Las áreas dibujadas por administradores **sin** fuente oficial se identifican como **editoriales**; nunca como límites oficiales.
 
-## 8. Pruebas GIS (planificadas)
+## 8. Pruebas GIS (estado al cierre de la Fase 3)
 
-CRS y orden de ejes; distancia geodésica frente a valor conocido; `ST_Covers` en el límite; área con `geography`; rechazo de bbox enorme; geometría inválida va a cuarentena; el original no se altera al simplificar; ninguna ruta hacia centroides inaccesibles.
+| Prueba prevista                                | Estado                                                                                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CRS y orden de ejes                            | **VERIFIED**: `CHECK geometry_in_working_area`, código `geometry.axis_order_swapped`, «defensa en profundidad» (hash recalculado) y la API rechaza lat/lon intercambiados |
+| `ST_Covers` en el límite                       | **VERIFIED** (integración con PostGIS real: el borde y el vértice cuentan como dentro)                                                                                    |
+| Área con `geography`                           | **VERIFIED** (30 km² medidos frente al valor en grados; el método viaja con el número)                                                                                    |
+| Rechazo de bbox enorme                         | **VERIFIED** (unitaria con fuzz, API y E2E)                                                                                                                               |
+| Geometría inválida va a cuarentena             | **VERIFIED** (pipeline: 2 casos reales, E-49; BD: el «lazo» se marca `invalid` y no se sirve)                                                                             |
+| El original no se altera al simplificar        | **VERIFIED** (la superficie almacenada es idéntica a cualquier zoom; la simplificación es válida y queda dentro de la tolerancia)                                         |
+| Distancia geodésica frente a un valor conocido | **DEFERRED**: no hay funciones de distancia hasta las fases de rutas y recomendaciones                                                                                    |
+| Ninguna ruta hacia centroides inaccesibles     | **DEFERRED**: no hay _routing_ hasta la Fase 8                                                                                                                            |
+
+El detalle de qué cubre cada nivel está en `docs/testing.md`.
 
 ## 9. Basemap de Panamá (Fase 2 — IMPLEMENTADO y VERIFICADO)
 

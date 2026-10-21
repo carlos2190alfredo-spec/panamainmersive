@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { PATHS } from './helpers';
-import { openMap } from './map-helpers';
+import { MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON, openMap } from './map-helpers';
 
 test.describe('selección de áreas en móvil', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('la lista es táctil (≥ 44 px), elegir abre la ficha y nada desborda en horizontal', async ({
     page,
   }) => {

@@ -1,5 +1,18 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { crc32, deflateSync } from 'node:zlib';
 import { expect, type Page, type Request } from '@playwright/test';
+
+/**
+ * El mapa base real (`public/data/panama-basemap.pmtiles`) no se versiona: lo produce `pnpm data:build` (Python,
+ * tippecanoe y red hacia Overture; docs/setup.md §6). Sin él, las pruebas que necesitan el mapa dibujado se OMITEN
+ * diciéndolo (un fallo por falta de datos no es un fallo del código, y un «pasó» tampoco sería cierto).
+ */
+export const MAP_DATA_PRESENT = existsSync(
+  join(process.cwd(), 'public/data/panama-basemap.pmtiles'),
+);
+export const MAP_DATA_SKIP_REASON =
+  'Falta public/data/panama-basemap.pmtiles (genera el mapa con `pnpm data:build`): prueba OMITIDA, no «pasó».';
 
 export const TERRAIN_HOST = 'elevation-tiles-prod.s3.amazonaws.com';
 

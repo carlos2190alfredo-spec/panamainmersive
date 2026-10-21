@@ -54,6 +54,7 @@ Pipeline de importación controlada y reproducible; geometrías versionadas; Lay
 | F3-11 | Desambiguar áreas superpuestas (por tamaño, con BD) o con un selector explícito; hoy el clic elige la de más arriba                                                  | DEFERRED                  |
 | F3-12 | `pnpm test:e2e:db` en CI (necesita publicar o generar los artefactos de datos)                                                                                       | DEFERRED                  |
 | F3-13 | Evaluar la lista y la ficha con lectores de pantalla reales y personas usuarias                                                                                      | PENDING                   |
+| F3-14 | CI que **genere el mapa base** (Python + tippecanoe + red hacia Overture, con caché por versión) para verificar el mapa y la selección de áreas fuera de local       | DEFERRED                  |
 
 ### Fase 4 — Destinos
 

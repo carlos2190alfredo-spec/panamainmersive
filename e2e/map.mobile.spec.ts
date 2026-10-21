@@ -1,10 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { PATHS } from './helpers';
-import { mapCanvas, mapState, openMap } from './map-helpers';
+import {
+  MAP_DATA_PRESENT,
+  MAP_DATA_SKIP_REASON,
+  mapCanvas,
+  mapState,
+  openMap,
+} from './map-helpers';
 
 const EXPLORE = PATHS.explore.es;
 
 test.describe('mapa en móvil', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
   test('el mapa se apila sobre el panel, ocupa el ancho y no desborda horizontalmente', async ({
     page,
   }) => {

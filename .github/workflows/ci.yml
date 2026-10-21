@@ -1,5 +1,8 @@
 # CI de Panamá Immersive. ESTADO: IMPLEMENTED, no VERIFIED: este flujo no se ha podido ejecutar fuera
 # del entorno de desarrollo. Los MISMOS comandos sí se ejecutan en local (ver docs/testing.md).
+# LIMITACIÓN CONOCIDA: este CI NO genera el mapa base (`public/data/panama-basemap.pmtiles`: Python + tippecanoe +
+# red hacia Overture, ≈ 5 min). Sin él, los E2E que necesitan el mapa dibujado se OMITEN diciéndolo (verificado en
+# local ocultando el fichero: 104 pasan, 56 omitidas, 0 fallan). El mapa real solo se verifica en local (backlog F3-14).
 name: CI
 
 on:
