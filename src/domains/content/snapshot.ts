@@ -9,8 +9,8 @@ import {
   type AssertionRecord,
   type FieldNotice,
 } from './assertion';
-import { dayOf, daysBetween } from './dates';
-import { FIELD_KEYS, SOURCE_CLASSES } from './fields';
+import { dayOf, daysBetween, isIsoDate, isIsoInstant, panamaDayOf } from './dates';
+import { FIELD_KEYS, SOURCE_CLASSES, appliesTo, getField } from './fields';
 import { codePointLength, verificationIssues } from './gates';
 
 /**
@@ -113,11 +113,34 @@ export function snapshotToRecords(snapshot: PublishedSnapshot): AssertionRecord[
 export const snapshotNotices = (snapshot: PublishedSnapshot): FieldNotice[] => snapshot.notices;
 
 /**
+ * Tolerancia entre el reloj de quien exporta y el de la BD: `verified_at` lo pone el servidor de la BD y
+ * `generatedAt` la máquina que exporta. Coincide con lo que la BD admite en `retrieved_at` (+5 min).
+ */
+const CLOCK_SKEW_MS = 5 * 60_000;
+/** Cota de la BD (`field_assertions_quantity_value_check`): `1e-6 <= valor < 1e12`. */
+const QUANTITY_MIN = 0.000001;
+const QUANTITY_MAX = 1e12;
+
+const isAfter = (instant: string, reference: string): boolean =>
+  Date.parse(instant) - Date.parse(reference) > CLOCK_SKEW_MS;
+
+/**
  * Comprobaciones SEMÁNTICAS de una instantánea ya válida en forma. Devuelve mensajes legibles para quien exporta o
  * compila; vacío = sin problemas. La instantánea no se «arregla»: si algo no cumple, se rechaza entera.
  */
 export function snapshotIssues(snapshot: PublishedSnapshot): string[] {
   const out: string[] = [];
+  // `generatedAt` no pasa por ninguna puerta: se comprueba aquí. `null` solo cabe en la instantánea vacía inicial.
+  const generated = snapshot.generatedAt;
+  let generatedAt: string | null = null;
+  if (generated === null) {
+    if (snapshot.assertions.length > 0 || snapshot.notices.length > 0)
+      out.push('generatedAt: falta, pero la instantánea tiene contenido');
+  } else if (isIsoInstant(generated)) {
+    generatedAt = generated;
+  } else {
+    out.push('generatedAt: no es un instante real');
+  }
   const seenIds = new Set<string>();
   const current = new Set<string>();
   for (const a of snapshot.assertions) {
@@ -144,6 +167,16 @@ export function snapshotIssues(snapshot: PublishedSnapshot): string[] {
     for (const code of verificationIssues(record, destination.kind, { people: 'unavailable' })) {
       out.push(`${where}: ${code}`);
     }
+    if (generatedAt !== null && isIsoInstant(a.verifiedAt) && isAfter(a.verifiedAt, generatedAt))
+      out.push(`${where}: verificada después de la exportación`);
+    // Lo que la BD impide al escribir (`assertion_one_value_kind`, rango de la cantidad) y no es una puerta.
+    if (getField(a.fieldKey)?.valueKind === 'text' && a.quantity !== null)
+      out.push(`${where}: un campo de texto no lleva cantidad`);
+    if (
+      a.quantity !== null &&
+      !(a.quantity.value >= QUANTITY_MIN && a.quantity.value < QUANTITY_MAX)
+    )
+      out.push(`${where}: cantidad fuera del rango admitido`);
     for (const t of a.texts) {
       // Solo sale lo publicable: el original (publicado al verificar) o una traducción humana revisada y publicada.
       if (t.status !== 'published') out.push(`${where}: texto ${t.locale} no publicado`);
@@ -160,6 +193,23 @@ export function snapshotIssues(snapshot: PublishedSnapshot): string[] {
     if (current.has(slot)) out.push(`${slot}: aviso ${n.state} junto a una afirmación vigente`);
     if (noticeSlots.has(slot)) out.push(`${slot}: avisos repetidos`);
     noticeSlots.add(slot);
+
+    const kind = getDestination(n.destinationKey)?.kind;
+    const field = getField(n.fieldKey);
+    if (kind !== undefined && field !== undefined && !appliesTo(field, kind))
+      out.push(`${slot}: aviso de un campo que no aplica a un destino de tipo ${kind}`);
+    if (n.state === 'EXPIRED') {
+      if (!isIsoInstant(n.verifiedAt))
+        out.push(`${slot}: aviso con verifiedAt que no es un instante real`);
+      else if (generatedAt !== null && isAfter(n.verifiedAt, generatedAt))
+        out.push(`${slot}: aviso verificado después de la exportación`);
+      if (!isIsoDate(n.validUntil))
+        out.push(`${slot}: aviso con validUntil que no es una fecha real`);
+      // Vencida = anterior al día de Panamá de la exportación; el día UTC escrito nunca es anterior al de Panamá,
+      // así que esta cota es algo más laxa y nunca rechaza un aviso legítimo cerca de la medianoche.
+      else if (generatedAt !== null && n.validUntil >= dayOf(generatedAt))
+        out.push(`${slot}: aviso EXPIRED con una vigencia que no ha vencido`);
+    }
   }
   return out;
 }
@@ -257,5 +307,7 @@ export function sameSnapshotContent(a: PublishedSnapshot, b: PublishedSnapshot):
 
 /** Días de calendario desde la exportación; `null` si nunca se exportó (instantánea vacía inicial). */
 export function snapshotAgeDays(snapshot: PublishedSnapshot, today: string): number | null {
-  return snapshot.generatedAt === null ? null : daysBetween(dayOf(snapshot.generatedAt), today);
+  // Día de PANAMÁ de la exportación (no el UTC escrito): entre las 19:00 y las 24:00 de Panamá darían edad −1.
+  const day = snapshot.generatedAt === null ? null : panamaDayOf(snapshot.generatedAt);
+  return day === null ? null : daysBetween(day, today);
 }

@@ -391,9 +391,9 @@
       }
     },
     "verifiedOn": "Verificado el {date}",
+    "confidenceLine": "Confianza: {level}",
     "validUntil": "Vigente hasta el {date}",
     "confidence": {
-      "label": "Confianza",
       "low": "baja",
       "medium": "media",
       "high": "alta"
@@ -405,13 +405,13 @@
     "originalShown": "Se muestra el texto original en {language}: {reason}",
     "reason": {
       "no_translation": "todavía no existe una traducción a este idioma.",
-      "translation_not_published": "la traducción todavía no ha sido revisada por una persona.",
+      "translation_not_published": "todavía no hay una traducción revisada y publicada.",
       "translation_outdated": "la traducción está desactualizada."
     },
     "expired": "{field}: la información verificada venció el {date}. No la mostramos porque puede haber cambiado.",
     "disputed": "{field}: hay información contradictoria en revisión. No la mostramos hasta resolverlo.",
     "unknownHeading": "Sin datos verificados todavía",
     "unknownLead": "De estos temas aún no hay información verificada. Eso no significa que no exista: significa que todavía no la hemos comprobado con una fuente.",
-    "publishedOn": "Contenido publicado el {date}."
+    "siteContentUpdatedOn": "Contenido del sitio actualizado por última vez el {date}."
   }
 }

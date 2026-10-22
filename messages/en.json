@@ -391,9 +391,9 @@
       }
     },
     "verifiedOn": "Verified on {date}",
+    "confidenceLine": "Confidence: {level}",
     "validUntil": "Valid until {date}",
     "confidence": {
-      "label": "Confidence",
       "low": "low",
       "medium": "medium",
       "high": "high"
@@ -405,13 +405,13 @@
     "originalShown": "Showing the original text in {language}: {reason}",
     "reason": {
       "no_translation": "there is no translation into this language yet.",
-      "translation_not_published": "the translation has not been reviewed by a person yet.",
+      "translation_not_published": "there is no reviewed and published translation yet.",
       "translation_outdated": "the translation is out of date."
     },
     "expired": "{field}: the verified information expired on {date}. We do not show it because it may have changed.",
     "disputed": "{field}: there is conflicting information under review. We do not show it until it is resolved.",
     "unknownHeading": "No verified data yet",
     "unknownLead": "There is no verified information on these topics yet. That does not mean it does not exist: it means we have not yet checked it against a source.",
-    "publishedOn": "Content published on {date}."
+    "siteContentUpdatedOn": "Site content last updated on {date}."
   }
 }

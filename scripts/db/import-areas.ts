@@ -4,25 +4,42 @@
  * con IMPORT_CONFIRM_REMOTE=<host> (nunca se importa a producción por accidente). `--publish` hace visibles las áreas
  * (decisión editorial explícita; no es el comportamiento por defecto).
  */
+import { parseArgs } from 'node:util';
 import { Client } from 'pg';
 import { RIGHTS_POLICIES } from '../../src/lib/rights-policies';
 import { ImportError, importAreas } from './import-areas-lib';
-import { isLocalHost } from './lib';
+import { checkDatabaseTarget, refusalMessage } from './target';
 
-const args = process.argv.slice(2);
-const flag = (name: string) => args.includes(name);
-const value = (name: string) => {
-  const i = args.indexOf(name);
-  return i >= 0 ? args[i + 1] : undefined;
-};
+const USAGE =
+  'Uso: pnpm db:import-areas --manifest <ruta>/manifest.json [--publish] [--target-env development|staging|production]';
+const TARGET_ENVS = ['development', 'staging', 'production'] as const;
 
-const manifestPath = value('--manifest');
-const targetEnv = (value('--target-env') ?? 'development') as
-  'development' | 'staging' | 'production';
-if (!manifestPath || !['development', 'staging', 'production'].includes(targetEnv)) {
-  console.error(
-    'Uso: pnpm db:import-areas --manifest <ruta>/manifest.json [--publish] [--target-env development|staging|production]',
-  );
+// Estricto: un argumento desconocido o con otra forma se rechaza (con `includes`/`indexOf`, `--target-env=production`
+// se ignoraba y se validaba como `development`, el entorno más permisivo).
+let parsed: ReturnType<typeof parseCli> | undefined;
+try {
+  parsed = parseCli(process.argv.slice(2));
+} catch (error) {
+  console.error(`${error instanceof Error ? error.message : String(error)}\n${USAGE}`);
+  process.exit(2);
+}
+function parseCli(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    options: {
+      manifest: { type: 'string' },
+      publish: { type: 'boolean' },
+      'target-env': { type: 'string' },
+    },
+    strict: true,
+    allowPositionals: false,
+  }).values;
+}
+
+const manifestPath = parsed.manifest;
+const targetEnv = parsed['target-env'] ?? 'development';
+if (!manifestPath || !TARGET_ENVS.some((e) => e === targetEnv)) {
+  console.error(USAGE);
   process.exit(2);
 }
 const url = process.env.DATABASE_URL;
@@ -30,12 +47,10 @@ if (!url) {
   console.error('Falta DATABASE_URL (ver .env.example).');
   process.exit(2);
 }
-const host = new URL(url).hostname;
-if (!isLocalHost(host) && process.env.IMPORT_CONFIRM_REMOTE !== host) {
-  console.error(
-    `Rechazado: «${host}» no es una base local. Si es intencionado y está autorizado, repite con IMPORT_CONFIRM_REMOTE=${host}.`,
-  );
-  process.exit(3);
+const target = checkDatabaseTarget(url, process.env.IMPORT_CONFIRM_REMOTE);
+if (!target.ok) {
+  console.error(refusalMessage(target, 'IMPORT_CONFIRM_REMOTE'));
+  process.exit(target.reason === 'invalid_url' ? 2 : 3);
 }
 
 const client = new Client({ connectionString: url });
@@ -44,9 +59,9 @@ try {
   await client.query('set search_path = public, extensions');
   const result = await importAreas(client, {
     manifestPath,
-    targetEnv,
+    targetEnv: targetEnv as (typeof TARGET_ENVS)[number],
     policies: RIGHTS_POLICIES,
-    publish: flag('--publish'),
+    publish: parsed.publish === true,
   });
   console.log(JSON.stringify(result));
 } catch (error) {

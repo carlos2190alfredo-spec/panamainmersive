@@ -30,6 +30,21 @@ export function daysBetween(a: string, b: string): number | null {
   return x === null || y === null ? null : Math.round((y - x) / MS_PER_DAY);
 }
 
+/** Día calendario de un instante en Panamá (`AAAA-MM-DD`). La caducidad y la edad se cuentan en días de Panamá. */
+export function panamaDay(instant: Date): string {
+  // `en-CA` formatea como AAAA-MM-DD; la zona es la de Panamá, no la del servidor.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Panama',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(instant);
+}
+
+/** Día de Panamá de un instante ISO 8601; `null` si no es un instante real (no inventa un día). */
+export const panamaDayOf = (value: string): string | null =>
+  isIsoInstant(value) ? panamaDay(new Date(value)) : null;
+
 /** `AAAA-MM-DD` de un instante, en la fecha que lleva escrita (no se convierte de zona). */
 export const dayOf = (value: string): string => value.slice(0, 10);
 

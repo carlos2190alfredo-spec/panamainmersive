@@ -644,6 +644,17 @@ describe('R-7 · límites de tamaño y rangos de los datos', () => {
       ),
       '23514',
     );
+    // Una fuente con `retrieved_at` infinito o anterior a 1990 saldría como `retrievedAt: null` y bloquearía TODA la
+    // exportación (lo verificado es inmutable): la BD no la admite.
+    for (const retrieved of ['infinity', '-infinity', '1989-12-31T23:59:59Z']) {
+      await expectSqlState(
+        db.owner.query(
+          "insert into public.source_records (source_class, institution, title, url, retrieved_at, license_name, created_by) values ('official', 'i', 't', 'https://example.org/x', $2::timestamptz, 'l', $1)",
+          [ids.editor, retrieved],
+        ),
+        '23514',
+      );
+    }
   });
 });
 
@@ -774,7 +785,7 @@ describe('R-11 · el exportador excluye con ruido lo que ya no cumple el registr
         retrievedDaysAgo: 400,
       });
       await makeVerified(local, { destinationId: destId, text: '[prueba] resumen sano' });
-      const result = await exportPublished(local.owner, new Date('2026-10-21T12:00:00Z'));
+      const result = await exportPublished(local.owner, new Date());
       expect(result.snapshot.assertions.map((a) => a.fieldKey)).toEqual(['overview.summary']);
       expect(result.excluded).toHaveLength(1);
       expect(result.excluded[0]).toMatchObject({

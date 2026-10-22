@@ -7,6 +7,13 @@ import { absoluteUrl, localizedUrl, type Href } from '@/lib/seo';
 import { buildSitemap, type SitemapRoute } from '@/lib/sitemap';
 import { getTodayIsoDate } from '@/lib/today';
 
+/**
+ * Igual que la ficha: lo que entra aquí depende del DÍA (caducidad del resumen). Sin `revalidate`, Next cachea el
+ * sitemap en el build (`initialRevalidateSeconds: false`, medido) y seguiría listando una ficha ya `noindex` hasta el
+ * siguiente despliegue. Debe ser un literal; `pnpm check:bundle` comprueba que coincide con el de la ficha.
+ */
+export const revalidate = 3600;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: SitemapRoute<Href>[] = [
     { hrefFor: () => '/', hasRequiredFields: true, isHome: true },

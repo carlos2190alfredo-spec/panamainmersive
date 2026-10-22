@@ -5,7 +5,8 @@
  */
 import { join } from 'node:path';
 import { Client } from 'pg';
-import { MigrationError, isLocalHost, migrate } from './lib';
+import { MigrationError, migrate } from './lib';
+import { checkDatabaseTarget, refusalMessage } from './target';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -13,12 +14,10 @@ if (!url) {
   process.exit(2);
 }
 
-const host = new URL(url).hostname;
-if (!isLocalHost(host) && process.env.MIGRATE_CONFIRM_REMOTE !== host) {
-  console.error(
-    `Rechazado: «${host}» no es una base local. Si es intencionado y está autorizado, repite con MIGRATE_CONFIRM_REMOTE=${host}.`,
-  );
-  process.exit(3);
+const target = checkDatabaseTarget(url, process.env.MIGRATE_CONFIRM_REMOTE);
+if (!target.ok) {
+  console.error(refusalMessage(target, 'MIGRATE_CONFIRM_REMOTE'));
+  process.exit(target.reason === 'invalid_url' ? 2 : 3);
 }
 
 const client = new Client({ connectionString: url });

@@ -54,7 +54,7 @@ describe('ficha: sin contenido verificado', () => {
     expect(html).not.toContain('<article');
     expect(html).not.toContain('Verificado el');
     expect(html).not.toContain('<a ');
-    expect(html).not.toContain('Contenido publicado el');
+    expect(html).not.toContain('Contenido del sitio actualizado');
   });
 
   it('un volcán incluye la altitud entre lo no verificado; una localidad no', () => {
@@ -169,31 +169,68 @@ describe('ficha: contenido verificado', () => {
     }
   });
 
-  it('la fecha de exportación del contenido solo aparece si existe', () => {
+  it('la fecha de exportación del contenido solo aparece si existe, y dice de QUÉ es la fecha', () => {
     expect(render([assertion()], [], 'es', { generatedAt: '2026-10-21T12:00:00.000Z' })).toContain(
-      'Contenido publicado el 21 de octubre de 2026',
+      'Contenido del sitio actualizado por última vez el 21 de octubre de 2026',
     );
     expect(render([assertion()], [], 'es', { generatedAt: null })).not.toContain(
-      'Contenido publicado',
+      'Contenido del sitio actualizado',
     );
   });
+
+  it('un destino SIN nada que decir no muestra la fecha de exportación de todo el sitio (no es suya)', () => {
+    // La instantánea es una sola para todo el sitio: su fecha cambia con cada exportación aunque este destino no.
+    const html = render([], [], 'es', { generatedAt: '2026-10-21T12:00:00.000Z' });
+    expect(html).toContain('todavía no está redactada');
+    expect(html).not.toContain('Contenido del sitio actualizado');
+    // Con un aviso (vencido o en disputa) sí hay algo publicado sobre el destino
+    const disputed: FieldNotice = {
+      destinationKey: 'boquete',
+      fieldKey: 'safety.hazards',
+      state: 'DISPUTED',
+    };
+    expect(render([], [disputed], 'es', { generatedAt: '2026-10-21T12:00:00.000Z' })).toContain(
+      'Contenido del sitio actualizado por última vez el 21 de octubre de 2026',
+    );
+  });
+
+  it.each(LOCALES)(
+    '%s: la línea de confianza usa la puntuación del idioma (en francés, espacio duro antes de «:»)',
+    (locale) => {
+      const html = render([assertion({ confidence: 'medium' })], [], locale);
+      const meta = [...html.matchAll(/<p class="[^"]*meta[^"]*">([^<]*)<\/p>/g)]
+        .map((m) => m[1] ?? '')
+        .find((line) => line.includes(' · '));
+      expect(meta, locale).toBeDefined();
+      const expected = {
+        es: 'Confianza: media',
+        en: 'Confidence: medium',
+        pt: 'Confiança: média',
+        fr: 'Fiabilité\u00a0: moyenne',
+        de: 'Verlässlichkeit: mittel',
+      }[locale];
+      expect(meta, locale).toContain(expected);
+    },
+  );
 });
 
 describe('ficha: idioma sin fingir traducción', () => {
   it('sin traducción se muestra el original, se dice por qué y se marca el idioma del texto', () => {
     const html = render([assertion()], [], 'en');
     expect(html).toContain(
-      'Showing the original text in Español: there is no translation into this language yet.',
+      'Showing the original text in Spanish: there is no translation into this language yet.',
     );
+    expect(html).not.toContain('Español');
     expect(html).toContain('lang="es"');
     expect(html).toContain('[prueba] texto original');
     expect(html).not.toContain('Translation reviewed by a person.');
   });
 
   it.each([
-    ['draft', 'has not been reviewed by a person yet'],
-    ['machine_translated', 'has not been reviewed by a person yet'],
-    ['reviewed', 'has not been reviewed by a person yet'],
+    ['draft', 'there is no reviewed and published translation yet'],
+    ['machine_translated', 'there is no reviewed and published translation yet'],
+    // «reviewed» SÍ está revisada, pero no publicada: la razón no puede decir que nadie la revisó
+    ['reviewed', 'there is no reviewed and published translation yet'],
     ['outdated', 'is out of date'],
   ] as const)('una traducción «%s» NO se muestra', (status, reason) => {
     const html = render(
@@ -214,6 +251,39 @@ describe('ficha: idioma sin fingir traducción', () => {
     expect(html).not.toContain('[test] original text');
     expect(html).toContain(reason);
     expect(html).toContain('[prueba] texto original');
+  });
+
+  it.each([
+    ['en', 'Showing the original text in Spanish: there is no translation into this language yet.'],
+    [
+      'pt',
+      'Exibindo o texto original em espanhol: ainda não existe uma tradução para este idioma.',
+    ],
+    ['fr', 'Texte original affiché en espagnol\u00a0: il n’existe pas encore de traduction'],
+    ['de', 'Der Originaltext wird auf Spanisch angezeigt: Es gibt noch keine Übersetzung'],
+  ] as const)(
+    '%s: el idioma del original (español) se nombra en el idioma de la interfaz, dentro de una frase correcta',
+    (locale, expected) => {
+      const html = render([assertion()], [], locale);
+      expect(html).toContain(expected);
+      expect(html).not.toContain('Español'); // el endónimo no se incrusta en una frase de otro idioma
+    },
+  );
+
+  it('una afirmación cuyo original está en inglés se nombra «inglés» en español, sin endónimo', () => {
+    const html = render(
+      [
+        assertion({
+          sourceLocale: 'en',
+          texts: [original({ locale: 'en', text: '[test] source' })],
+        }),
+      ],
+      [],
+      'es',
+    );
+    expect(html).toContain('Se muestra el texto original en inglés:');
+    expect(html).not.toContain('English');
+    expect(html).toContain('lang="en"');
   });
 
   it('una traducción humana publicada se muestra y se declara revisada', () => {
@@ -245,10 +315,33 @@ describe('ficha: vencido y en disputa', () => {
       'Reglas de entrada: la información verificada venció el 1 de junio de 2026',
     );
     expect(html).toContain('Riesgos y seguridad: hay información contradictoria en revisión');
+    // La sección de desconocidos DEBE existir (si desapareciera, `not.toContain` sobre '' pasaría sin probar nada)
+    expect(html).toContain('Sin datos verificados todavía');
     const unknownPart = html.split('Sin datos verificados todavía')[1] ?? '';
+    expect(unknownPart.length).toBeGreaterThan(0);
+    expect(unknownPart).toContain('Resumen'); // control positivo: sí lista lo que no se investigó
     expect(unknownPart).not.toContain('Reglas de entrada');
     expect(unknownPart).not.toContain('Riesgos y seguridad');
   });
+
+  it.each(LOCALES)(
+    '%s: con solo campos vencidos o en disputa NO se dice que la ficha «no está redactada» (se contradice con los avisos)',
+    (locale) => {
+      const pending = (messages[locale].Destinations as { contentPending: string }).contentPending;
+      for (const [assertions, notices] of [
+        [[], [expired]],
+        [[], [disputed]],
+        [[], [expired, disputed]],
+        [[entryRules({ validUntil: '2026-10-01' })], []], // venció por fecha: el estado se deriva
+      ] as [AssertionRecord[], FieldNotice[]][]) {
+        const html = render(assertions, notices, locale);
+        expect(html, locale).not.toContain(pending);
+        expect(html, locale).toContain('<div'); // sigue habiendo un aviso
+      }
+      // y el estado realmente vacío sí lo dice
+      expect(render([], [], locale)).toContain(pending);
+    },
+  );
 
   it('una afirmación que venció por fecha tampoco muestra su contenido', () => {
     const html = render([entryRules({ validUntil: '2026-10-01' })], [], 'es');

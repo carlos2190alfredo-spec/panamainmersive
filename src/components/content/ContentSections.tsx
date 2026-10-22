@@ -2,7 +2,12 @@ import { useTranslations } from 'next-intl';
 import { Notice } from '@/components/Notice';
 import type { DestinationContentView, VerifiedItem } from '@/domains/content/completeness';
 import { safeHttpsUrl } from '@/domains/geography/area-detail';
-import { formatCalendarDate, formatElevation, formatPanamaDateTime } from '@/i18n/format';
+import {
+  formatCalendarDate,
+  formatElevation,
+  formatLanguageName,
+  formatPanamaDateTime,
+} from '@/i18n/format';
 import { LOCALE_INFO, type Locale } from '@/i18n/locales';
 import styles from './ContentSections.module.css';
 
@@ -24,10 +29,14 @@ export function ContentSections({
   const t = useTranslations('Content');
   const destinations = useTranslations('Destinations');
   const fieldLabel = (key: string) => t(`fields.${key}` as 'fields.overview.summary');
+  // «Sin redactar» solo si NO hay nada que decir: con un campo vencido o en disputa sí se redactó, y el aviso
+  // de abajo lo cuenta; los dos mensajes juntos se contradirían.
+  const hasContent =
+    view.verified.length > 0 || view.expired.length > 0 || view.disputed.length > 0;
 
   return (
     <>
-      {view.verified.length === 0 ? (
+      {!hasContent ? (
         <Notice>
           <p>{destinations('contentPending')}</p>
         </Notice>
@@ -66,9 +75,10 @@ export function ContentSections({
         </section>
       ) : null}
 
-      {generatedAt !== null ? (
+      {/* La instantánea es una para todo el sitio: su fecha es la del sitio, y solo se muestra si esta ficha publica algo. */}
+      {generatedAt !== null && hasContent ? (
         <p className={styles.meta}>
-          {t('publishedOn', {
+          {t('siteContentUpdatedOn', {
             date: formatPanamaDateTime(locale, new Date(generatedAt), { dateStyle: 'long' }),
           })}
         </p>
@@ -96,7 +106,7 @@ function VerifiedField({ item, locale }: { item: VerifiedItem; locale: Locale })
         <>
           <p className={styles.fallback}>
             {t('originalShown', {
-              language: LOCALE_INFO[text.locale].endonym,
+              language: formatLanguageName(locale, text.locale),
               reason: t(`reason.${text.reason}`),
             })}
           </p>
@@ -122,7 +132,7 @@ function VerifiedField({ item, locale }: { item: VerifiedItem; locale: Locale })
           item.validUntil === null
             ? null
             : t('validUntil', { date: formatCalendarDate(locale, item.validUntil) }),
-          `${t('confidence.label')}: ${t(`confidence.${item.confidence}`)}`,
+          t('confidenceLine', { level: t(`confidence.${item.confidence}`) }),
         ]
           .filter((part): part is string => part !== null)
           .join(' · ')}

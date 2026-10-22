@@ -16,7 +16,11 @@ import {
   submit,
 } from './content-helpers';
 
-const NOW = new Date('2026-10-21T12:00:00.000Z');
+/**
+ * Hora de exportación: la REAL. La BD sella `verified_at` con su propio reloj y una instantánea no puede declararse
+ * exportada antes de lo que contiene (`snapshotIssues` lo comprueba, con 5 min de tolerancia entre relojes).
+ */
+const now = () => new Date();
 
 async function destination(
   db: TestDb,
@@ -42,10 +46,11 @@ describe('exportación de contenido publicado', () => {
   });
 
   it('una base sin contenido exporta una instantánea vacía y válida', async () => {
-    const { snapshot } = await exportPublished(db.owner, NOW);
+    const at = now();
+    const { snapshot } = await exportPublished(db.owner, at);
     expect(snapshot).toEqual({
       schema: 1,
-      generatedAt: '2026-10-21T12:00:00.000Z',
+      generatedAt: at.toISOString(),
       assertions: [],
       notices: [],
     });
@@ -150,7 +155,7 @@ describe('exportación de contenido publicado', () => {
       text: '[prueba] cómo llegar',
     });
 
-    const { snapshot } = await exportPublished(db.owner, NOW);
+    const { snapshot } = await exportPublished(db.owner, now());
 
     expect(
       snapshot.assertions.map((a) => `${a.destinationKey}/${a.fieldKey}@${String(a.version)}`),
@@ -198,19 +203,20 @@ describe('exportación de contenido publicado', () => {
   });
 
   it('es determinista: la misma base da los mismos bytes, y solo la hora de exportación difiere entre exportaciones', async () => {
-    const { snapshot: a } = await exportPublished(db.owner, NOW);
-    const { snapshot: b } = await exportPublished(db.owner, NOW);
+    const at = now();
+    const { snapshot: a } = await exportPublished(db.owner, at);
+    const { snapshot: b } = await exportPublished(db.owner, at);
     expect(serializeSnapshot(a)).toBe(serializeSnapshot(b));
     const { snapshot: later } = await exportPublished(
       db.owner,
-      new Date('2026-10-22T09:00:00.000Z'),
+      new Date(at.getTime() + 86_400_000),
     );
     expect(serializeSnapshot(a)).not.toBe(serializeSnapshot(later));
     expect(sameSnapshotContent(a, later)).toBe(true);
   });
 
   it('exporta con el rol anon y deja la conexión limpia (sin transacción ni rol residual)', async () => {
-    await exportPublished(db.owner, NOW);
+    await exportPublished(db.owner, now());
     const [row] = await rowsOf(
       db.owner,
       "select current_user as u, current_setting('transaction_read_only') as ro",
@@ -230,7 +236,7 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
       await seedPeople(db);
       const dest = await destination(db, 'destino-que-no-existe-en-el-registro', 'locality');
       await makeVerified(db, { destinationId: dest });
-      await expect(exportPublished(db.owner, NOW)).rejects.toBeInstanceOf(SnapshotError);
+      await expect(exportPublished(db.owner, now())).rejects.toBeInstanceOf(SnapshotError);
       // la conexión sigue usable tras el error
       expect(await rowsOf(db.owner, 'select 1 as ok')).toEqual([{ ok: 1 }]);
     } finally {
@@ -252,7 +258,7 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
         [dest, ids.reviewer, ids.editor],
       );
       await db.owner.query('set session_replication_role = origin');
-      const { snapshot, excluded } = await exportPublished(db.owner, NOW);
+      const { snapshot, excluded } = await exportPublished(db.owner, now());
       expect(snapshot.assertions).toEqual([]);
       expect(JSON.stringify(snapshot)).not.toContain('sin respaldo');
       expect(excluded).toHaveLength(1);
@@ -280,7 +286,7 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
          values ($1, 'es', '[test] mismo idioma que el original', 'human_translation', 'published', $2, $3, now())`,
         [id, ids.editor, ids.reviewer],
       );
-      await expect(exportPublished(db.owner, NOW)).rejects.toBeInstanceOf(SnapshotError);
+      await expect(exportPublished(db.owner, now())).rejects.toBeInstanceOf(SnapshotError);
     } finally {
       await db.close();
     }
@@ -302,7 +308,7 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
         [id, ids.reviewer],
       );
       // La RLS ya solo deja ver las humanas: la automática no llega a la instantánea
-      const { snapshot } = await exportPublished(db.owner, NOW);
+      const { snapshot } = await exportPublished(db.owner, now());
       expect(JSON.stringify(snapshot)).not.toContain('[test] máquina');
     } finally {
       await db.close();

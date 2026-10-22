@@ -6,11 +6,12 @@ import {
   formatCurrency,
   formatDistance,
   formatElevation,
+  formatLanguageName,
   formatList,
   formatNumber,
   formatPanamaDateTime,
 } from '@/i18n/format';
-import { LOCALES } from '@/i18n/locales';
+import { LOCALES, LOCALE_INFO } from '@/i18n/locales';
 
 // 15:30 UTC = 10:30 en Panamá (UTC−5, sin horario de verano).
 const instant = new Date('2026-10-20T15:30:00Z');
@@ -84,5 +85,32 @@ describe('formatos con Intl', () => {
     expect(formatList('en', ['a', 'b', 'c'])).toBe('a, b, and c');
     expect(formatList('es', ['a', 'b', 'c'])).toBe('a, b y c');
     expect(formatList('de', ['a', 'b', 'c'])).toBe('a, b und c');
+  });
+});
+
+describe('nombre de un idioma en el idioma de la interfaz', () => {
+  it.each([
+    ['es', 'es', 'español'],
+    ['es', 'en', 'inglés'],
+    ['en', 'es', 'Spanish'],
+    ['pt', 'es', 'espanhol'],
+    ['fr', 'es', 'espagnol'],
+    ['de', 'es', 'Spanisch'],
+    ['de', 'fr', 'Französisch'],
+    ['fr', 'de', 'allemand'],
+  ] as const)('en %s, «%s» se llama %s', (ui, language, expected) => {
+    expect(formatLanguageName(ui, language)).toBe(expected);
+  });
+
+  it('nunca es el endónimo en una frase de otro idioma (salvo que coincida con el idioma de la página)', () => {
+    for (const ui of LOCALES) {
+      for (const language of LOCALES) {
+        const name = formatLanguageName(ui, language);
+        expect(name.length).toBeGreaterThan(0);
+        if (ui !== language) {
+          expect(name, `${ui}/${language}`).not.toBe(LOCALE_INFO[language].endonym);
+        }
+      }
+    }
   });
 });

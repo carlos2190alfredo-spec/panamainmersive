@@ -2,12 +2,14 @@
  * Comprobación posterior al build (`pnpm check:bundle`, requiere `pnpm build`):
  *  1. ningún secreto ni nombre de variable solo-servidor en el bundle de cliente (`.next/static`);
  *  2. presupuesto de JS/CSS que carga cada página pública (medición real, gzip);
- *  3. presupuesto del mapa, que se carga DIFERIDO (MapLibre + su worker + PMTiles) solo en /explorar.
+ *  3. presupuesto del mapa, que se carga DIFERIDO (MapLibre + su worker + PMTiles) solo en /explorar;
+ *  4. la ficha y el sitemap se regeneran (`revalidate`): la caducidad del contenido se evalúa por día.
  * Los presupuestos son objetivos iniciales (docs/performance.md): se ajustan con evidencia.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { SERVER_ONLY_NAMES, assetsOfHtml, findForbidden, gzipBytes, walk } from './lib/bundle-scan';
+import { REVALIDATE_SECONDS, revalidationProblems, type PrerenderEntry } from './lib/isr-scan';
 
 const ROOT = process.cwd();
 const NEXT = join(ROOT, '.next');
@@ -114,5 +116,21 @@ if (lazyKb > MAP_LAZY_BUDGET_KB) {
     `FALLO: el mapa pesa ${lazyKb.toFixed(1)} KB > presupuesto ${MAP_LAZY_BUDGET_KB} KB`,
   );
   failed = true;
+}
+// 4) Regeneración de lo que depende del día --------------------------------------------------------------
+// La caducidad del contenido verificado se evalúa por día al regenerar: la ficha y el sitemap deben tener revalidate.
+const manifestPath = join(NEXT, 'prerender-manifest.json');
+if (!existsSync(manifestPath)) {
+  console.error('FALLO: falta .next/prerender-manifest.json (¿cambió la forma del build?).');
+  failed = true;
+} else {
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    routes?: Record<string, PrerenderEntry>;
+  };
+  const isrProblems = revalidationProblems(manifest.routes ?? {});
+  for (const p of isrProblems) console.error(`FALLO: ${p}`);
+  if (isrProblems.length > 0) failed = true;
+  else
+    console.log(`\nOK: la ficha y el sitemap se regeneran cada ${String(REVALIDATE_SECONDS)} s.`);
 }
 if (failed) process.exit(1);

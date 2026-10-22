@@ -3,6 +3,7 @@ import {
   EMPTY_SNAPSHOT,
   SnapshotError,
   parseSnapshot,
+  snapshotAgeDays,
   snapshotIssues,
   snapshotToRecords,
   type PublishedSnapshot,
@@ -249,5 +250,104 @@ describe('serialización y edad de la instantánea', () => {
     expect(snapshotAgeDays(s, '2026-10-21')).toBe(0);
     expect(snapshotAgeDays(s, '2026-11-04')).toBe(14);
     expect(snapshotAgeDays(s, 'mal')).toBeNull();
+  });
+});
+
+/**
+ * Revisión independiente (2.ª tanda): `generatedAt` y los avisos no pasan por ninguna puerta, y el cargador los
+ * aceptaba con cualquier cadena. Un `generatedAt` basura rompía el render de cada ficha (`RangeError`), y un aviso con
+ * `validUntil: '2026-13-45'` se mostraba como otra fecha. Un archivo editado a mano debe romper AL CARGAR.
+ */
+describe('instantánea: lo que no pasa por las puertas', () => {
+  type Notice = PublishedSnapshot['notices'][number];
+  const expired = (over: Partial<Extract<Notice, { state: 'EXPIRED' }>> = {}): Notice => ({
+    destinationKey: 'boquete',
+    fieldKey: 'overview.summary',
+    state: 'EXPIRED',
+    verifiedAt: '2026-06-01T12:00:00Z',
+    validUntil: '2026-09-01',
+    ...over,
+  });
+  const withNotices = (notices: Notice[]): PublishedSnapshot => snap([], notices);
+
+  it('un aviso coherente se acepta (control positivo)', () => {
+    expect(() => parseSnapshot(withNotices([expired()]))).not.toThrow();
+    expect(() =>
+      parseSnapshot(
+        withNotices([{ destinationKey: 'boquete', fieldKey: 'safety.hazards', state: 'DISPUTED' }]),
+      ),
+    ).not.toThrow();
+  });
+
+  it.each(['ayer por la tarde', '2026-02-31T00:00:00Z', '2026-10-21', ''])(
+    'generatedAt que no es un instante real se rechaza al cargar: «%s»',
+    (generatedAt) => {
+      expect(() => parseSnapshot({ ...snap([assertion()]), generatedAt })).toThrow(SnapshotError);
+    },
+  );
+
+  it('generatedAt nulo solo es válido en la instantánea vacía (nunca exportada)', () => {
+    expect(() => parseSnapshot(EMPTY_SNAPSHOT)).not.toThrow();
+    expect(() => parseSnapshot({ ...snap([assertion()]), generatedAt: null })).toThrow(
+      SnapshotError,
+    );
+    expect(() => parseSnapshot({ ...withNotices([expired()]), generatedAt: null })).toThrow(
+      SnapshotError,
+    );
+  });
+
+  it.each([
+    ['verifiedAt que no es un instante', { verifiedAt: 'nunca' }],
+    ['verifiedAt imposible', { verifiedAt: '2026-02-31T12:00:00Z' }],
+    ['verifiedAt posterior a la exportación', { verifiedAt: '2026-10-22T00:00:00Z' }],
+    ['validUntil que no existe en el calendario', { validUntil: '2026-13-45' }],
+    ['validUntil que no existe (31 de febrero)', { validUntil: '2026-02-31' }],
+    ['EXPIRED con vigencia que aún no ha vencido', { validUntil: '2099-01-01' }],
+    ['EXPIRED con vigencia hasta el día de la exportación', { validUntil: '2026-10-21' }],
+  ] as const)('aviso EXPIRED inválido: %s', (_name, over) => {
+    expect(() => parseSnapshot(withNotices([expired({ ...over })]))).toThrow(SnapshotError);
+  });
+
+  it('un aviso de un campo que no aplica al destino se rechaza (también DISPUTED)', () => {
+    // `facts.elevation_m` solo aplica a volcanes; Boquete es una localidad.
+    for (const notice of [
+      expired({ fieldKey: 'facts.elevation_m' }),
+      { destinationKey: 'boquete', fieldKey: 'facts.elevation_m', state: 'DISPUTED' } as Notice,
+    ]) {
+      expect(() => parseSnapshot(withNotices([notice]))).toThrow(SnapshotError);
+    }
+  });
+
+  it('una afirmación verificada «después» de la exportación se rechaza', () => {
+    const a = assertion({ verifiedAt: '2026-10-22T00:00:00Z' });
+    expect(() => parseSnapshot(snap([a]))).toThrow(SnapshotError);
+  });
+
+  it('un campo de texto con cantidad se rechaza (la BD lo impide con assertion_one_value_kind)', () => {
+    const a = assertion({ quantity: { value: 5, unit: 'm' } });
+    expect(() => parseSnapshot(snap([a]))).toThrow(SnapshotError);
+  });
+
+  it('una cantidad fuera del rango de la BD (< 1e12) se rechaza', () => {
+    expect(() =>
+      parseSnapshot(snap([elevation({ quantity: { value: 1e12, unit: 'm' } })])),
+    ).toThrow(SnapshotError);
+    expect(() =>
+      parseSnapshot(snap([elevation({ quantity: { value: 999_999_999_999, unit: 'm' } })])),
+    ).not.toThrow();
+  });
+
+  it('snapshotAgeDays cuenta el día de PANAMÁ de la exportación, no el día UTC escrito', () => {
+    // 21:00 en Panamá del 21 de octubre = 02:00Z del 22: hoy (Panamá) es el 21 → edad 0, no −1.
+    const late = { ...snap([]), generatedAt: '2026-10-22T02:00:00Z' };
+    expect(snapshotAgeDays(late, '2026-10-21')).toBe(0);
+    // Medianoche de Panamá (05:00Z) ya es el día siguiente.
+    const midnight = { ...snap([]), generatedAt: '2026-10-22T05:00:00Z' };
+    expect(snapshotAgeDays(midnight, '2026-10-22')).toBe(0);
+    expect(snapshotAgeDays(midnight, '2026-10-21')).toBe(-1);
+  });
+
+  it('snapshotAgeDays no inventa una edad para un instante inválido', () => {
+    expect(snapshotAgeDays({ ...snap([]), generatedAt: 'ayer' }, '2026-10-21')).toBeNull();
   });
 });

@@ -55,6 +55,17 @@ export function formatPanamaDateTime(
   }).format(date);
 }
 
+/**
+ * Nombre de un idioma ESCRITO en el idioma de la interfaz («español» en una página en español, «Spanish» en una en
+ * inglés, «Spanisch» en una en alemán). Sirve para frases como «texto original en {idioma}»: el endónimo («Español»)
+ * dentro de una frase en alemán o francés es agramatical, y un lector de pantalla lo pronuncia con otra fonética.
+ */
+export function formatLanguageName(ui: Locale, language: Locale): string {
+  const name = new Intl.DisplayNames(formatTag(ui), { type: 'language' }).of(language);
+  // `of` solo devuelve `undefined` si el código no es válido; los de `Locale` lo son siempre.
+  return name ?? LOCALE_INFO[language].endonym;
+}
+
 /** Fecha sin hora; `isoDate` (AAAA-MM-DD) se interpreta como día calendario, sin saltos de zona. */
 export function formatCalendarDate(locale: Locale, isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
