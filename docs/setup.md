@@ -120,3 +120,8 @@ DATABASE_URL=postgresql://… pnpm content:export --check     # sale con 1 si el
 - Revisa el `git diff` de `data/content/published.json` antes de desplegar: es el contenido que verá el público.
 - **Una disputa o retirada hecha en la BD no llega a la web hasta exportar y desplegar** (F4-4).
 - `pnpm test:e2e:content` prueba todo el recorrido con contenido **sintético** en una base temporal y una copia temporal de la app (`.e2e-content-app/`, ignorada por git y borrada al terminar): no toca `data/content/published.json` ni el build del proyecto.
+
+### 8.1 Exclusiones al exportar y cambio de umbrales (ADR-0020)
+
+- Si algo verificado **ya no cumple** las puertas del registro **vigente** (típicamente, tras endurecer un umbral), `pnpm content:export` **no lo publica**: lo lista en `stderr` con sus códigos (`EXCLUIDA destino/campo@versión …`), lo cuenta en el resumen JSON (`excluded`) y termina con **código 4**. El archivo se escribe igualmente, de forma **atómica**, sin esa afirmación. `--allow-exclusions` acepta las exclusiones (código 0). Lo malformado (forma inválida, duplicados, traducciones no publicables, destino desconocido) sigue haciendo fallar **toda** la exportación sin escribir nada.
+- **Para cambiar un umbral** (F4-1): una migración **nueva** que actualice `content_fields` **y** el registro de `src/domains/content/fields.ts`; después `pnpm content:export --dry-run` lista qué dejaría de cumplir; cada afirmación afectada se **retira** o se **verifica de nuevo como versión nueva**. Aún no se guarda con cada verificación la versión del registro (DEFERRED).

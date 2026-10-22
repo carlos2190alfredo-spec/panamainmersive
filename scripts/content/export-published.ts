@@ -3,9 +3,12 @@
  * Exporta el contenido verificado y público de la BD a `data/content/published.json` (ADR-0019).
  *  --check    no escribe: sale con 1 si el archivo difiere de lo que hay en la BD (sin contar la hora de exportación).
  *  --dry-run  muestra el resumen sin escribir.
+ *  --allow-exclusions  no falla (código 4) cuando algo verificado ya no cumple las puertas del registro vigente y se
+ *             EXCLUYE de la instantánea (ADR-0020). Sin esta opción el archivo se escribe igualmente, pero el código de
+ *             salida avisa: que una exclusión pase desapercibida sería perder contenido en silencio.
  * Una base que NO sea local exige confirmar el host con CONTENT_CONFIRM_REMOTE=<host>. Solo LEE (rol `anon`).
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
 import {
@@ -41,12 +44,19 @@ if (!isLocalHost(host) && process.env.CONTENT_CONFIRM_REMOTE !== host) {
 const client = new Client({ connectionString: url });
 await client.connect();
 try {
-  const snapshot = await exportPublished(client, new Date());
+  const { snapshot, excluded } = await exportPublished(client, new Date());
   const summary = {
     assertions: snapshot.assertions.length,
     notices: snapshot.notices.length,
     destinations: new Set(snapshot.assertions.map((a) => a.destinationKey)).size,
+    excluded: excluded.length,
   };
+  for (const e of excluded) {
+    console.error(
+      `EXCLUIDA ${e.destinationKey}/${e.fieldKey}@${String(e.version)} (${e.id}): ya no cumple ${e.codes.join(', ')}. ` +
+        'No se publica: retírala o verifica una versión nueva.',
+    );
+  }
   if (flag('--check')) {
     const current = parseSnapshot(JSON.parse(readFileSync(out, 'utf8')) as unknown);
     const same = sameSnapshotContent(current, snapshot);
@@ -55,8 +65,14 @@ try {
   } else if (flag('--dry-run')) {
     console.log(JSON.stringify({ ...summary, wrote: false }));
   } else {
-    writeFileSync(out, serializeSnapshot(snapshot));
+    // Escritura atómica: nunca queda un archivo a medias si el proceso muere a mitad.
+    const tmp = `${out}.tmp-${String(process.pid)}`;
+    writeFileSync(tmp, serializeSnapshot(snapshot));
+    renameSync(tmp, out);
     console.log(JSON.stringify({ ...summary, wrote: out }));
+  }
+  if (excluded.length > 0 && !flag('--allow-exclusions') && process.exitCode === undefined) {
+    process.exitCode = 4;
   }
 } catch (error) {
   if (error instanceof SnapshotError) {

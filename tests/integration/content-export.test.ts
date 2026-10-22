@@ -42,7 +42,7 @@ describe('exportación de contenido publicado', () => {
   });
 
   it('una base sin contenido exporta una instantánea vacía y válida', async () => {
-    const snapshot = await exportPublished(db.owner, NOW);
+    const { snapshot } = await exportPublished(db.owner, NOW);
     expect(snapshot).toEqual({
       schema: 1,
       generatedAt: '2026-10-21T12:00:00.000Z',
@@ -150,7 +150,7 @@ describe('exportación de contenido publicado', () => {
       text: '[prueba] cómo llegar',
     });
 
-    const snapshot = await exportPublished(db.owner, NOW);
+    const { snapshot } = await exportPublished(db.owner, NOW);
 
     expect(
       snapshot.assertions.map((a) => `${a.destinationKey}/${a.fieldKey}@${String(a.version)}`),
@@ -198,10 +198,13 @@ describe('exportación de contenido publicado', () => {
   });
 
   it('es determinista: la misma base da los mismos bytes, y solo la hora de exportación difiere entre exportaciones', async () => {
-    const a = await exportPublished(db.owner, NOW);
-    const b = await exportPublished(db.owner, NOW);
+    const { snapshot: a } = await exportPublished(db.owner, NOW);
+    const { snapshot: b } = await exportPublished(db.owner, NOW);
     expect(serializeSnapshot(a)).toBe(serializeSnapshot(b));
-    const later = await exportPublished(db.owner, new Date('2026-10-22T09:00:00.000Z'));
+    const { snapshot: later } = await exportPublished(
+      db.owner,
+      new Date('2026-10-22T09:00:00.000Z'),
+    );
     expect(serializeSnapshot(a)).not.toBe(serializeSnapshot(later));
     expect(sameSnapshotContent(a, later)).toBe(true);
   });
@@ -235,7 +238,7 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
     }
   });
 
-  it('datos que no cumplen las puertas (p. ej. alguien se saltó los disparadores) se rechazan al exportar', async () => {
+  it('datos que no cumplen las puertas (p. ej. alguien se saltó los disparadores) NO se publican y se dicen; no se reparan', async () => {
     const db = await createTestDb();
     try {
       await seedPeople(db);
@@ -249,9 +252,35 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
         [dest, ids.reviewer, ids.editor],
       );
       await db.owner.query('set session_replication_role = origin');
-      const error = await exportPublished(db.owner, NOW).catch((e: unknown) => e);
-      expect(error).toBeInstanceOf(SnapshotError);
-      expect((error as SnapshotError).issues.join(' ')).toContain('evidence_none');
+      const { snapshot, excluded } = await exportPublished(db.owner, NOW);
+      expect(snapshot.assertions).toEqual([]);
+      expect(JSON.stringify(snapshot)).not.toContain('sin respaldo');
+      expect(excluded).toHaveLength(1);
+      expect(excluded[0]).toMatchObject({
+        destinationKey: 'boquete',
+        fieldKey: 'overview.summary',
+        version: 1,
+      });
+      expect(excluded[0]?.codes).toContain('evidence_none');
+    } finally {
+      await db.close();
+    }
+  });
+
+  it('en cambio, lo malformado (aquí, una traducción que no es publicable) sigue haciendo fallar TODA la exportación', async () => {
+    const db = await createTestDb();
+    try {
+      await seedPeople(db);
+      const dest = await destination(db, 'boquete', 'locality');
+      const id = await makeVerified(db, { destinationId: dest });
+      // La RLS solo deja ver las humanas publicadas; se fuerza una fila con idioma repetido respecto del original
+      await db.owner.query('alter table public.assertion_translations disable trigger user');
+      await db.owner.query(
+        `insert into public.assertion_translations (assertion_id, locale, text, provenance, status, translated_by, reviewed_by, reviewed_at)
+         values ($1, 'es', '[test] mismo idioma que el original', 'human_translation', 'published', $2, $3, now())`,
+        [id, ids.editor, ids.reviewer],
+      );
+      await expect(exportPublished(db.owner, NOW)).rejects.toBeInstanceOf(SnapshotError);
     } finally {
       await db.close();
     }
@@ -273,7 +302,7 @@ describe('la exportación falla en voz alta (nunca repara ni omite en silencio)'
         [id, ids.reviewer],
       );
       // La RLS ya solo deja ver las humanas: la automática no llega a la instantánea
-      const snapshot = await exportPublished(db.owner, NOW);
+      const { snapshot } = await exportPublished(db.owner, NOW);
       expect(JSON.stringify(snapshot)).not.toContain('[test] máquina');
     } finally {
       await db.close();

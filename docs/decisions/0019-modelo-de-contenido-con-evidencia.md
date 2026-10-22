@@ -1,6 +1,6 @@
 # 0019 — Modelo de contenido: afirmaciones con evidencia, estado derivado y publicación por instantánea
 
-- Estado: Aceptada (**los umbrales por campo son una propuesta de ingeniería pendiente de validar con la persona responsable de la edición**: F4-1)
+- Estado: Aceptada, **enmendada por [ADR-0020](0020-endurecimiento-del-modelo-de-contenido.md)** (una revisión independiente halló huecos reales en la separación de funciones, las traducciones y la paridad BD↔dominio; léela junto a esta) (**los umbrales por campo son una propuesta de ingeniería pendiente de validar con la persona responsable de la edición**: F4-1)
 - Fecha: 2026-10-21
 - Relacionadas: ADR-0007 (derechos), ADR-0008 (traducciones), ADR-0016 (API espacial), `docs/PROMPT-MAESTRO.md` §12, `docs/data-model.md`, `docs/i18n.md`
 

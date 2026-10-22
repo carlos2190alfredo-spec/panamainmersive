@@ -11,7 +11,7 @@ import {
 } from './assertion';
 import { dayOf, daysBetween } from './dates';
 import { FIELD_KEYS, SOURCE_CLASSES } from './fields';
-import { verificationIssues } from './gates';
+import { codePointLength, verificationIssues } from './gates';
 
 /**
  * Instantánea PUBLICADA del contenido (`data/content/published.json`). La produce `pnpm content:export` leyendo la BD
@@ -23,7 +23,13 @@ export const SNAPSHOT_SCHEMA_VERSION = 1;
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoInstant = z.string().max(40);
-const shortText = z.string().min(1).max(300);
+/** Longitud en puntos de código (como `char_length` de la BD), no en unidades UTF-16. */
+const text = (max: number, min = 0) =>
+  z.string().refine((s) => {
+    const n = codePointLength(s);
+    return n >= min && n <= max;
+  });
+const shortText = text(300, 1);
 
 const evidenceSchema = z.strictObject({
   id: z.uuid(),
@@ -36,12 +42,12 @@ const evidenceSchema = z.strictObject({
   license: z.strictObject({ name: shortText, url: z.string().max(2048).nullable() }),
   stance: z.enum(['supports', 'contradicts']),
   locator: shortText.nullable(),
-  excerpt: z.string().min(1).max(MAX_EXCERPT_LENGTH).nullable(),
+  excerpt: text(MAX_EXCERPT_LENGTH, 1).nullable(),
 });
 
 const textSchema = z.strictObject({
   locale: z.enum(LOCALES),
-  text: z.string().max(MAX_TEXT_LENGTH),
+  text: text(MAX_TEXT_LENGTH),
   provenance: z.enum(TEXT_PROVENANCES),
   status: z.enum(['draft', 'machine_translated', 'reviewed', 'published', 'outdated']),
 });
@@ -169,17 +175,68 @@ export class SnapshotError extends Error {
   }
 }
 
-/** Valida forma y semántica; lanza `SnapshotError` (nunca devuelve algo parcial). */
-export function parseSnapshot(raw: unknown): PublishedSnapshot {
+/** Valida SOLO la forma (esquema estricto); lanza `SnapshotError`. No comprueba las puertas ni la semántica. */
+export function parseSnapshotShape(raw: unknown): PublishedSnapshot {
   const parsed = snapshotSchema.safeParse(raw);
   if (!parsed.success) {
     throw new SnapshotError(
       parsed.error.issues.slice(0, 20).map((i) => `${i.path.join('.') || '(raíz)'}: ${i.code}`),
     );
   }
-  const issues = snapshotIssues(parsed.data);
-  if (issues.length > 0) throw new SnapshotError(issues);
   return parsed.data;
+}
+
+/** Valida forma y semántica; lanza `SnapshotError` (nunca devuelve algo parcial). */
+export function parseSnapshot(raw: unknown): PublishedSnapshot {
+  const snapshot = parseSnapshotShape(raw);
+  const issues = snapshotIssues(snapshot);
+  if (issues.length > 0) throw new SnapshotError(issues);
+  return snapshot;
+}
+
+export interface ExcludedAssertion {
+  readonly id: string;
+  readonly destinationKey: string;
+  readonly fieldKey: string;
+  readonly version: number;
+  /** Códigos de puerta que ya no cumple con el registro VIGENTE. */
+  readonly codes: readonly string[];
+}
+
+/**
+ * Separa lo que ya NO cumple las puertas del registro vigente (p. ej. tras endurecer un umbral: lo verificado es
+ * inmutable y se verificó con las reglas de entonces). No es reparar: lo excluido NO se publica y se devuelve con sus
+ * códigos para que quien exporta lo vea y lo trate (retirar, o verificar una versión nueva). Una sola afirmación así
+ * no debe impedir publicar una disputa o retirada urgente de OTRO destino. La forma inválida o lo manipulado siguen
+ * siendo un error de toda la instantánea (`parseSnapshotShape` y `snapshotIssues`).
+ */
+export function excludeFailingGates(snapshot: PublishedSnapshot): {
+  snapshot: PublishedSnapshot;
+  excluded: ExcludedAssertion[];
+} {
+  const excluded: ExcludedAssertion[] = [];
+  const kept = snapshot.assertions.filter((a) => {
+    const destination = getDestination(a.destinationKey);
+    if (!destination) return true; // lo reportará `snapshotIssues` como destino desconocido
+    const record: AssertionRecord = {
+      ...a,
+      status: 'verified',
+      supersededAt: null,
+      authorId: null,
+      verifiedById: null,
+    };
+    const codes = verificationIssues(record, destination.kind, { people: 'unavailable' });
+    if (codes.length === 0) return true;
+    excluded.push({
+      id: a.id,
+      destinationKey: a.destinationKey,
+      fieldKey: a.fieldKey,
+      version: a.version,
+      codes,
+    });
+    return false;
+  });
+  return { snapshot: { ...snapshot, assertions: kept }, excluded };
 }
 
 /**

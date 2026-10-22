@@ -375,15 +375,18 @@ describe('revisor', () => {
   });
 
   it('nadie revisa su propia traducción (restricción de integridad)', async () => {
-    await db.owner.query(
-      "update public.destination_translations set translated_by = $1 where destination_id = $2 and locale = 'en'",
-      [ids.reviewer, w.pubDest],
-    );
+    // La autoría es inmutable (migración 0008): el escenario se prepara saltando los disparadores, solo aquí.
+    const arrange = async (value: string | null) => {
+      await db.owner.query('set session_replication_role = replica');
+      await db.owner.query(
+        "update public.destination_translations set translated_by = $1 where destination_id = $2 and locale = 'en'",
+        [value, w.pubDest],
+      );
+      await db.owner.query('set session_replication_role = origin');
+    };
+    await arrange(ids.reviewer);
     await expectSqlState(reviewAs(ids.reviewer, ids.reviewer), '23514');
-    await db.owner.query(
-      "update public.destination_translations set translated_by = null where destination_id = $1 and locale = 'en'",
-      [w.pubDest],
-    );
+    await arrange(null);
   });
 
   it('un revisor sí puede publicar un destino; no concede roles', async () => {

@@ -103,7 +103,9 @@ async function main(): Promise<number> {
     await migrate(owner, join(ROOT, 'db/migrations'));
     await owner.query('set search_path = public, extensions');
     await seedContent(owner);
-    const snapshot = await exportPublished(owner, new Date());
+    const { snapshot, excluded } = await exportPublished(owner, new Date());
+    if (excluded.length > 0)
+      throw new Error(`La siembra sintética no debería excluir nada: ${JSON.stringify(excluded)}`);
     await owner.end();
     console.log(
       `Contenido exportado: ${snapshot.assertions.length} afirmaciones, ${snapshot.notices.length} avisos.`,

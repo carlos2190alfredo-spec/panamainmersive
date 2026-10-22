@@ -86,6 +86,10 @@ describe('puertas de verificación: cada una se activa sola', () => {
     ['validity_missing', () => entryRules({ validUntil: null })],
     ['validity_invalid', () => entryRules({ validFrom: '2027-04-01', validUntil: '2027-03-01' })],
     [
+      'validity_starts_after_verification',
+      () => entryRules({ validFrom: '2026-10-02', validUntil: '2027-03-01' }),
+    ],
+    [
       'validity_before_verification',
       () => entryRules({ validUntil: '2026-09-01', validFrom: null }),
     ],
@@ -284,8 +288,13 @@ describe('puertas de verificación: umbrales de varias fuentes', () => {
     maxValidityDays: null,
     appliesTo: 'all',
   };
+  // Cada n es un documento DISTINTO (otra URL): «dos fuentes» cuenta documentos, no filas de evidencia.
   const ev = (n: number, over = {}) =>
-    evidence({ id: `5b0c2a1e-8f0d-4c1b-9a53-0d6a3f2e1c0${String(n)}`, ...over });
+    evidence({
+      id: `5b0c2a1e-8f0d-4c1b-9a53-0d6a3f2e1c0${String(n)}`,
+      url: `https://example.org/doc-${String(n)}`,
+      ...over,
+    });
 
   it('una sola fuente no basta si se piden dos', () => {
     expect(evidenceIssues(assertion({ evidence: [ev(1)] }), two)).toContain(
@@ -304,8 +313,100 @@ describe('puertas de verificación: umbrales de varias fuentes', () => {
     expect(evidenceIssues(r, two)).toContain('evidence_class_insufficient');
   });
 
+  it('citar dos veces el mismo documento NO cumple «dos fuentes» (mismo enlace, otra mayúscula o con fragmento)', () => {
+    const again = (url: string) => assertion({ evidence: [ev(1), ev(2, { url })] });
+    for (const url of [
+      'https://example.org/doc-1',
+      'https://EXAMPLE.org/Doc-1',
+      'https://example.org/doc-1#otra-parte',
+    ]) {
+      expect(evidenceIssues(again(url), two), url).toContain('evidence_class_insufficient');
+    }
+  });
+
+  it('dos filas con el mismo enlace tampoco cuentan como dos fuentes frescas', () => {
+    const stale = ev(2, { url: 'https://example.org/doc-1', retrievedAt: '2025-01-01T00:00:00Z' });
+    expect(evidenceIssues(assertion({ evidence: [ev(1), stale] }), two)).toContain(
+      'evidence_class_insufficient',
+    );
+  });
+
   it('con dos fuentes, las dos deben estar dentro de la antigüedad máxima', () => {
     const old = ev(2, { retrievedAt: '2025-01-01T00:00:00Z' });
     expect(evidenceIssues(assertion({ evidence: [ev(1), old] }), two)).toContain('evidence_stale');
+  });
+});
+
+describe('puertas de verificación: endurecimiento tras la revisión (ADR-0020)', () => {
+  it('R-10: una vigencia ya vencida al verificar se rechaza también en campos estables', () => {
+    // overview.summary no caduca por registro; verificada el 2026-10-01
+    expect(issues(assertion({ validUntil: '2026-09-30' }))).toContain(
+      'validity_before_verification',
+    );
+    expect(issues(assertion({ validUntil: '2026-10-01' }))).toEqual([]);
+    expect(issues(assertion({ validUntil: null }))).toEqual([]);
+  });
+
+  it('R-8: algo que aún no rige no se verifica; el mismo día o antes sí', () => {
+    // verificada el 2026-10-01
+    expect(issues(entryRules({ validFrom: '2026-10-02' }))).toContain(
+      'validity_starts_after_verification',
+    );
+    expect(issues(entryRules({ validFrom: '2026-10-01' }))).toEqual([]);
+    expect(issues(entryRules({ validFrom: '2026-09-01' }))).toEqual([]);
+    // también en un campo estable, sin vigencia final
+    expect(issues(assertion({ validFrom: '2027-01-01' }))).toContain(
+      'validity_starts_after_verification',
+    );
+  });
+
+  it('R-4: los tamaños se cuentan en puntos de código, como en la BD', () => {
+    const emojis = (n: number) => assertion({ texts: [original({ text: '😀'.repeat(n) })] });
+    expect(issues(emojis(2500))).toEqual([]); // 5 000 unidades UTF-16, pero 2 500 caracteres
+    expect(issues(emojis(4000))).toEqual([]);
+    expect(issues(emojis(4001))).toContain('text_invalid');
+  });
+
+  it('R-4: «en blanco» incluye los espacios Unicode y los saltos de línea', () => {
+    for (const blank of [' ', '\n', '\t', ' ', '﻿', '　', ' ']) {
+      expect(
+        issues(assertion({ texts: [original({ text: blank })] })),
+        JSON.stringify(blank),
+      ).toContain('original_text_missing');
+    }
+    // el espacio de ancho cero NO es blanco para trim(), y la BD coincide
+    expect(issues(assertion({ texts: [original({ text: '​' })] }))).toEqual([]);
+  });
+
+  it('los ayudantes: puntos de código, enlaces https y fuente normalizada', async () => {
+    const { codePointLength, isHttpsUrl, normalizeSourceUrl } =
+      await import('@/domains/content/gates');
+    expect(codePointLength('')).toBe(0);
+    expect(codePointLength('a😀b')).toBe(3);
+    expect(codePointLength('é')).toBe(2); // un acento combinado son dos puntos de código (igual que char_length)
+    expect(isHttpsUrl('https://example.org/x')).toBe(true);
+    for (const bad of [
+      'http://example.org',
+      'javascript:alert(1)',
+      'https://',
+      'https://%',
+      'ftp://example.org',
+      '',
+    ]) {
+      expect(isHttpsUrl(bad), bad).toBe(false);
+    }
+    expect(normalizeSourceUrl('HTTPS://Example.ORG/Doc#frag')).toBe('https://example.org/doc');
+    expect(normalizeSourceUrl('https://example.org/a#b#c')).toBe('https://example.org/a');
+  });
+
+  it('fieldOverride evalúa con otro campo (solo para probar umbrales que el registro no usa)', () => {
+    const strict = {
+      ...CONTENT_FIELDS[0],
+      evidence: { classes: ['official'], minCount: 2, maxAgeDays: 100 },
+    } as ContentField;
+    expect(verificationIssues(assertion(), 'locality', DB, strict)).toContain(
+      'evidence_class_insufficient',
+    );
+    expect(verificationIssues(assertion(), 'locality', DB)).toEqual([]);
   });
 });

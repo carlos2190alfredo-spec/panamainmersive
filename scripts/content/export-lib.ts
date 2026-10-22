@@ -1,5 +1,12 @@
 import type { Client } from 'pg';
-import { parseSnapshot, type PublishedSnapshot } from '../../src/domains/content/snapshot';
+import {
+  SnapshotError,
+  excludeFailingGates,
+  parseSnapshotShape,
+  snapshotIssues,
+  type ExcludedAssertion,
+  type PublishedSnapshot,
+} from '../../src/domains/content/snapshot';
 
 /**
  * Exporta el contenido PÚBLICO de la BD a la instantánea que lee la aplicación (ADR-0019).
@@ -57,7 +64,13 @@ interface NoticeRow {
   valid_until: string | null;
 }
 
-export async function exportPublished(client: Client, now: Date): Promise<PublishedSnapshot> {
+export interface ExportResult {
+  readonly snapshot: PublishedSnapshot;
+  /** Lo que ya NO cumple las puertas del registro vigente: no se publica y se dice (ADR-0020). */
+  readonly excluded: readonly ExcludedAssertion[];
+}
+
+export async function exportPublished(client: Client, now: Date): Promise<ExportResult> {
   await client.query('begin isolation level repeatable read read only');
   try {
     await client.query('set local role anon');
@@ -179,8 +192,13 @@ export async function exportPublished(client: Client, now: Date): Promise<Publis
       ),
     };
 
-    // Forma + puertas del dominio. Cualquier incumplimiento lanza `SnapshotError`: no se escribe nada.
-    return parseSnapshot(raw);
+    // Forma estricta (error de TODO si falla). Después se separa lo que ya no cumple las puertas del registro vigente
+    // —se excluye y se informa, sin reparar— y lo demás se revalida entero (duplicados, traducciones, avisos…).
+    const shaped = parseSnapshotShape(raw);
+    const { snapshot, excluded } = excludeFailingGates(shaped);
+    const issues = snapshotIssues(snapshot);
+    if (issues.length > 0) throw new SnapshotError(issues);
+    return { snapshot, excluded };
   } finally {
     await client.query('rollback');
   }
