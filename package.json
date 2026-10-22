@@ -30,7 +30,8 @@
     "data:ingest": "python3 -I pipelines/ingest/import_areas.py --dataset overture-protected-areas && python3 -I pipelines/ingest/import_areas.py --dataset overture-destination-references",
     "db:import-areas": "tsx scripts/db/import-areas.ts",
     "content:export": "tsx scripts/content/export-published.ts",
-    "test:e2e:content": "tsx scripts/e2e-content.ts"
+    "test:e2e:content": "tsx scripts/e2e-content.ts",
+    "perf:vitals": "tsx scripts/perf/vitals.ts"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "5.3.0",

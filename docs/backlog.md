@@ -84,16 +84,17 @@ Street imagery e historias · Empresas · Actividades · Rutas y viajes · IA ·
 
 ## Deuda técnica y mejoras registradas
 
-| ID   | Tema                                                                                                                                                         | Estado              |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| T-01 | Job informativo de CI con TypeScript 7 para detectar cuándo typescript-eslint lo soporte (ADR-0002)                                                          | DEFERRED            |
-| T-02 | Pasar a ESLint 10 cuando `eslint-plugin-jsx-a11y` lo declare compatible (ADR-0012)                                                                           | DEFERRED            |
-| T-03 | Copiar el terreno Terrarium a almacenamiento propio para producción (términos y estabilidad)                                                                 | DEFERRED            |
-| T-04 | Decisión de proveedor de imagen satelital abierta (Sentinel-2 COG requiere servicio de teselas)                                                              | DEFERRED            |
-| T-05 | Decidir variante del portugués (BR/PT) y tono por idioma                                                                                                     | BLOCKED (editorial) |
-| T-06 | Puente XYZ sobre PMTiles para `MVTDataProvider` de Cesium (solo si se activa Cesium)                                                                         | DEFERRED            |
-| T-07 | Fuente de extracto OSM para Valhalla (Geofabrik bloqueado)                                                                                                   | BLOCKED             |
-| T-08 | Observabilidad (Sentry/OpenTelemetry) cuando se conozca el despliegue                                                                                        | DEFERRED            |
-| T-09 | La URL del worker de MapLibre depende de que Turbopack emita el activo (E-46); revisar al actualizar MapLibre/Next                                           | DEFERRED            |
-| T-10 | `.next/static/media` incluye `maplibre-gl-dev*.mjs` y `-shared*.mjs` (≈ 3,7 MB sin comprimir) que no se piden en producción: valorar podarlos del despliegue | DEFERRED            |
-| T-11 | Caché de desarrollo de Turbopack obsoleta puede provocar un bucle de recarga («HMR hash mismatch»): borrar `.next/dev` (ver CLAUDE.md)                       | NOTA                |
+| ID   | Tema                                                                                                                                                                                                    | Estado              |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| T-01 | Job informativo de CI con TypeScript 7 para detectar cuándo typescript-eslint lo soporte (ADR-0002)                                                                                                     | DEFERRED            |
+| T-02 | Pasar a ESLint 10 cuando `eslint-plugin-jsx-a11y` lo declare compatible (ADR-0012)                                                                                                                      | DEFERRED            |
+| T-03 | Copiar el terreno Terrarium a almacenamiento propio para producción (términos y estabilidad)                                                                                                            | DEFERRED            |
+| T-04 | Decisión de proveedor de imagen satelital abierta (Sentinel-2 COG requiere servicio de teselas)                                                                                                         | DEFERRED            |
+| T-05 | Decidir variante del portugués (BR/PT) y tono por idioma                                                                                                                                                | BLOCKED (editorial) |
+| T-06 | Puente XYZ sobre PMTiles para `MVTDataProvider` de Cesium (solo si se activa Cesium)                                                                                                                    | DEFERRED            |
+| T-07 | Fuente de extracto OSM para Valhalla (Geofabrik bloqueado)                                                                                                                                              | BLOCKED             |
+| T-08 | Observabilidad (Sentry/OpenTelemetry) cuando se conozca el despliegue                                                                                                                                   | DEFERRED            |
+| T-09 | La URL del worker de MapLibre depende de que Turbopack emita el activo (E-46); revisar al actualizar MapLibre/Next                                                                                      | DEFERRED            |
+| T-10 | `.next/static/media` incluye `maplibre-gl-dev*.mjs` y `-shared*.mjs` (≈ 3,7 MB sin comprimir) que no se piden en producción: valorar podarlos del despliegue                                            | DEFERRED            |
+| T-11 | Caché de desarrollo de Turbopack obsoleta puede provocar un bucle de recarga («HMR hash mismatch»): borrar `.next/dev` (ver CLAUDE.md)                                                                  | NOTA                |
+| T-12 | Rendimiento en **hardware y red reales** y medición de **INP/FPS** (hoy solo hay M-06: móvil emulado, CPU ×4, SwiftShader); decidir si `perf:vitals` pasa a ser una comprobación informativa programada | PENDING             |

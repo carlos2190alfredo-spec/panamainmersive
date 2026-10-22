@@ -1,6 +1,6 @@
 # Rendimiento y accesibilidad
 
-> Los números de esta página son **presupuestos y objetivos**, no resultados. Los resultados medidos se registran aparte en la sección «Mediciones» con fecha, dispositivo, red y qué incluye cada medición. Hoy **no hay mediciones**.
+> Los números de esta página son **presupuestos y objetivos**, no resultados. Los resultados medidos se registran aparte en la sección «Mediciones» con fecha, dispositivo, red y qué incluye cada medición. Las **únicas** mediciones son las de abajo (M-01…M-06) y **ninguna** es en hardware ni red reales.
 
 ## Presupuestos iniciales (del documento rector)
 
@@ -96,3 +96,22 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 - **Sin zod en el cliente** (E-51): evita una violación de CSP y su peso.
 - **Riesgo**: con ≈ 4,6 KB de margen, la siguiente mejora de Explorar obliga a diferir el panel o a recalibrar el presupuesto con evidencia (F3-10).
 - **Sin medir**: latencia de la ficha, coste de `queryRenderedFeatures` en cada `idle` con las siete capas, FPS al elegir áreas con geometrías grandes en dispositivos reales.
+
+### M-06 · Línea base de Web Vitals en móvil EMULADO (2026-10-22)
+
+- **Qué mide**: `pnpm perf:vitals` (`scripts/perf/vitals.ts`) sobre el build de producción, con Chromium 141, **Pixel 5 emulado, CPU ×4 y red de 10 Mbps / 100 ms RTT** (CDP), **caché fría** (contexto nuevo en cada pasada), **5 pasadas por página**. Se informa la **mediana** y el rango. FCP, LCP, CLS (mayor ventana de sesión), TBT **aproximado** (tareas largas desde FCP), bytes transferidos **comprimidos** y peticiones. En Explorar, además, el tiempo hasta `data-map-status="ready"`. Datos en bruto: `docs/research/perf-baseline-2026-10-22.json`.
+- **Equipo**: Intel Xeon ×4 (calibración: 74 ms para 50 M iteraciones **sin** limitar), Node 22.22.0. **No es un Android de gama media**: la limitación ×4 es una aproximación.
+
+| Página                | FCP = LCP (ms, mediana) | CLS   | TBT≈ (ms) | Transferido (KB) | Peticiones |     Mapa listo (ms) |
+| --------------------- | ----------------------: | ----- | --------: | ---------------: | ---------: | ------------------: |
+| Inicio (es)           |           508 (412–884) | 0,000 |       107 |              294 |         29 |                   — |
+| Destinos (es)         |           468 (424–480) | 0,000 |       101 |              355 |         47 |                   — |
+| Ficha de destino (es) |           412 (388–604) | 0,000 |        82 |              296 |         29 |                   — |
+| Ficha de destino (de) |           400 (396–472) | 0,000 |        77 |              296 |         29 |                   — |
+| Fuentes (es)          |           376 (368–428) | 0,000 |        78 |              295 |         29 |                   — |
+| Explorar (es)         |           372 (356–416) | 0,000 |       564 |            1 275 |         47 | 3 145 (3 099–3 580) |
+
+- **Lectura honesta**: en estas condiciones emuladas, las páginas de texto pintan su contenido principal en ≈ 0,4–0,5 s, sin cambios de diseño, con ≈ 300 KB transferidos y un bloqueo de hilo aproximado de ≈ 80–110 ms (hidratación). Explorar tarda ≈ 3,1 s hasta que el mapa está listo y acumula ≈ 560 ms de tareas largas, **pero ese tiempo no es representativo**: el mapa se dibuja con WebGL por **software** (SwiftShader). El primer recorrido de Explorar transfiere ≈ 1,3 MB (dentro del presupuesto «ligero» de ≈ 1,5 MB, **sin contar** las teselas posteriores, que se declaran aparte: M-02).
+- **Valores atípicos**: la primera pasada de cada página suele ser la más lenta (calentamiento del servidor y del navegador); se muestran en el rango, no se descartan.
+- **Lo que NO dice**: no es hardware ni red reales; no mide **INP** (necesita interacción real) ni **FPS**; el TBT es una aproximación; con 5 pasadas el p75 no es fiable (se da la mediana); LCP/CLS de una página **estática y sin imágenes** son favorables por construcción: no se extrapolan a fichas con medios (Fase 4 en adelante). **No se afirma cumplimiento de ningún presupuesto.**
+- **Reproducir**: `SITE_ENV=development pnpm build && pnpm perf:vitals --runs 5 --json <ruta>` (omite Explorar si falta el mapa base). No es una puerta de CI: las cifras dependen del equipo.

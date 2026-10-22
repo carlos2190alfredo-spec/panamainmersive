@@ -16,6 +16,7 @@ pnpm data:anchors && pnpm data:build                       # datos del mapa (Pyt
 pnpm data:ingest && pnpm db:import-areas --manifest …      # ingesta controlada de áreas (docs/setup.md §7, ADR-0015)
 pnpm test:e2e:content                                      # ficha con contenido verificado: PG temporal → exportación → copia de la app → Next (docs/testing.md)
 pnpm content:export [--check|--dry-run]                    # contenido público de DATABASE_URL → data/content/published.json (docs/setup.md §8, ADR-0019)
+pnpm perf:vitals [--runs N] [--json ruta]                  # Web Vitals en móvil EMULADO sobre el build (docs/performance.md M-06; informativo, no es una puerta)
 ```
 
 Actualiza `docs/progress.md` en cada entrega: qué funciona, cómo ejecutarlo, qué pruebas se corrieron, qué queda.
