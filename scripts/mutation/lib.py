@@ -80,11 +80,15 @@ def run_vitest(project: str, files: list[str] | None = None) -> dict[str, str]:
             return {}
         try:
             data = json.loads(out.read_text(encoding="utf-8"))
-            return {
-                f"{Path(f['name']).name} › {t['fullName']}": t["status"]
-                for f in data["testResults"]
-                for t in f["assertionResults"]
-            }
+            results: dict[str, str] = {}
+            seen: dict[str, int] = {}
+            for f in data["testResults"]:
+                for t in f["assertionResults"]:
+                    key = f"{Path(f['name']).name} › {t['fullName']}"
+                    # `it.each` puede dar el mismo título a dos casos: no se pisan (la última ganaría y ocultaría un fallo)
+                    seen[key] = seen.get(key, 0) + 1
+                    results[key if seen[key] == 1 else f"{key} #{seen[key]}"] = t["status"]
+            return results
         except (ValueError, KeyError, TypeError) as error:
             print(f"AVISO: el informe de Vitest no se pudo leer ({type(error).__name__}).", file=sys.stderr)
             return {}

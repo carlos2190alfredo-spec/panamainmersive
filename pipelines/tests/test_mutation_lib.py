@@ -190,6 +190,35 @@ class TestRunVitest:
         monkeypatch.setattr(lib.subprocess, "run", escribe_basura)
         assert lib.run_vitest("unit") == {}
 
+    def test_dos_pruebas_con_el_mismo_nombre_no_se_pierden_ni_se_pisan(self, lib, monkeypatch):
+        """`it.each` puede dar el mismo título a dos casos: contarlas como una y dejar ganar a la última ocultaría un fallo."""
+
+        def escribe(cmd, **kwargs):
+            salida = next(a for a in cmd if a.startswith("--outputFile=")).split("=", 1)[1]
+            Path(salida).write_text(
+                json.dumps(
+                    {
+                        "testResults": [
+                            {
+                                "name": "/r/tests/a.test.ts",
+                                "assertionResults": [
+                                    {"fullName": "forma inválida: undefined", "status": "failed"},
+                                    {"fullName": "forma inválida: undefined", "status": "passed"},
+                                    {"fullName": "otra", "status": "passed"},
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            return subprocess.CompletedProcess(cmd, 1)
+
+        monkeypatch.setattr(lib.subprocess, "run", escribe)
+        results = lib.run_vitest("unit")
+        assert len(results) == 3
+        assert sorted(results.values()) == ["failed", "passed", "passed"], "el fallo no puede perderse"
+
     def test_lee_estado_por_prueba(self, lib, monkeypatch):
         def escribe_resultado(cmd, **kwargs):
             salida = next(a for a in cmd if a.startswith("--outputFile=")).split("=", 1)[1]
