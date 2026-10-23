@@ -115,3 +115,67 @@ Flujos implementados: teclado completo, foco visible y gestionado, contraste (**
 - **Valores atípicos**: la primera pasada de cada página suele ser la más lenta (calentamiento del servidor y del navegador); se muestran en el rango, no se descartan.
 - **Lo que NO dice**: no es hardware ni red reales; no mide **INP** (necesita interacción real) ni **FPS**; el TBT es una aproximación; con 5 pasadas el p75 no es fiable (se da la mediana); LCP/CLS de una página **estática y sin imágenes** son favorables por construcción: no se extrapolan a fichas con medios (Fase 4 en adelante). **No se afirma cumplimiento de ningún presupuesto.**
 - **Reproducir**: `SITE_ENV=development pnpm build && pnpm perf:vitals --runs 5 --json <ruta>` (omite Explorar si falta el mapa base). No es una puerta de CI: las cifras dependen del equipo.
+
+### M-07 · Coste de lectura, escritura y contención de la base de datos (2026-10-23)
+
+- **Qué mide**: `pnpm perf:db` (`scripts/perf/db-cost.ts`) con **datos sintéticos** a tres escalas: 200 / 2 000 / 20 000 destinos × los 7 campos que aplican a una localidad, con dos versiones por campo (una reemplazada y una vigente con su fuente), un 5 % con una versión 3 en revisión y otro 5 % con un borrador, un 30 % de las vigentes con una traducción humana publicada y un 10 % de destinos sin publicar: **2 940 / 29 400 / 294 000 filas** en `field_assertions`. Se siembra por SQL con los disparadores desactivados. Mide (1) el **exportador real** (se registran sus consultas; no se copia su SQL), (2) la **lectura con RLS frente a lo mismo escrito a mano** (propietario con el filtro explícito: la diferencia es la maquinaria de la política, no el filtro) con `EXPLAIN`, (3) la **escritura** con los disparadores completos, sin el de serialización (0011) y sin éste ni la auditoría, y (4) la **contención** con `pgbench` (8 conexiones: claves repartidas y una sola clave caliente), en un clúster **relajado** (el de pruebas: `fsync`, `synchronous_commit` y `full_page_writes` apagados) y en otro **durable** (valores por defecto de PostgreSQL).
+- **Equipo**: Intel Xeon ×4 (que comparte `pgbench`), 15,7 GB, PostgreSQL 16.15 (`shared_buffers` 128 MB, `work_mem` 4 MB), socket Unix, Node 22.22.0. «Antes» = `828b893`; «después» = la 0012 y el agrupado del exportador (`2b33feb`, `4c095a7`). Datos en bruto: `docs/research/perf-db-2026-10-23-before.json` y `…-after.json`.
+
+**Exportador real** (ms, clúster relajado; antes → después)
+
+| Destinos | Afirmaciones públicas |           Total |           SQL | Montaje y validación de forma |
+| -------- | --------------------: | --------------: | ------------: | ----------------------------: |
+| 200      |                 1 260 |         83 → 68 |       29 → 29 |                       53 → 40 |
+| 2 000    |                12 600 |     2 527 → 277 |     296 → 250 |                    2 231 → 27 |
+| 20 000   |               126 000 | 176 551 → 4 608 | 4 459 → 4 096 |                 172 092 → 512 |
+
+**Lectura del personal** (mediana en ms; con la política antes → después · escrito a mano)
+
+| Consulta                      |       2 940 filas |              29 400 |              294 000 |
+| ----------------------------- | ----------------: | ------------------: | -------------------: |
+| Cola de revisión (50)         | 176 → 0,63 · 0,35 | 1 762 → 1,95 · 1,55 | 17 858 → 19,7 · 16,6 |
+| Contar todas las afirmaciones |  179 → 0,45 · 0,2 | 1 748 → 1,66 · 1,18 | 17 792 → 16,6 · 14,9 |
+| Mis borradores (50)           |  86 → 0,61 · 0,39 |   395 → 1,33 · 1,22 |     81 → 0,55 · 0,34 |
+
+**Lectura pública (`anon`)** (mediana en ms; con la política antes → después · escrito a mano)
+
+| Consulta                                      |      2 940 filas |             29 400 |            294 000 |
+| --------------------------------------------- | ---------------: | -----------------: | -----------------: |
+| Todas las públicas (forma del exportador)     |  4,4 → 3,4 · 1,9 |       35 → 23 · 18 |    420 → 360 · 333 |
+| Las de un destino (por clave)                 | 0,5 → 0,9 · 0,25 | 0,28 → 0,38 · 0,22 | 0,30 → 0,29 · 0,19 |
+| Fuentes (RLS anidada: fuente → evidencia → …) |  3,6 → 2,2 · 1,6 |     291 → 300 · 12 |    615 → 475 · 231 |
+
+**Escritura** (mediana en ms por operación, tras la corrección; relajado / durable)
+
+| Operación                              | 2 940 filas |      29 400 |     294 000 |
+| -------------------------------------- | ----------: | ----------: | ----------: |
+| Nuevo borrador, disparadores completos | 0,73 / 1,07 | 0,70 / 0,93 | 0,73 / 1,05 |
+| … sin el de serialización              | 0,83 / 0,87 | 0,70 / 0,88 | 0,75 / 1,02 |
+| … sin serialización ni auditoría       | 0,56 / 0,87 | 0,58 / 0,79 | 0,58 / 0,77 |
+| Verificar una versión, completos       | 1,68 / 1,97 | 1,52 / 1,83 | 1,60 / 1,89 |
+| … sin el de serialización              | 1,52 / 1,79 | 1,49 / 1,78 | 1,51 / 1,82 |
+
+**Contención** (`pgbench`, transacciones por segundo, tras la corrección; 8 conexiones salvo indicación)
+
+| Escenario                      | Relajado 2 940 | 29 400 | 294 000 | Durable 2 940 | 29 400 | 294 000 |
+| ------------------------------ | -------------: | -----: | ------: | ------------: | -----: | ------: |
+| Repartidas · con serialización |          4 731 |  5 594 |   5 419 |         3 457 |  3 981 |   3 776 |
+| Repartidas · sin serialización |          4 779 |  5 628 |   5 478 |         3 556 |  4 100 |   3 693 |
+| Una sola clave · 1 conexión    |          1 335 |  1 263 |   1 309 |         1 017 |    991 |     737 |
+| Una sola clave · 8 conexiones  |          1 637 |  1 609 |   1 631 |         1 105 |  1 152 |     992 |
+
+La latencia media de la clave caliente con 8 conexiones fue ≈ 4,9 ms (relajado) y ≈ 7–8 ms (durable), frente a ≈ 0,75 y ≈ 1,0–1,4 ms con una.
+
+- **Lectura honesta**:
+  1. **Había un defecto real, y no el que yo esperaba.** La lectura del personal escalaba **linealmente con las filas** (176 ms → 1,8 s → 17,9 s): la política evaluaba `app.has_role(…)` fila a fila (≈ 60 µs) y antes que los filtros de la consulta. Con `(select app.is_staff())` el plan pasa a un _InitPlan_ y la misma consulta cuesta 19,7 ms (×1,2 sobre lo manual). Se corrigió con la migración `0012` (ADR-0023) y una prueba que lo exige también a las políticas futuras. Hoy no se notaba (cientos de filas), pero 45 políticas tenían esa forma.
+  2. **El exportador era cuadrático** en el montaje (176,6 s con 126 000 afirmaciones, de los que el SQL son 4,5 s). Corregido (`4c095a7`). No tenía efecto con el contenido actual; sí hacía que, por encima del tope del esquema, la exportación gastara minutos en rechazar.
+  3. **La RLS pública es barata**: ×1,1–2,7 sobre lo manual, en milisegundos. El valor atípico es la lectura anónima de **fuentes** (RLS anidada: ×25 a 29 400 filas, 300 ms frente a 12 ms; el planificador elige otro plan). No está en ninguna ruta del producto y la 0012 no la cambia: **queda anotada, no corregida**.
+  4. **La escritura cuesta ≈ 0,7 ms (relajado) / ≈ 1,0 ms (durable) y no crece con el tamaño** de la tabla en dos órdenes de magnitud. El disparador de serialización **no se distingue del ruido** (≤ 0,2 ms); la auditoría suma ≈ 0,1–0,2 ms. La decisión del ADR-0022 aguanta.
+  5. **Una sola clave caliente admite ≈ 1 000–1 600 versiones por segundo** en este entorno, con 8 escritores. Una persona editora produce del orden de una por minuto: sobra margen incluso si la red o el disco lo empeoran 100 veces.
+- **Lo que NO dice**:
+  - **No es producción.** Datos **sintéticos**, socket Unix (sin red, sin _pooler_ ni PostgREST), un equipo que comparte sus cuatro núcleos con `pgbench` y un disco de contenedor cuyo `fsync` cuesta ≈ 0,3 ms; **uno de producción puede costar 1–10 ms y el bloqueo de la 0011 se mantiene hasta el `COMMIT`**. El modo durable acota el efecto, no lo reproduce.
+  - **Ruido**: entre dos ejecuciones idénticas hubo hasta un 20 % de diferencia en tps (5 903 frente a 4 731 con la misma configuración a 200 destinos); la contención es **una sola pasada de 5 s** por celda y las lecturas, la mediana de 5 (2 si pasan de 1 s). Las diferencias pequeñas **no son conclusiones**.
+  - **Los datos se sembraron saltándose los disparadores** (la forma la validan las pruebas de integración y el exportador real los lee sin quejarse, pero no «pasaron» por las puertas). **La revalidación de puertas del exportador no se midió a escala**: necesitaría destinos del registro (E-79); por lectura es lineal.
+  - **Solo una localidad** (7 campos; un volcán tiene 8), sin lecturas concurrentes con las escrituras, sin _bloat_ ni `VACUUM` y solo PostgreSQL 16.15.
+  - **El régimen real es mucho menor**: el registro tiene **9 destinos** y la instantánea admite **5 000 afirmaciones** (E-79), así que hoy son ≤ 72. Estas escalas miden el **margen** si el modelo creciera, y crecer exige otro diseño (F4-18).
+- **Reproducir**: `pnpm perf:db [--scales 200,2000,20000] [--runs 5] [--seconds 5] [--json <ruta>]` (≈ 20 minutos a las tres escalas, con **nada más en marcha**: cualquier otra carga falsea los tiempos); `--smoke` ejecuta la escala mínima en segundos y es lo que prueba `db-cost-smoke.test.ts`. Salida 0 medido · 1 la premisa de la medición no se cumplió · 2 no se pudo medir (sin PostgreSQL o sin `pgbench`). No es una puerta de CI: las cifras dependen del equipo.

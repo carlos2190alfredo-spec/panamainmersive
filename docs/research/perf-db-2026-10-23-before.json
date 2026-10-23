@@ -1,0 +1,1805 @@
+{
+  "environment": {
+    "cores": 4,
+    "cpuModel": "Intel(R) Xeon(R) Processor",
+    "memoryGB": 15.7,
+    "kernel": "6.18.44-fc-v153",
+    "node": "v22.22.0",
+    "transport": "socket Unix, sin red, sin pooler",
+    "measuredAt": "2026-10-23T22:21:34.917Z",
+    "relaxedCluster": {
+      "version": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "max_connections": "100",
+      "fsync": "off",
+      "synchronous_commit": "off",
+      "full_page_writes": "off"
+    },
+    "durableCluster": {
+      "version": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "max_connections": "100",
+      "fsync": "on",
+      "synchronous_commit": "on",
+      "full_page_writes": "on"
+    }
+  },
+  "options": {
+    "scales": [
+      200,
+      2000,
+      20000
+    ],
+    "runs": 5,
+    "seconds": 5,
+    "writes": 150,
+    "smoke": false
+  },
+  "results": [
+    {
+      "scale": 200,
+      "info": {
+        "destinations": 200,
+        "published": 180,
+        "fields": [
+          "access.how_to_get_there",
+          "overview.summary",
+          "restrictions.entry_rules",
+          "restrictions.legal_status",
+          "safety.hazards",
+          "visit.accessibility",
+          "visit.best_season"
+        ],
+        "visible": 1260,
+        "totals": {
+          "destinations": 200,
+          "sources": 2870,
+          "assertions": 2940,
+          "evidence": 2870,
+          "translations": 420,
+          "inReview": 70,
+          "drafts": 70
+        }
+      },
+      "seedMs": 109,
+      "export": {
+        "totalMs": 82.5,
+        "sqlMs": 29.1,
+        "otherMs": 53.4,
+        "queries": [
+          {
+            "query": "assertions",
+            "ms": 9.5,
+            "rows": 1260
+          },
+          {
+            "query": "evidence",
+            "ms": 12.6,
+            "rows": 1260
+          },
+          {
+            "query": "translations",
+            "ms": 5.2,
+            "rows": 379
+          },
+          {
+            "query": "notices",
+            "ms": 1.1,
+            "rows": 0
+          }
+        ],
+        "plans": {
+          "assertions": {
+            "executionMs": 3.97,
+            "planningMs": 0.25,
+            "scans": [
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 2))"
+            ],
+            "sharedHit": 1613,
+            "sharedRead": 0
+          },
+          "evidence": {
+            "executionMs": 9.98,
+            "planningMs": 0.59,
+            "scans": [
+              "Index Scan on assertion_evidence using assertion_evidence_assertion_id_source_record_id_key",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on source_records using source_records_pkey",
+              "Index Scan on assertion_evidence using assertion_evidence_source",
+              "Index Scan on field_assertions using field_assertions_pkey",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 5,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 5))",
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (SubPlan 7))"
+            ],
+            "sharedHit": 71934,
+            "sharedRead": 0
+          },
+          "translations": {
+            "executionMs": 3.18,
+            "planningMs": 0.35,
+            "scans": [
+              "Index Scan on assertion_translations using assertion_translations_pkey",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 2,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 5))"
+            ],
+            "sharedHit": 2946,
+            "sharedRead": 0
+          },
+          "notices": {
+            "executionMs": 0.48,
+            "planningMs": 0.15,
+            "scans": [
+              "Seq Scan on destinations",
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND ((status = 'disputed'::assertion_status) OR ((status = 'verified'::assertion_status) AND (valid_until IS NOT NULL) AND (valid_until < ((now() AT TIME ZONE 'America/Panama'…"
+            ],
+            "sharedHit": 364,
+            "sharedRead": 0
+          }
+        }
+      },
+      "reads": [
+        {
+          "name": "anon · todas las afirmaciones públicas (forma del exportador)",
+          "rls": {
+            "medianMs": 4.35,
+            "minMs": 3.87,
+            "maxMs": 5.14,
+            "p95Ms": 5.14,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 2.17,
+            "minMs": 2.13,
+            "maxMs": 2.2,
+            "p95Ms": 2.2,
+            "samples": 5
+          },
+          "ratio": 2,
+          "rows": 1260,
+          "rlsPlan": {
+            "executionMs": 3.18,
+            "planningMs": 0.2,
+            "scans": [
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 2))"
+            ],
+            "sharedHit": 1613,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 1,
+            "planningMs": 0.15,
+            "scans": [
+              "Seq Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)))"
+            ],
+            "sharedHit": 228,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "anon · las afirmaciones de UN destino (por clave)",
+          "rls": {
+            "medianMs": 0.47,
+            "minMs": 0.46,
+            "maxMs": 0.48,
+            "p95Ms": 0.48,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 0.39,
+            "minMs": 0.38,
+            "maxMs": 0.43,
+            "p95Ms": 0.43,
+            "samples": 5
+          },
+          "ratio": 1.2,
+          "rows": 7,
+          "rlsPlan": {
+            "executionMs": 0.04,
+            "planningMs": 0.19,
+            "scans": [
+              "Index Scan on destinations using destinations_key_key",
+              "Bitmap Heap Scan on field_assertions",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (SubPlan 1))"
+            ],
+            "sharedHit": 54,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.04,
+            "planningMs": 0.18,
+            "scans": [
+              "Seq Scan on destinations",
+              "Bitmap Heap Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date))"
+            ],
+            "sharedHit": 14,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "anon · fuentes (RLS anidada: fuente → evidencia → afirmación → destino)",
+          "rls": {
+            "medianMs": 3.63,
+            "minMs": 3.62,
+            "maxMs": 3.76,
+            "p95Ms": 3.76,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 1.71,
+            "minMs": 1.64,
+            "maxMs": 1.73,
+            "p95Ms": 1.73,
+            "samples": 5
+          },
+          "ratio": 2.1,
+          "rows": 1,
+          "rlsPlan": {
+            "executionMs": 3.37,
+            "planningMs": 0.29,
+            "scans": [
+              "Seq Scan on source_records",
+              "Seq Scan on assertion_evidence",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 3,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 12))"
+            ],
+            "sharedHit": 503,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 1.9,
+            "planningMs": 0.27,
+            "scans": [
+              "Seq Scan on source_records",
+              "Seq Scan on assertion_evidence",
+              "Seq Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)))"
+            ],
+            "sharedHit": 993,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (revisor) · cuenta de todas las afirmaciones",
+          "rls": {
+            "medianMs": 178.67,
+            "minMs": 172.79,
+            "maxMs": 225.56,
+            "p95Ms": 225.56,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 0.17,
+            "minMs": 0.16,
+            "maxMs": 0.19,
+            "p95Ms": 0.19,
+            "samples": 5
+          },
+          "ratio": 1051,
+          "rows": 1,
+          "rlsPlan": {
+            "executionMs": 172.34,
+            "planningMs": 0.03,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "(app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role))"
+            ],
+            "sharedHit": 17784,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.34,
+            "planningMs": 0.04,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [],
+            "sharedHit": 144,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (revisor) · cola de revisión (50 en revisión, más antiguas primero)",
+          "rls": {
+            "medianMs": 175.53,
+            "minMs": 172.33,
+            "maxMs": 186.26,
+            "p95Ms": 186.26,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 0.34,
+            "minMs": 0.31,
+            "maxMs": 0.35,
+            "p95Ms": 0.35,
+            "samples": 5
+          },
+          "ratio": 516.3,
+          "rows": 50,
+          "rlsPlan": {
+            "executionMs": 171.68,
+            "planningMs": 0.04,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role)) AND (status = 'in_review'::assertion_status))"
+            ],
+            "sharedHit": 26676,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.21,
+            "planningMs": 0.05,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "(status = 'in_review'::assertion_status)"
+            ],
+            "sharedHit": 216,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (editor) · mis borradores (50)",
+          "rls": {
+            "medianMs": 86.39,
+            "minMs": 85.12,
+            "maxMs": 89.14,
+            "p95Ms": 89.14,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 0.36,
+            "minMs": 0.34,
+            "maxMs": 0.41,
+            "p95Ms": 0.41,
+            "samples": 5
+          },
+          "ratio": 240,
+          "rows": 50,
+          "rlsPlan": {
+            "executionMs": 85.67,
+            "planningMs": 0.03,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((created_by = '00000000-0000-4000-8000-0000000000e1'::uuid) AND (app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role)) AND (status = 'draft'::asse…"
+            ],
+            "sharedHit": 11822,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.23,
+            "planningMs": 0.03,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((created_by = '00000000-0000-4000-8000-0000000000e1'::uuid) AND (status = 'draft'::assertion_status))"
+            ],
+            "sharedHit": 142,
+            "sharedRead": 0
+          }
+        }
+      ],
+      "writes": [
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 0.7,
+            "minMs": 0.63,
+            "maxMs": 4.35,
+            "p95Ms": 0.96,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.56,
+            "minMs": 1.4,
+            "maxMs": 3.41,
+            "p95Ms": 1.84,
+            "samples": 31
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 0.66,
+            "minMs": 0.61,
+            "maxMs": 2.38,
+            "p95Ms": 0.88,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 1.5,
+            "minMs": 1.41,
+            "maxMs": 1.79,
+            "p95Ms": 1.78,
+            "samples": 31
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización ni auditoría",
+          "timing": {
+            "medianMs": 0.55,
+            "minMs": 0.5,
+            "maxMs": 2.9,
+            "p95Ms": 0.77,
+            "samples": 150
+          }
+        }
+      ],
+      "contention": [
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "repartidas · con serialización",
+          "clients": 8,
+          "transactions": 29507,
+          "tps": 5903,
+          "latencyMs": 1.35
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "repartidas · sin serialización",
+          "clients": 8,
+          "transactions": 29250,
+          "tps": 5849,
+          "latencyMs": 1.37
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "una sola clave · 1 conexión",
+          "clients": 1,
+          "transactions": 6572,
+          "tps": 1315,
+          "latencyMs": 0.76
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "una sola clave · 8 conexiones",
+          "clients": 8,
+          "transactions": 8101,
+          "tps": 1618,
+          "latencyMs": 4.94
+        }
+      ]
+    },
+    {
+      "scale": 2000,
+      "info": {
+        "destinations": 2000,
+        "published": 1800,
+        "fields": [
+          "access.how_to_get_there",
+          "overview.summary",
+          "restrictions.entry_rules",
+          "restrictions.legal_status",
+          "safety.hazards",
+          "visit.accessibility",
+          "visit.best_season"
+        ],
+        "visible": 12600,
+        "totals": {
+          "destinations": 2000,
+          "sources": 28700,
+          "assertions": 29400,
+          "evidence": 28700,
+          "translations": 4200,
+          "inReview": 700,
+          "drafts": 700
+        }
+      },
+      "seedMs": 1046,
+      "export": {
+        "totalMs": 2527.4,
+        "sqlMs": 296.2,
+        "otherMs": 2231.3,
+        "queries": [
+          {
+            "query": "assertions",
+            "ms": 61.7,
+            "rows": 12600
+          },
+          {
+            "query": "evidence",
+            "ms": 176.6,
+            "rows": 12600
+          },
+          {
+            "query": "translations",
+            "ms": 45.2,
+            "rows": 3780
+          },
+          {
+            "query": "notices",
+            "ms": 7.7,
+            "rows": 0
+          }
+        ],
+        "plans": {
+          "assertions": {
+            "executionMs": 38.86,
+            "planningMs": 0.35,
+            "scans": [
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 2))"
+            ],
+            "sharedHit": 23275,
+            "sharedRead": 0
+          },
+          "evidence": {
+            "executionMs": 140.93,
+            "planningMs": 2.18,
+            "scans": [
+              "Index Scan on assertion_evidence using assertion_evidence_assertion_id_source_record_id_key",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on source_records using source_records_pkey",
+              "Index Scan on assertion_evidence using assertion_evidence_source",
+              "Index Scan on field_assertions using field_assertions_pkey",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 5,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 5))",
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (SubPlan 7))"
+            ],
+            "sharedHit": 795887,
+            "sharedRead": 0
+          },
+          "translations": {
+            "executionMs": 30.52,
+            "planningMs": 1.82,
+            "scans": [
+              "Index Scan on assertion_translations using assertion_translations_pkey",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 2,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 5))"
+            ],
+            "sharedHit": 30100,
+            "sharedRead": 0
+          },
+          "notices": {
+            "executionMs": 4.45,
+            "planningMs": 0.17,
+            "scans": [
+              "Seq Scan on field_assertions",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND ((status = 'disputed'::assertion_status) OR ((status = 'verified'::assertion_status) AND (valid_until IS NOT NULL) AND (valid_until < ((now() AT TIME ZONE 'America/Panama'…"
+            ],
+            "sharedHit": 2848,
+            "sharedRead": 0
+          }
+        }
+      },
+      "reads": [
+        {
+          "name": "anon · todas las afirmaciones públicas (forma del exportador)",
+          "rls": {
+            "medianMs": 35.39,
+            "minMs": 34.87,
+            "maxMs": 41.52,
+            "p95Ms": 41.52,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 18.05,
+            "minMs": 17.25,
+            "maxMs": 42.56,
+            "p95Ms": 42.56,
+            "samples": 5
+          },
+          "ratio": 2,
+          "rows": 12600,
+          "rlsPlan": {
+            "executionMs": 30.47,
+            "planningMs": 0.21,
+            "scans": [
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 2))"
+            ],
+            "sharedHit": 23275,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 11.29,
+            "planningMs": 0.15,
+            "scans": [
+              "Seq Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)))"
+            ],
+            "sharedHit": 2228,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "anon · las afirmaciones de UN destino (por clave)",
+          "rls": {
+            "medianMs": 0.28,
+            "minMs": 0.27,
+            "maxMs": 0.31,
+            "p95Ms": 0.31,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 0.2,
+            "minMs": 0.19,
+            "maxMs": 0.21,
+            "p95Ms": 0.21,
+            "samples": 5
+          },
+          "ratio": 1.4,
+          "rows": 7,
+          "rlsPlan": {
+            "executionMs": 0.03,
+            "planningMs": 0.14,
+            "scans": [
+              "Index Scan on destinations using destinations_key_key",
+              "Bitmap Heap Scan on field_assertions",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (SubPlan 1))"
+            ],
+            "sharedHit": 77,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.02,
+            "planningMs": 0.14,
+            "scans": [
+              "Index Scan on destinations using destinations_key_key",
+              "Bitmap Heap Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date))"
+            ],
+            "sharedHit": 14,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "anon · fuentes (RLS anidada: fuente → evidencia → afirmación → destino)",
+          "rls": {
+            "medianMs": 291.02,
+            "minMs": 287.71,
+            "maxMs": 293.11,
+            "p95Ms": 293.11,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 12.66,
+            "minMs": 11.9,
+            "maxMs": 14.77,
+            "p95Ms": 14.77,
+            "samples": 5
+          },
+          "ratio": 23,
+          "rows": 1,
+          "rlsPlan": {
+            "executionMs": 301.53,
+            "planningMs": 0.3,
+            "scans": [
+              "Seq Scan on source_records",
+              "Seq Scan on assertion_evidence",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 3,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 12))"
+            ],
+            "sharedHit": 4933,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 20.57,
+            "planningMs": 0.38,
+            "scans": [
+              "Seq Scan on source_records",
+              "Seq Scan on assertion_evidence",
+              "Seq Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)))"
+            ],
+            "sharedHit": 9784,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (revisor) · cuenta de todas las afirmaciones",
+          "rls": {
+            "medianMs": 1747.66,
+            "minMs": 1722.07,
+            "maxMs": 1747.66,
+            "p95Ms": 1747.66,
+            "samples": 2
+          },
+          "manual": {
+            "medianMs": 1.14,
+            "minMs": 1.1,
+            "maxMs": 1.7,
+            "p95Ms": 1.7,
+            "samples": 5
+          },
+          "ratio": 1533,
+          "rows": 1,
+          "rlsPlan": {
+            "executionMs": 1790.4,
+            "planningMs": 0.04,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "(app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role))"
+            ],
+            "sharedHit": 177824,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 3.58,
+            "planningMs": 0.06,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [],
+            "sharedHit": 1424,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (revisor) · cola de revisión (50 en revisión, más antiguas primero)",
+          "rls": {
+            "medianMs": 1762.07,
+            "minMs": 1738.27,
+            "maxMs": 1762.07,
+            "p95Ms": 1762.07,
+            "samples": 2
+          },
+          "manual": {
+            "medianMs": 1.7,
+            "minMs": 1.64,
+            "maxMs": 2.3,
+            "p95Ms": 2.3,
+            "samples": 5
+          },
+          "ratio": 1036.5,
+          "rows": 50,
+          "rlsPlan": {
+            "executionMs": 1754.44,
+            "planningMs": 0.04,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role)) AND (status = 'in_review'::assertion_status))"
+            ],
+            "sharedHit": 266736,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 2.43,
+            "planningMs": 0.06,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "(status = 'in_review'::assertion_status)"
+            ],
+            "sharedHit": 2136,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (editor) · mis borradores (50)",
+          "rls": {
+            "medianMs": 394.66,
+            "minMs": 386.68,
+            "maxMs": 410.53,
+            "p95Ms": 410.53,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 1.18,
+            "minMs": 1.11,
+            "maxMs": 1.67,
+            "p95Ms": 1.67,
+            "samples": 5
+          },
+          "ratio": 334.5,
+          "rows": 50,
+          "rlsPlan": {
+            "executionMs": 377.88,
+            "planningMs": 0.04,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((created_by = '00000000-0000-4000-8000-0000000000e1'::uuid) AND (app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role)) AND (status = 'draft'::asse…"
+            ],
+            "sharedHit": 51958,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 1.27,
+            "planningMs": 0.06,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((created_by = '00000000-0000-4000-8000-0000000000e1'::uuid) AND (status = 'draft'::assertion_status))"
+            ],
+            "sharedHit": 626,
+            "sharedRead": 0
+          }
+        }
+      ],
+      "writes": [
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 0.68,
+            "minMs": 0.6,
+            "maxMs": 3.2,
+            "p95Ms": 1.08,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.54,
+            "minMs": 1.39,
+            "maxMs": 4.83,
+            "p95Ms": 1.99,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 0.67,
+            "minMs": 0.6,
+            "maxMs": 3.01,
+            "p95Ms": 0.83,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 1.52,
+            "minMs": 1.37,
+            "maxMs": 2.42,
+            "p95Ms": 2.01,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización ni auditoría",
+          "timing": {
+            "medianMs": 0.55,
+            "minMs": 0.49,
+            "maxMs": 1,
+            "p95Ms": 0.73,
+            "samples": 150
+          }
+        }
+      ],
+      "contention": [
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "repartidas · con serialización",
+          "clients": 8,
+          "transactions": 29084,
+          "tps": 5817,
+          "latencyMs": 1.38
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "repartidas · sin serialización",
+          "clients": 8,
+          "transactions": 29015,
+          "tps": 5799,
+          "latencyMs": 1.38
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "una sola clave · 1 conexión",
+          "clients": 1,
+          "transactions": 6533,
+          "tps": 1307,
+          "latencyMs": 0.77
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "una sola clave · 8 conexiones",
+          "clients": 8,
+          "transactions": 8153,
+          "tps": 1629,
+          "latencyMs": 4.91
+        }
+      ]
+    },
+    {
+      "scale": 20000,
+      "info": {
+        "destinations": 20000,
+        "published": 18000,
+        "fields": [
+          "access.how_to_get_there",
+          "overview.summary",
+          "restrictions.entry_rules",
+          "restrictions.legal_status",
+          "safety.hazards",
+          "visit.accessibility",
+          "visit.best_season"
+        ],
+        "visible": 126000,
+        "totals": {
+          "destinations": 20000,
+          "sources": 287000,
+          "assertions": 294000,
+          "evidence": 287000,
+          "translations": 42000,
+          "inReview": 7000,
+          "drafts": 7000
+        }
+      },
+      "seedMs": 12580,
+      "export": {
+        "totalMs": 176551.3,
+        "sqlMs": 4459.2,
+        "otherMs": 172092.1,
+        "queries": [
+          {
+            "query": "assertions",
+            "ms": 946.1,
+            "rows": 126000
+          },
+          {
+            "query": "evidence",
+            "ms": 2636.1,
+            "rows": 126000
+          },
+          {
+            "query": "translations",
+            "ms": 821,
+            "rows": 37799
+          },
+          {
+            "query": "notices",
+            "ms": 53.8,
+            "rows": 0
+          }
+        ],
+        "plans": {
+          "assertions": {
+            "executionMs": 440.65,
+            "planningMs": 0.41,
+            "scans": [
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 2))"
+            ],
+            "sharedHit": 232729,
+            "sharedRead": 0
+          },
+          "evidence": {
+            "executionMs": 2152.7,
+            "planningMs": 21.24,
+            "scans": [
+              "Index Scan on assertion_evidence using assertion_evidence_assertion_id_source_record_id_key",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on source_records using source_records_pkey",
+              "Index Scan on assertion_evidence using assertion_evidence_source",
+              "Index Scan on field_assertions using field_assertions_pkey",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 5,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 5))",
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (SubPlan 7))"
+            ],
+            "sharedHit": 9738546,
+            "sharedRead": 111129
+          },
+          "translations": {
+            "executionMs": 568.56,
+            "planningMs": 17.05,
+            "scans": [
+              "Index Scan on assertion_translations using assertion_translations_pkey",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 2,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 5))"
+            ],
+            "sharedHit": 295698,
+            "sharedRead": 5721
+          },
+          "notices": {
+            "executionMs": 45.73,
+            "planningMs": 0.27,
+            "scans": [
+              "Seq Scan on field_assertions",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND ((status = 'disputed'::assertion_status) OR ((status = 'verified'::assertion_status) AND (valid_until IS NOT NULL) AND (valid_until < ((now() AT TIME ZONE 'America/Panama'…"
+            ],
+            "sharedHit": 13900,
+            "sharedRead": 14996
+          }
+        }
+      },
+      "reads": [
+        {
+          "name": "anon · todas las afirmaciones públicas (forma del exportador)",
+          "rls": {
+            "medianMs": 420.47,
+            "minMs": 415.1,
+            "maxMs": 456.08,
+            "p95Ms": 456.08,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 263.38,
+            "minMs": 214.96,
+            "maxMs": 266.19,
+            "p95Ms": 266.19,
+            "samples": 5
+          },
+          "ratio": 1.6,
+          "rows": 126000,
+          "rlsPlan": {
+            "executionMs": 359.15,
+            "planningMs": 0.31,
+            "scans": [
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 2))"
+            ],
+            "sharedHit": 232729,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 152.96,
+            "planningMs": 0.24,
+            "scans": [
+              "Seq Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)))"
+            ],
+            "sharedHit": 12009,
+            "sharedRead": 10575
+          }
+        },
+        {
+          "name": "anon · las afirmaciones de UN destino (por clave)",
+          "rls": {
+            "medianMs": 0.3,
+            "minMs": 0.27,
+            "maxMs": 0.78,
+            "p95Ms": 0.78,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 0.22,
+            "minMs": 0.18,
+            "maxMs": 0.27,
+            "p95Ms": 0.27,
+            "samples": 5
+          },
+          "ratio": 1.4,
+          "rows": 7,
+          "rlsPlan": {
+            "executionMs": 0.03,
+            "planningMs": 0.14,
+            "scans": [
+              "Index Scan on destinations using destinations_key_key",
+              "Index Scan on field_assertions using field_assertions_one_current",
+              "Index Scan on destinations using destinations_pkey"
+            ],
+            "subPlans": 1,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (SubPlan 1))"
+            ],
+            "sharedHit": 77,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.03,
+            "planningMs": 0.13,
+            "scans": [
+              "Index Scan on destinations using destinations_key_key",
+              "Bitmap Heap Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date))"
+            ],
+            "sharedHit": 17,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "anon · fuentes (RLS anidada: fuente → evidencia → afirmación → destino)",
+          "rls": {
+            "medianMs": 614.83,
+            "minMs": 606.99,
+            "maxMs": 662.35,
+            "p95Ms": 662.35,
+            "samples": 5
+          },
+          "manual": {
+            "medianMs": 225.46,
+            "minMs": 219.2,
+            "maxMs": 254.16,
+            "p95Ms": 254.16,
+            "samples": 5
+          },
+          "ratio": 2.7,
+          "rows": 1,
+          "rlsPlan": {
+            "executionMs": 649.14,
+            "planningMs": 0.41,
+            "scans": [
+              "Seq Scan on source_records",
+              "Seq Scan on assertion_evidence",
+              "Bitmap Heap Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 3,
+            "filters": [
+              "(((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)) AND (hashed SubPlan 12))"
+            ],
+            "sharedHit": 39060,
+            "sharedRead": 10234
+          },
+          "manualPlan": {
+            "executionMs": 302.72,
+            "planningMs": 0.44,
+            "scans": [
+              "Index Only Scan on source_records using source_records_pkey",
+              "Seq Scan on assertion_evidence",
+              "Seq Scan on field_assertions",
+              "Seq Scan on destinations"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((superseded_at IS NULL) AND (status = 'verified'::assertion_status) AND ((valid_until IS NULL) OR (valid_until >= ((now() AT TIME ZONE 'America/Panama'::text))::date)))"
+            ],
+            "sharedHit": 53621,
+            "sharedRead": 23527
+          }
+        },
+        {
+          "name": "personal (revisor) · cuenta de todas las afirmaciones",
+          "rls": {
+            "medianMs": 17791.96,
+            "minMs": 17745.31,
+            "maxMs": 17791.96,
+            "p95Ms": 17791.96,
+            "samples": 2
+          },
+          "manual": {
+            "medianMs": 15.38,
+            "minMs": 15.06,
+            "maxMs": 16.85,
+            "p95Ms": 16.85,
+            "samples": 5
+          },
+          "ratio": 1156.8,
+          "rows": 1,
+          "rlsPlan": {
+            "executionMs": 17775.06,
+            "planningMs": 0.07,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "(app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role))"
+            ],
+            "sharedHit": 1771982,
+            "sharedRead": 6466
+          },
+          "manualPlan": {
+            "executionMs": 27.85,
+            "planningMs": 0.07,
+            "scans": [
+              "Index Only Scan on field_assertions using field_assertions_pkey"
+            ],
+            "subPlans": 0,
+            "filters": [],
+            "sharedHit": 5676,
+            "sharedRead": 0
+          }
+        },
+        {
+          "name": "personal (revisor) · cola de revisión (50 en revisión, más antiguas primero)",
+          "rls": {
+            "medianMs": 17858.01,
+            "minMs": 17595.13,
+            "maxMs": 17858.01,
+            "p95Ms": 17858.01,
+            "samples": 2
+          },
+          "manual": {
+            "medianMs": 18.83,
+            "minMs": 18.65,
+            "maxMs": 19.31,
+            "p95Ms": 19.31,
+            "samples": 5
+          },
+          "ratio": 948.4,
+          "rows": 50,
+          "rlsPlan": {
+            "executionMs": 17638.31,
+            "planningMs": 0.09,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role)) AND (status = 'in_review'::assertion_status))"
+            ],
+            "sharedHit": 2658933,
+            "sharedRead": 8739
+          },
+          "manualPlan": {
+            "executionMs": 21.33,
+            "planningMs": 0.08,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "(status = 'in_review'::assertion_status)"
+            ],
+            "sharedHit": 17594,
+            "sharedRead": 11524
+          }
+        },
+        {
+          "name": "personal (editor) · mis borradores (50)",
+          "rls": {
+            "medianMs": 81.08,
+            "minMs": 80.5,
+            "maxMs": 81.08,
+            "p95Ms": 81.08,
+            "samples": 2
+          },
+          "manual": {
+            "medianMs": 0.46,
+            "minMs": 0.4,
+            "maxMs": 1.47,
+            "p95Ms": 1.47,
+            "samples": 5
+          },
+          "ratio": 176.3,
+          "rows": 50,
+          "rlsPlan": {
+            "executionMs": 2744.81,
+            "planningMs": 0.04,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((created_by = '00000000-0000-4000-8000-0000000000e1'::uuid) AND (app.has_role('editor'::app_role) OR app.has_role('reviewer'::app_role) OR app.has_role('admin'::app_role)) AND (status = 'draft'::asse…"
+            ],
+            "sharedHit": 375386,
+            "sharedRead": 0
+          },
+          "manualPlan": {
+            "executionMs": 0.03,
+            "planningMs": 0.07,
+            "scans": [
+              "Seq Scan on field_assertions"
+            ],
+            "subPlans": 0,
+            "filters": [
+              "((created_by = '00000000-0000-4000-8000-0000000000e1'::uuid) AND (status = 'draft'::assertion_status))"
+            ],
+            "sharedHit": 8,
+            "sharedRead": 0
+          }
+        }
+      ],
+      "writes": [
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 0.77,
+            "minMs": 0.63,
+            "maxMs": 3.16,
+            "p95Ms": 1.26,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.64,
+            "minMs": 1.41,
+            "maxMs": 5.6,
+            "p95Ms": 2.6,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 0.68,
+            "minMs": 0.6,
+            "maxMs": 1.05,
+            "p95Ms": 0.79,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 1.48,
+            "minMs": 1.38,
+            "maxMs": 2.66,
+            "p95Ms": 1.83,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización ni auditoría",
+          "timing": {
+            "medianMs": 0.56,
+            "minMs": 0.52,
+            "maxMs": 8.28,
+            "p95Ms": 0.69,
+            "samples": 150
+          }
+        }
+      ],
+      "contention": [
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "repartidas · con serialización",
+          "clients": 8,
+          "transactions": 28261,
+          "tps": 5651,
+          "latencyMs": 1.42
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "repartidas · sin serialización",
+          "clients": 8,
+          "transactions": 28408,
+          "tps": 5679,
+          "latencyMs": 1.41
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "una sola clave · 1 conexión",
+          "clients": 1,
+          "transactions": 6596,
+          "tps": 1319,
+          "latencyMs": 0.76
+        },
+        {
+          "durability": "relajado (fsync=off)",
+          "scenario": "una sola clave · 8 conexiones",
+          "clients": 8,
+          "transactions": 7779,
+          "tps": 1554,
+          "latencyMs": 5.15
+        }
+      ]
+    }
+  ],
+  "durable": [
+    {
+      "scale": 200,
+      "writes": [
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.01,
+            "minMs": 0.77,
+            "maxMs": 3.66,
+            "p95Ms": 1.31,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.94,
+            "minMs": 1.66,
+            "maxMs": 4.16,
+            "p95Ms": 3,
+            "samples": 31
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 1.01,
+            "minMs": 0.78,
+            "maxMs": 45.82,
+            "p95Ms": 1.27,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 2.03,
+            "minMs": 1.75,
+            "maxMs": 3.16,
+            "p95Ms": 2.82,
+            "samples": 31
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización ni auditoría",
+          "timing": {
+            "medianMs": 0.85,
+            "minMs": 0.69,
+            "maxMs": 19.73,
+            "p95Ms": 1.31,
+            "samples": 150
+          }
+        }
+      ],
+      "contention": [
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "repartidas · con serialización",
+          "clients": 8,
+          "transactions": 19914,
+          "tps": 3981,
+          "latencyMs": 2.01
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "repartidas · sin serialización",
+          "clients": 8,
+          "transactions": 20600,
+          "tps": 4118,
+          "latencyMs": 1.94
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "una sola clave · 1 conexión",
+          "clients": 1,
+          "transactions": 4681,
+          "tps": 936,
+          "latencyMs": 1.07
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "una sola clave · 8 conexiones",
+          "clients": 8,
+          "transactions": 5765,
+          "tps": 1153,
+          "latencyMs": 6.94
+        }
+      ]
+    },
+    {
+      "scale": 2000,
+      "writes": [
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.01,
+            "minMs": 0.79,
+            "maxMs": 3.76,
+            "p95Ms": 1.33,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 2,
+            "minMs": 1.6,
+            "maxMs": 4.1,
+            "p95Ms": 3.04,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 0.88,
+            "minMs": 0.76,
+            "maxMs": 2.03,
+            "p95Ms": 1.51,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 1.82,
+            "minMs": 1.57,
+            "maxMs": 4.16,
+            "p95Ms": 3.58,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización ni auditoría",
+          "timing": {
+            "medianMs": 0.96,
+            "minMs": 0.68,
+            "maxMs": 2.23,
+            "p95Ms": 1.65,
+            "samples": 150
+          }
+        }
+      ],
+      "contention": [
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "repartidas · con serialización",
+          "clients": 8,
+          "transactions": 20866,
+          "tps": 4176,
+          "latencyMs": 1.92
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "repartidas · sin serialización",
+          "clients": 8,
+          "transactions": 19837,
+          "tps": 3968,
+          "latencyMs": 2.02
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "una sola clave · 1 conexión",
+          "clients": 1,
+          "transactions": 4885,
+          "tps": 977,
+          "latencyMs": 1.02
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "una sola clave · 8 conexiones",
+          "clients": 8,
+          "transactions": 5523,
+          "tps": 1104,
+          "latencyMs": 7.25
+        }
+      ]
+    },
+    {
+      "scale": 20000,
+      "writes": [
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.25,
+            "minMs": 0.88,
+            "maxMs": 4.6,
+            "p95Ms": 2.19,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "completo",
+          "timing": {
+            "medianMs": 1.97,
+            "minMs": 1.63,
+            "maxMs": 5.38,
+            "p95Ms": 3.19,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 0.98,
+            "minMs": 0.84,
+            "maxMs": 1.63,
+            "p95Ms": 1.37,
+            "samples": 150
+          }
+        },
+        {
+          "operation": "verificar una versión (UPDATE + COMMIT)",
+          "variant": "sin serialización",
+          "timing": {
+            "medianMs": 1.86,
+            "minMs": 1.61,
+            "maxMs": 3.59,
+            "p95Ms": 2.67,
+            "samples": 100
+          }
+        },
+        {
+          "operation": "nuevo borrador (INSERT + COMMIT)",
+          "variant": "sin serialización ni auditoría",
+          "timing": {
+            "medianMs": 0.91,
+            "minMs": 0.74,
+            "maxMs": 1.9,
+            "p95Ms": 1.57,
+            "samples": 150
+          }
+        }
+      ],
+      "contention": [
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "repartidas · con serialización",
+          "clients": 8,
+          "transactions": 18349,
+          "tps": 3669,
+          "latencyMs": 2.18
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "repartidas · sin serialización",
+          "clients": 8,
+          "transactions": 18563,
+          "tps": 3710,
+          "latencyMs": 2.16
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "una sola clave · 1 conexión",
+          "clients": 1,
+          "transactions": 4490,
+          "tps": 898,
+          "latencyMs": 1.11
+        },
+        {
+          "durability": "durable (fsync=on)",
+          "scenario": "una sola clave · 8 conexiones",
+          "clients": 8,
+          "transactions": 5034,
+          "tps": 1006,
+          "latencyMs": 7.96
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,7 @@ SQL del modelo de contenido y 12 de 23 de su ruta de producción sobrevivían co
 `docs/progress.md` Entrega 4b). Aquí está para que **cualquiera pueda reproducir** lo que la documentación afirma.
 
 ```bash
-python3 scripts/mutation/db.py            # SQL (0007–0009) y exportador contra las suites de integración (~4 min)
+python3 scripts/mutation/db.py            # SQL (0007–0012) y exportador contra las suites de integración (~4 min)
 python3 scripts/mutation/ts.py            # ruta de producción en TypeScript contra la suite unitaria (~2 min)
 python3 scripts/mutation/cli.py           # CLI `content:export` contra su prueba de extremo a extremo (~1 min)
 python3 scripts/mutation/ci.py            # orquestación y CI: `bundle-scan`, `check-bundle`, `e2e-report`, `e2e-run`, `pg-cluster`, configuraciones de Playwright, `ci.yml`, `package.json` y la propia `lib.py` (suite unitaria, señales y pytest)
