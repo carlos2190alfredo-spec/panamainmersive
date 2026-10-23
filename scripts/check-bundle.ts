@@ -8,7 +8,17 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { SERVER_ONLY_NAMES, assetsOfHtml, findForbidden, gzipBytes, walk } from './lib/bundle-scan';
+import {
+  CLIENT_TEXT_FILES,
+  SERVER_ONLY_NAMES,
+  assetsOfHtml,
+  findForbidden,
+  gzipBytes,
+  measureAssets,
+  pageProblems,
+  parseBudget,
+  walk,
+} from './lib/bundle-scan';
 import { REVALIDATE_SECONDS, revalidationProblems, type PrerenderEntry } from './lib/isr-scan';
 
 const ROOT = process.cwd();
@@ -19,7 +29,13 @@ if (!existsSync(join(NEXT, 'static'))) {
 }
 
 // 1) Secretos en el bundle de cliente ------------------------------------------------------------
-const clientFiles = walk(join(NEXT, 'static'), /\.(js|css|map|html|json)$/);
+const clientFiles = walk(join(NEXT, 'static'), CLIENT_TEXT_FILES);
+if (clientFiles.length === 0) {
+  console.error(
+    'FALLO: no hay ningún fichero de cliente que escanear (¿cambió la forma del build?).',
+  );
+  process.exit(1);
+}
 const leaks = clientFiles.flatMap((f) =>
   findForbidden(f.replace(ROOT, ''), readFileSync(f, 'utf8'), SERVER_ONLY_NAMES),
 );
@@ -33,8 +49,17 @@ console.log(
 );
 
 // 2) Presupuesto de JS/CSS por página -------------------------------------------------------------
-const JS_BUDGET_KB = Number(process.env.JS_BUDGET_KB ?? 210); // gzip. Línea base medida 2026-10-20: 190,5 KB (React+Next+next-intl); margen ≈ 10 %
-const CSS_BUDGET_KB = Number(process.env.CSS_BUDGET_KB ?? 20); // gzip
+// Un presupuesto no válido (`JS_BUDGET_KB=2l0`) detiene la puerta: no se compara contra NaN.
+const budget = (name: string, fallback: number): number => {
+  try {
+    return parseBudget(name, process.env[name], fallback);
+  } catch (error) {
+    console.error(`FALLO: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(2);
+  }
+};
+const JS_BUDGET_KB = budget('JS_BUDGET_KB', 210); // gzip. Línea base medida 2026-10-20: 190,5 KB (React+Next+next-intl); margen ≈ 10 %
+const CSS_BUDGET_KB = budget('CSS_BUDGET_KB', 20); // gzip
 
 const pages: [string, string][] = [
   ['home', 'es.html'],
@@ -61,13 +86,13 @@ for (const [label, file] of pages) {
     continue;
   }
   const a = assetsOfHtml(readFileSync(htmlPath, 'utf8'));
-  const size = (urls: readonly string[]) =>
-    urls.reduce((sum, u) => {
-      const p = join(NEXT, u.replace(/^\/_next\//, ''));
-      return existsSync(p) ? sum + gzipBytes(p) : sum;
-    }, 0);
-  const js = size(a.js) / 1024;
-  const css = size(a.css) / 1024;
+  const measuredJs = measureAssets(NEXT, a.js, existsSync, gzipBytes);
+  const measuredCss = measureAssets(NEXT, a.css, existsSync, gzipBytes);
+  const js = measuredJs.bytes / 1024;
+  const css = measuredCss.bytes / 1024;
+  const problems = pageProblems(label, a, measuredJs, measuredCss);
+  for (const problem of problems) console.error(`FALLO: ${problem}`);
+  if (problems.length > 0) failed = true;
   rows.push(
     label.padEnd(12) +
       `${js.toFixed(1)} KB`.padStart(10) +
@@ -92,7 +117,7 @@ console.log(rows.join('\n'));
 // 3) Mapa (carga diferida) ------------------------------------------------------------------------
 // MapLibre 6 se emite como activo estático (`static/media/maplibre-gl.<hash>.mjs`) junto a su worker; PMTiles y el
 // código del lienzo viven en chunks normales. Los `-dev` y `shared` no se piden en producción.
-const MAP_LAZY_BUDGET_KB = Number(process.env.MAP_LAZY_BUDGET_KB ?? 500); // gzip. Medido 2026-10-20: ≈ 451 KB
+const MAP_LAZY_BUDGET_KB = budget('MAP_LAZY_BUDGET_KB', 500); // gzip. Medido 2026-10-20: ≈ 451 KB
 const mediaDir = join(NEXT, 'static/media');
 const lazyFiles = [
   ...(existsSync(mediaDir) ? readdirSync(mediaDir) : [])

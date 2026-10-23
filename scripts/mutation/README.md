@@ -13,8 +13,18 @@ python3 scripts/mutation/db.py F1 T2 G1   # solo las mutaciones con esos identif
 ```
 
 Solo usa la biblioteca estándar de Python (no necesita `.venv`). Salida: `MATA` (alguna prueba falla: bien),
-`SOBREVIVE` (hueco real, o mutante equivalente que hay que justificar), `INVÁLIDA` (rompió algo más y no cuenta).
-Código de salida 1 si sobrevive alguna.
+`SOBREVIVE` (hueco real, o mutante equivalente que hay que justificar), `INVÁLIDA` (rompió algo más: no se evaluó).
+
+| Salida | Significado                                                                                              |
+| ------ | -------------------------------------------------------------------------------------------------------- |
+| 0      | Todas las mutaciones evaluadas fueron detectadas (las «dependen del reloj» solo avisan).                 |
+| 1      | Sobrevive alguna.                                                                                        |
+| 2      | No se pudo evaluar: ID inexistente, árbol sucio, `git` no disponible o fallando, base no verde/completa. |
+| 3      | Ninguna sobrevive, pero alguna fue `INVÁLIDA`: una garantía quedó **sin comprobar**, no «comprobada».    |
+
+Un **0** solo se emite si se evaluó algo: pedir un ID que no existe, que todas las mutaciones sean inválidas o que las
+pruebas se **omitan** (una prueba omitida no «mata») ya no termina en «0 supervivientes». Las pruebas de esta
+herramienta están en `pipelines/tests/test_mutation_lib.py`.
 
 ## Reglas (cada una nació de un error real)
 
@@ -30,7 +40,10 @@ Código de salida 1 si sobrevive alguna.
 - Un **superviviente no es automáticamente un fallo de las pruebas**: puede ser un mutante **equivalente** (p. ej. una
   segunda barrera de defensa en profundidad). Hay que justificarlo por escrito (ADR-0020); no se ignora en silencio.
 
-## Límite conocido
+## Límites conocidos
+
+Si Vitest agota el plazo (30 min) solo se detiene el proceso directo, no necesariamente sus procesos hijo; la mutación
+queda `INVÁLIDA` y el archivo se restaura, pero conviene comprobar que no quedan procesos huérfanos.
 
 `D1` (`app.panama_today()` calculado en UTC) solo se detecta entre las 00:00 y las 05:00 UTC, cuando el día de Panamá y el
 UTC difieren, y PostgreSQL no permite falsear `now()`. Se avisa como «depende del reloj» en lugar de fallar.

@@ -11,6 +11,9 @@ export default defineConfig({
   testDir: 'e2e-content',
   fullyParallel: true,
   workers: 2,
+  // En CI, un `test.only` olvidado ejecutaría UNA prueba y saldría en verde; y una prueba intermitente es un fallo.
+  forbidOnly: !!process.env.CI,
+  failOnFlakyTests: !!process.env.CI,
   reporter: [['list']],
   use: { baseURL: `http://localhost:${PORT}`, trace: 'retain-on-failure', launchOptions },
   projects: [

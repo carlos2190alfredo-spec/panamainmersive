@@ -11,8 +11,15 @@ export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // Un reintento sirve para distinguir «intermitente» de «roto», pero NO para dar el verde: una prueba que falla y
+  // pasa al reintentar es un FALLO en CI (antes salía con 0 y solo lo delataba una línea «1 flaky» del registro).
+  failOnFlakyTests: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: [['list']],
+  // En CI también un informe JSON: `pnpm check:e2e-skips` lo lee para limitar las pruebas OMITIDAS (sin mapa base
+  // decenas se omiten diciéndolo; sin un límite, otra omisión perdería cobertura en silencio).
+  reporter: process.env.CI
+    ? [['list'], ['json', { outputFile: 'test-results/e2e-report.json' }]]
+    : [['list']],
   use: {
     baseURL,
     trace: 'retain-on-failure',

@@ -1,11 +1,14 @@
 /**
  * `pnpm test:e2e:db` — suite E2E CON base de datos (docs/testing.md).
  *
- *  1. Comprueba lo que necesita y, si falta algo, dice QUÉ y sale con 0 sin ejecutar nada (OMITIDA, no «pasó»).
+ *  1. Comprueba lo que necesita y, si falta algo, dice QUÉ: en LOCAL sale con 0 sin ejecutar nada (OMITIDA, no
+ *     «pasó»); en CI es un FALLO (un verde que no ejecutó nada es peor que un rojo).
  *  2. Levanta un PostgreSQL TEMPORAL (socket Unix, sin tocar ninguno del sistema), migra, importa y PUBLICA las
  *     áreas protegidas reales (artefactos de `pnpm data:ingest`) y despublica una a propósito.
- *  3. Arranca `next start` sobre el build apuntando a esa BD y ejecuta Playwright con `playwright.db.config.ts`.
- *  4. Limpia todo (servidor y clúster) y devuelve el código de salida de Playwright.
+ *  3. Arranca `next start` sobre el build apuntando a esa BD (en un puerto LIBRE o el de `E2E_DB_PORT`, que debe
+ *     estarlo, y comprobando que el servidor que responde es el SUYO) y ejecuta Playwright con
+ *     `playwright.db.config.ts`.
+ *  4. Limpia todo (servidor, Playwright y clúster; también ante SIGINT/SIGTERM) y devuelve el código de Playwright.
  *
  * Nada de esto toca bases remotas: el clúster vive en un directorio temporal y se destruye al terminar.
  */
@@ -14,18 +17,25 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from 'pg';
 import { RIGHTS_POLICIES } from '../src/lib/rights-policies';
-import { startTestCluster } from '../tests/integration/pg-cluster';
+import {
+  PostgresUnavailableError,
+  startTestCluster,
+  type TestCluster,
+} from '../tests/integration/pg-cluster';
 import { importAreas } from './db/import-areas-lib';
 import { migrate } from './db/lib';
+import {
+  onTerminate,
+  pickPort,
+  skip,
+  startServer,
+  stopGroup,
+  waitForServer,
+  type ServerHandle,
+} from './lib/e2e-run';
 
 const ROOT = process.cwd();
-const PORT = Number(process.env.E2E_DB_PORT ?? 3200);
 const INGEST_DIR = join(ROOT, 'data/build/ingest/overture-protected-areas');
-
-function skip(reason: string): never {
-  console.log(`\nOMITIDA (no ejecutada, NO es un «pasó»): ${reason}\n`);
-  process.exit(0);
-}
 
 function ingestManifest(): string | null {
   if (!existsSync(INGEST_DIR)) return null;
@@ -35,30 +45,9 @@ function ingestManifest(): string | null {
   return path && existsSync(path) ? path : null;
 }
 
-async function waitFor(url: string, ms: number): Promise<void> {
-  const deadline = Date.now() + ms;
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return;
-    } catch {
-      // aún no responde
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`El servidor no respondió en ${ms / 1000} s: ${url}`);
-}
-
-function stopServer(child: ChildProcess | undefined): void {
-  if (!child?.pid) return;
-  try {
-    process.kill(-child.pid, 'SIGTERM'); // grupo de procesos: `next start` lanza `next-server`
-  } catch {
-    // ya terminó
-  }
-}
-
 async function main(): Promise<number> {
+  // El puerto primero: si lo piden y está ocupado, se dice ya (antes de levantar nada).
+  const port = await pickPort(process.env.E2E_DB_PORT);
   if (!existsSync(join(ROOT, '.next/BUILD_ID')))
     skip('falta el build: ejecuta `SITE_ENV=development pnpm build`.');
   if (!existsSync(join(ROOT, 'public/data/panama-basemap.pmtiles'))) {
@@ -68,16 +57,28 @@ async function main(): Promise<number> {
   if (!manifest)
     skip('faltan los artefactos de ingesta: ejecuta `pnpm data:ingest` (docs/setup.md §7).');
 
-  let cluster;
+  let cluster: TestCluster;
   try {
-    cluster = await startTestCluster();
+    cluster = await startTestCluster({ handleSignals: false });
   } catch (error) {
-    skip(
-      `no hay PostgreSQL+PostGIS utilizable (${error instanceof Error ? error.message : String(error)}).`,
-    );
+    // Solo «no hay PostgreSQL» se puede omitir (en local); un initdb o pg_ctl que falla es un fallo de verdad.
+    if (error instanceof PostgresUnavailableError)
+      skip(`no hay PostgreSQL+PostGIS utilizable (${error.message}).`);
+    throw error;
   }
 
-  let server: ChildProcess | undefined;
+  let server: ServerHandle | undefined;
+  let playwright: ChildProcess | undefined;
+  // Una sola limpieza aunque la pidan a la vez una señal y el `finally`; sin bloquear el bucle de eventos (si no,
+  // `tsx` mataba el proceso a mitad de limpiar al reenviar una segunda señal).
+  let cleaning: Promise<void> | undefined;
+  const cleanup = (): Promise<void> =>
+    (cleaning ??= (async () => {
+      stopGroup(playwright);
+      server?.stop();
+      await cluster.stopAsync();
+    })());
+  const untrack = onTerminate(cleanup);
   try {
     const admin = new Client({
       host: cluster.host,
@@ -128,19 +129,14 @@ async function main(): Promise<number> {
     await owner.end();
 
     const databaseUrl = `postgresql://postgres@/pi_e2e?host=${encodeURIComponent(cluster.host)}&port=${cluster.port}`;
-    server = spawn(
+    server = startServer(
       process.execPath,
-      [join(ROOT, 'node_modules/next/dist/bin/next'), 'start', '-p', String(PORT)],
-      {
-        cwd: ROOT,
-        detached: true,
-        stdio: 'ignore',
-        env: { ...process.env, SITE_ENV: 'development', DATABASE_URL: databaseUrl },
-      },
+      [join(ROOT, 'node_modules/next/dist/bin/next'), 'start', '-p', String(port)],
+      { cwd: ROOT, env: { ...process.env, SITE_ENV: 'development', DATABASE_URL: databaseUrl } },
     );
-    await waitFor(`http://localhost:${PORT}/api/health`, 60_000);
+    await waitForServer(`http://localhost:${String(port)}/api/health`, 60_000, server);
 
-    const playwright = spawn(
+    const child = spawn(
       'pnpm',
       [
         'exec',
@@ -153,9 +149,10 @@ async function main(): Promise<number> {
       {
         cwd: ROOT,
         stdio: 'inherit',
+        detached: true, // su propio grupo: la limpieza lo para entero (workers incluidos) ante una señal
         env: {
           ...process.env,
-          E2E_DB_PORT: String(PORT),
+          E2E_DB_PORT: String(port),
           E2E_PUBLISHED_OVID: published.ovid,
           E2E_PUBLISHED_NAME: published.name,
           E2E_UNPUBLISHED_OVID: unpublished.ovid,
@@ -163,14 +160,19 @@ async function main(): Promise<number> {
         },
       },
     );
-    return await new Promise<number>((resolve) => {
-      playwright.on('exit', (code) => {
+    playwright = child;
+    return await new Promise<number>((resolve, reject) => {
+      child.once('error', reject); // p. ej. `pnpm` fuera del PATH: antes quedaba todo huérfano
+      child.once('exit', (code) => {
         resolve(code ?? 1);
       });
     });
+  } catch (error) {
+    if (server) console.error(`\nSalida del servidor de la prueba:\n${server.tail()}\n`);
+    throw error;
   } finally {
-    stopServer(server);
-    cluster.stop();
+    untrack();
+    await cleanup();
   }
 }
 

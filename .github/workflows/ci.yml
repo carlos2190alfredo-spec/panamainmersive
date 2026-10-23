@@ -1,8 +1,17 @@
 # CI de Panamá Immersive. ESTADO: IMPLEMENTED, no VERIFIED: este flujo no se ha podido ejecutar fuera
-# del entorno de desarrollo. Los MISMOS comandos sí se ejecutan en local (ver docs/testing.md).
-# LIMITACIÓN CONOCIDA: este CI NO genera el mapa base (`public/data/panama-basemap.pmtiles`: Python + tippecanoe +
-# red hacia Overture, ≈ 5 min). Sin él, los E2E que necesitan el mapa dibujado se OMITEN diciéndolo (verificado en
-# local ocultando el fichero: 104 pasan, 56 omitidas, 0 fallan). El mapa real solo se verifica en local (backlog F3-14).
+# del entorno de desarrollo. Los MISMOS comandos sí se ejecutan en local (ver docs/testing.md) y la estructura de este
+# archivo está vigilada por `tests/unit/scripts/ci-workflow.test.ts` (guardas textuales, no una ejecución).
+#
+# LIMITACIONES CONOCIDAS (honestas, no ocultas en el nombre de un job verde):
+#  · Este CI NO genera el mapa base (`public/data/panama-basemap.pmtiles`: Python + tippecanoe + red hacia Overture,
+#    ≈ 5 min). Sin él, las pruebas E2E que necesitan el mapa dibujado se OMITEN diciéndolo. Medido en local ocultando el
+#    fichero, 2026-10-23: 104 pasan, 56 omitidas (todas por esa causa), 0 fallan. `pnpm check:e2e-skips` limita las
+#    omitidas a ese número: otra omisión nueva ya no pasa desapercibida. El mapa real solo se verifica en local (F3-14).
+#  · `pnpm test:e2e:db` NO está en este flujo: necesita artefactos de datos gitignorados (`pnpm data:build` y
+#    `pnpm data:ingest`) que el CI no genera, y en CI «faltan datos» es un FALLO (un verde que no ejecutó nada es peor
+#    que un rojo), así que añadirlo sin generarlos lo dejaría siempre en rojo. Se ejecuta en local (docs/testing.md).
+#  · Las acciones de terceros van por etiqueta mayor (`@v4`), no por hash de commit: DEFERRED (no se pueden consultar los
+#    hashes sin red hacia GitHub y uno supuesto sería peor que una etiqueta). Backlog F4-17.
 name: CI
 
 on:
@@ -13,14 +22,16 @@ on:
 permissions:
   contents: read
 
+# En `main` NO se cancela: un commit ya integrado se quedaría sin veredicto si llega otro encima.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   check:
     name: Tipos, lint, formato y pruebas unitarias
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -37,6 +48,7 @@ jobs:
   pipelines:
     name: Pipelines de datos (pytest, sin red)
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -52,6 +64,7 @@ jobs:
   integration:
     name: Integración (PostgreSQL 16 + PostGIS, RLS y migraciones)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -62,11 +75,18 @@ jobs:
       # Las pruebas levantan su propio clúster temporal (sin servicios): solo necesitan los binarios.
       - run: sudo apt-get update && sudo apt-get install -y postgresql-16 postgresql-16-postgis-3
       - run: pnpm install --frozen-lockfile
+      - name: Versiones
+        run: |
+          node --version
+          pnpm --version
+          /usr/lib/postgresql/16/bin/postgres --version
+          dpkg-query --show --showformat='postgis ${Version}\n' postgresql-16-postgis-3
       - run: pnpm test:integration
 
   e2e:
-    name: Compilación, presupuesto de bundle, E2E y accesibilidad
+    name: Build, presupuesto de bundle y E2E (mapa base NO generado en CI; sus pruebas se omiten con presupuesto)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: check
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +97,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Versiones
+        run: |
+          node --version
+          pnpm --version
+          pnpm exec playwright --version
       - run: pnpm build
         env:
           SITE_ENV: development
@@ -85,10 +110,24 @@ jobs:
         env:
           CI: 'true'
           SITE_ENV: development
+      # 56 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO: si algún día el CI genera el mapa, bájalo.
+      - name: Presupuesto de pruebas omitidas
+        run: pnpm check:e2e-skips
+        env:
+          E2E_MAX_SKIPPED: '56'
+      - name: Trazas de Playwright (solo si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
   e2e-content:
     name: E2E de la ficha con contenido verificado (PostgreSQL temporal → exportación → build → Next)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: check
     steps:
       - uses: actions/checkout@v4
@@ -102,6 +141,38 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-16 postgresql-16-postgis-3
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Versiones
+        run: |
+          node --version
+          pnpm --version
+          pnpm exec playwright --version
+          /usr/lib/postgresql/16/bin/postgres --version
       - run: pnpm test:e2e:content
         env:
           CI: 'true'
+      - name: Trazas de Playwright (solo si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-content-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # El ÚNICO check que haría falta exigir en la protección de rama: resume a todos y se ejecuta siempre (un job cuyo
+  # `needs` falló queda «omitido», que GitHub no pinta de rojo).
+  ci-ok:
+    name: CI (resultado de todos los jobs)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [check, pipelines, integration, e2e, e2e-content]
+    if: ${{ always() }}
+    steps:
+      - name: Algún job falló, se canceló o se omitió
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "::error::Algún job no terminó en éxito."
+          echo "$NEEDS"
+          exit 1

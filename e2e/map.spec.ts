@@ -274,9 +274,11 @@ test.describe('mapa: capas y relieve de terceros', () => {
     await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
     for (const url of terrain.requests)
       expect(url).toMatch(new RegExp(`^https://${TERRAIN_HOST}/terrarium/\\d+/\\d+/\\d+\\.png$`));
-    await expect(page.getByRole('list').filter({ hasText: 'Frontera' }).first())
-      .toBeVisible()
-      .catch(() => undefined);
+    // La leyenda (no el control, que también dice «Sombreado del relieve») refleja la capa activada.
+    const legend = page.getByRole('region', { name: 'Leyenda' });
+    await expect(
+      legend.getByRole('listitem').filter({ hasText: 'Sombreado del relieve' }),
+    ).toBeVisible();
     await expect(page.locator('[data-map-layers]')).toHaveAttribute(
       'data-map-layers',
       'protectedAreas,boundaries,places,waterways,landcover,hillshade',
@@ -286,6 +288,7 @@ test.describe('mapa: capas y relieve de terceros', () => {
     await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).uncheck();
     await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,places,waterways,landcover(&|$)/);
     await expect(page.getByText('Con una capa de relieve activa')).toHaveCount(0);
+    await expect(legend.getByText('Sombreado del relieve')).toHaveCount(0);
     await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
     // La CSP deja pasar el origen del relieve (connect-src) y nada más.
     expect(await watch.violations()).toEqual([]);
