@@ -24,6 +24,7 @@ Un ADR registra **una** decisión, su contexto, las alternativas descartadas y c
 | [0018](0018-seleccion-de-areas.md)                     | Selección de áreas: clic y lista por teclado equivalentes, `a` en la URL, ficha en dos niveles de verdad (mapa / BD) sin afirmar lo que no se sabe                                                                                                                | Aceptada                     |
 | [0019](0019-modelo-de-contenido-con-evidencia.md)      | Modelo de contenido: afirmaciones por campo con evidencia, estado **derivado** (nunca un booleano), puertas en BD y dominio que deben coincidir, publicación por instantánea revalidada                                                                           | Aceptada, enmendada por 0020 |
 | [0020](0020-endurecimiento-del-modelo-de-contenido.md) | Endurecimiento del modelo de contenido tras una revisión independiente: solo quien redactó edita, traducciones que no sobreviven a un cambio del original, la BD al menos tan estricta como el dominio y el exportador, exclusión con ruido en vez de fallar todo | Aceptada                     |
+| [0021](0021-idioma-de-las-fuentes.md)                  | Idioma de las fuentes citadas (WCAG 3.1.2): columna opcional con etiqueta BCP 47 canónica, `null` = no se sabe y no se adivina, el mismo patrón en BD, instantánea y componente, `lang` en título, institución, licencia y localizador                            | Aceptada                     |
 
 ## Cuándo se revisa un ADR
 

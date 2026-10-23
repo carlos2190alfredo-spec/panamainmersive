@@ -6,14 +6,14 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                                                                                                                                                                                                              | Notas                                                                                    |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                                                                                                                          | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                    |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                                                                                                                             | Detalle abajo                                                                            |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                            | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                              |
-| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                         | Entregas 3, 3b, 3c y 3d; cierre abajo                                                    |
-| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto); **sin ninguna afirmación verificada real** | Entregas 4a, 4b y 4c; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5–10                      | PENDIENTE                                                                                                                                                                                                                                                                                           | Ver `docs/backlog.md`                                                                    |
+| Fase                      | Estado                                                                                                                                                                                                                                                                                                                                              | Notas                                                                                        |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                                                                                                                                                                          | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                        |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                                                                                                                                                                             | Detalle abajo                                                                                |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                                                                            | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                                  |
+| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                                                                         | Entregas 3, 3b, 3c y 3d; cierre abajo                                                        |
+| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto) y el **idioma de las fuentes** (4d, WCAG 3.1.2); **sin ninguna afirmación verificada real** | Entregas 4a, 4b, 4c y 4d; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
+| 5–10                      | PENDIENTE                                                                                                                                                                                                                                                                                                                                           | Ver `docs/backlog.md`                                                                        |
 
 ## Entrega 1 — Foundation
 
@@ -562,3 +562,61 @@ Primera ejecución real de `ci.yml` y comparación de Chromium (T-15, requiere r
 ### Siguiente acción concreta
 
 Igual que en la 4a y la 4b, lo que más valor da depende de una persona: validar los umbrales de evidencia (F4-1) y redactar **un** resumen real con fuente primaria oficial para ver la primera ficha; antes de **publicar** contenido real, decidir F4-14 y F4-16. Para el CI, la acción que desbloquea todo lo pendiente es **conectar un remoto** (decisión 7) y mirar la primera ejecución. Lo que sigue sin depender de nadie es la **interfaz de autoría** (F4-2), que necesita antes una decisión de autenticación.
+
+## Entrega 4d — Fase 4: idioma de las fuentes citadas (F4-15, WCAG 3.1.2)
+
+Alcance: **una sola deuda, la de accesibilidad registrada como R2-12 y aplazada a propósito en la 4b**. Por qué esta y no otra: la Fase 4 ya no tenía trabajo independiente grande (la interfaz de autoría necesita una decisión de autenticación que no existe; F4-14 y F4-16 necesitan decisiones de despliegue y procedencia) y las fases 5–10 dependen de credenciales, derechos o contenido que no existen (L-01…L-05). Esta no depende de nadie y tiene un daño concreto: cuando llegue contenido real, un lector de pantalla pronunciaría el título de un documento en inglés con la voz del español.
+
+### Qué funciona (VERIFIED en local, 2026-10-23)
+
+- **Migración `0010`**: `source_records.language`, **opcional**. `null` significa «no se sabe»: la ficha **no marca `lang` y no lo adivina**. Etiqueta BCP 47 en forma canónica (`es`, `pt-BR`, `es-419`, `zh-Hant-TW`), **solo bien formada**. `anon` recibe SELECT de la columna; el disparador de solo inserción de la 0009 la cubre.
+- **Un solo patrón en tres capas** (`src/domains/content/language-tag.ts`): la restricción de la BD, el esquema de la instantánea y el componente (que además no pasa al atributo nada que no lo cumpla). Una prueba de integración compara la **restricción real** con la expresión sobre un corpus (salto de línea final, cifras de ancho completo, mayúsculas fuera de ASCII…) y sobre **más de 400 cadenas aleatorias con semilla fija**: la BD nunca es más laxa que el dominio (ADR-0020).
+- **Instantánea y exportador**: `language` es obligatoria en cada evidencia (con `null` = desconocido); una instantánea de la forma anterior **falla en voz alta**. `schema` sigue en 1 (no existe ninguna publicada con la forma anterior: la real está vacía). `pnpm content:export` **avisa** (no falla) de las fuentes sin idioma declarado.
+- **Ficha**: `lang` en el título, la institución, el nombre de la licencia y el localizador **cuando se sabe**, en los cinco idiomas (`t.rich` con `<doc>`; el espacio duro del francés se conserva). El texto de la interfaz que los rodea no se marca, y el aviso oculto «se abre en una pestaña nueva», que está dentro del enlace marcado, **vuelve al idioma de la interfaz**. Tamaño de la ficha sin cambios (191,1 KB gzip).
+- **ADR-0021** y documentación (data-model, i18n, security R2-12 resuelta con sus límites, backlog F4-15 cerrado y T-16).
+
+### Cómo ejecutarlo
+
+```bash
+pnpm check                                                        # typecheck + lint + format + 1018 unitarias
+pnpm test:integration                                             # 357 (incluye la paridad BD ≡ dominio y el exportador con idioma)
+SITE_ENV=development pnpm build && pnpm check:bundle              # la ficha sigue en 191,1 KB
+CI=true pnpm test:e2e && pnpm check:e2e-skips --max-skipped 56    # 160
+pnpm test:e2e:content && pnpm test:e2e:db                         # 28 (con axe, cinco idiomas, dos temas) · 7
+python3 scripts/mutation/{ts,db,cli}.py                           # incluyen las 30 mutaciones nuevas (I1–I18, Y1–Y10, L1–L2)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-23)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **1018** (50 ficheros) · `pnpm test:integration`: **357** (18 ficheros; 0 clústeres huérfanos) · `pnpm test:pipelines`: **119** · `pnpm test:e2e` con `CI=true` y el mapa real: **160 pasan, 0 omitidas** · `pnpm test:e2e:content`: **28** (21 previas + 7 nuevas) · `pnpm test:e2e:db`: **7** · `pnpm check:bundle`: OK sin cambios · **mutación: las 30 nuevas, 29 detectadas + 1 equivalente justificada; las **110** de `db.py`, `ts.py` y `cli.py` (80 previas + 30 nuevas) **repetidas sobre el código final: 108 detectadas, `D1` avisa** (depende del reloj: eran las 13:05 UTC, fuera de la ventana 00:00–05:00) **y `Y4` es la equivalente justificada; 0 supervivientes**. `ci.py` (105) no se repitió: esta entrega no tocó ningún archivo que muta**.
+
+### Lo que se encontró y cambió (honestamente)
+
+- **La mutación de mi propio trabajo: 28 de 30 en la primera pasada.** Los dos restantes: **I17 era un hueco real** (el título de una fuente sin enlace seguro se pinta como `<span>` y nada comprobaba que conservara su `lang`; ahora hay prueba) e **Y4 era equivalente y yo creía lo contrario**: quitar `language is null or` de la restricción no cambia nada, porque en PostgreSQL un `CHECK` se cumple cuando la expresión da `NULL`. Mi intuición de que «`null` se rechazaría» era falsa en SQL; queda marcada como equivalente con su justificación escrita.
+- **Una interacción que no vi al diseñar**: el texto oculto «se abre en una pestaña nueva» queda **dentro** de un enlace con `lang="it"`, y un lector de pantalla lo leería con la voz del documento. Lo descubrí al escribir el E2E (la página inglesa tenía un segundo `[lang="en"]` y rompía una comprobación que contaba cualquier elemento); el aviso vuelve ahora al idioma de la interfaz y esa comprobación se acotó a `p[lang=…]`, que es lo que decía querer.
+- **Un idioma sintético mal elegido en mi E2E**: con una fuente en francés, la página francesa tendría dos clases de elementos con `lang="fr"` y el recuento no distinguiría un caso del otro; la siembra usa `it` (ninguno de los cinco de la interfaz) y `pt-BR` (para ejercitar la región de punta a punta).
+- **Errores de mi prueba de paridad que vi antes de fiarme de ella**: el propietario no tiene usuario (`created_by` es `not null`) y una cadena con NUL se rechaza con otro código (22021, no 23514). Se corrigieron antes de aceptar su veredicto.
+- **Lo que axe no dice**: su regla `valid-lang` (etiquetada `wcag2aa`/`wcag312` en axe-core 4.14.0) solo valida el **valor** de `lang`; **no detecta su ausencia** en un pasaje en otro idioma. Un axe en verde no demuestra el criterio; por eso hay pruebas de **presencia** (componente y E2E).
+- **No toqué** las fuentes del mapa (`data_sources`: Overture, ODbL, Noto…): son nombres propios e identificadores de licencia, y su idioma es conocido y fijo.
+
+### Qué no pudo verificarse
+
+- **El texto de WCAG 3.1.2 y sus excepciones, en su fuente primaria**: `w3.org` está bloqueado por la política de red (403, E-76) y no se rodea. Lo que cito de la norma es **de memoria**.
+- **Lectores de pantalla reales** (NVDA, VoiceOver, TalkBack): solo se comprobó el DOM y axe. Que la voz cambie de verdad con `lang` en esos spans no está probado con personas ni con esos programas.
+- **Que la etiqueta esté registrada en IANA** y la **dirección del texto** (`dir`) en idiomas de derecha a izquierda (T-16).
+- **Ninguna fuente real**: la instantánea publicada sigue **vacía**; todo usa datos sintéticos. Hasta que alguien edite fuentes, **el idioma quedará en `null`** (no hay interfaz de autoría que lo pida: F4-2).
+- Lo de la entrega 4c: `ci.yml` nunca se ejecutó (no hay remoto) y el CI instalará Chromium 156 frente al 141 de aquí (E-68).
+
+### Decisiones que necesitan a una persona (no puedo tomarlas yo)
+
+Las ocho de la 4c (**F4-1**, **F4-3**, **F4-5**, **F4-4/F4-16**, **F4-12**, **F4-14**, **conectar un remoto**, **¿debe el CI generar el mapa base?**) y una nueva:
+
+9. **¿Se vuelve obligatorio el idioma de la fuente cuando exista la interfaz de autoría (F4-2)?** Hoy es opcional con un aviso del exportador, porque exigirlo sin esa interfaz rechazaría contenido válido.
+
+### Pendiente
+
+T-16 (registro IANA, `dir`, leer la norma), T-14 y T-15 (guiones de orquestación y primera ejecución del CI), F4-17b (acciones por hash), procedencia de la instantánea (F4-14), regeneración programada (F4-16), contenido real (F4-6), interfaz de autoría (F4-2) y las decisiones de arriba. Ver `docs/backlog.md`.
+
+### Siguiente acción concreta
+
+**Lo independiente de las personas en la Fase 4 está agotado**: lo que queda necesita una decisión (autenticación para F4-2, despliegue para F4-16, procedencia para F4-14) o contenido real. Las fases 5–10 están además bloqueadas por L-05 (cobertura Google/Mapillary `UNKNOWN`) y por no haber contenido que contar. Se puede preparar el esqueleto puro de un recorrido guiado (esquema de pasos con cámara y referencias a contenido verificado), pero **no lo recomiendo hasta que exista contenido**: construir la interfaz de un recorrido vacío sería inventar cobertura. Lo que más valor da sigue siendo una sesión corta contigo: validar los umbrales (F4-1), redactar **un** resumen real con fuente primaria oficial (con el idioma de la fuente) y decidir si se conecta un remoto.

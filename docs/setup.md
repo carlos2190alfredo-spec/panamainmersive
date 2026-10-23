@@ -19,6 +19,7 @@ La política de red del entorno cloud **deniega** casi todos los hosts (E-00). P
 | Alta      | `sigigntg.anati.gob.pa`, `www.ign.gob.pa`, `ignpanama.anati.gob.pa`, `www.anati.gob.pa`               | Geometrías oficiales (ANATI/IGN)                         |
 | Alta      | `miambiente.gob.pa` (+ su geoportal), `www.atp.gob.pa`                                                | Áreas protegidas y turismo oficial                       |
 | Media     | `whc.unesco.org`                                                                                      | Límites de Casco Antiguo y Coiba                         |
+| Media     | `www.w3.org`                                                                                          | WCAG 2.2 en fuente primaria (E-76: 403 observado)        |
 | Media     | `commons.wikimedia.org`, `www.wikidata.org`, `*.wikipedia.org`                                        | Medios con licencia por archivo y QIDs                   |
 | Media     | `graph.mapillary.com`, `www.mapillary.com`, `help.mapillary.com`, `api.kartaview.org`                 | Street imagery                                           |
 | Media     | `operations.osmfoundation.org`, `download.geofabrik.de`                                               | Política de teselas y extracto OSM (routing)             |
