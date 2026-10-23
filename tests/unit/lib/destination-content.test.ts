@@ -112,3 +112,86 @@ describe('sitemap con campos mínimos por idioma y sensibilidad', () => {
     }
   });
 });
+
+/**
+ * El camino POSITIVO. Con el estado real de la interfaz (español en borrador, el resto automático) nada puede ser
+ * publicable, así que todas las pruebas de arriba solo afirman «no indexable»: un `statusFor: () => 'draft'` las
+ * dejaba verdes. Aquí se simula que la interfaz ya se revisó, para probar que el estado SÍ llega a `published` y que
+ * manda el más débil entre la interfaz y el contenido.
+ */
+describe('SEO de la ficha: el camino positivo (con la interfaz simulada como revisada)', () => {
+  async function seoWith(
+    ui: Record<Locale, TranslationStatus>,
+    content: Parameters<typeof destinationSeo>[0],
+  ) {
+    vi.resetModules();
+    vi.doMock('@/domains/editorial/ui-status', () => ({
+      UI_TRANSLATION_STATUS: ui,
+      SITE_PUBLICATION_POLICY: { indexReviewed: false, allowMachineTranslatedGeneral: false },
+    }));
+    try {
+      const mod = await import('@/lib/destination-content');
+      return mod.destinationSeo(content, 'locality', TODAY);
+    } finally {
+      vi.doUnmock('@/domains/editorial/ui-status');
+      vi.resetModules();
+    }
+  }
+  const everywhere = (status: TranslationStatus): Record<Locale, TranslationStatus> => ({
+    es: status,
+    en: status,
+    pt: status,
+    fr: status,
+    de: status,
+  });
+  const translated = (...locales: Locale[]) =>
+    assertion({
+      texts: [original(), ...locales.map((l) => translation({ locale: l, text: `[test] ${l}` }))],
+    });
+
+  it('contenido publicado + interfaz publicada = publicada, solo en los idiomas donde el resumen existe', async () => {
+    const seo = await seoWith(everywhere('published'), {
+      assertions: [translated('en')],
+      notices: [],
+    });
+    expect(LOCALES.map((l) => [l, seo.statusFor(l)])).toEqual([
+      ['es', 'published'],
+      ['en', 'published'],
+      ['pt', 'draft'], // sin traducción al portugués: el contenido de esa página no está publicado
+      ['fr', 'draft'],
+      ['de', 'draft'],
+    ]);
+    expect(LOCALES.filter((l) => seo.hasRequiredFields(l))).toEqual(['es', 'en']);
+  });
+
+  it('manda el MÁS DÉBIL de la interfaz y el contenido, en cada idioma', async () => {
+    const seo = await seoWith(
+      { es: 'published', en: 'reviewed', pt: 'machine_translated', fr: 'draft', de: 'outdated' },
+      { assertions: [translated('en', 'pt', 'fr', 'de')], notices: [] },
+    );
+    expect(LOCALES.map((l) => [l, seo.statusFor(l)])).toEqual([
+      ['es', 'published'],
+      ['en', 'reviewed'],
+      ['pt', 'machine_translated'],
+      ['fr', 'draft'],
+      ['de', 'outdated'],
+    ]);
+  });
+
+  it('una interfaz publicada no publica una página sin contenido verificado', async () => {
+    const seo = await seoWith(everywhere('published'), { assertions: [], notices: [] });
+    for (const l of LOCALES) expect(seo.statusFor(l), l).toBe('draft');
+  });
+});
+
+describe('indexingOf: lo que la ficha y el sitemap reciben', () => {
+  it('son exactamente los tres campos que deciden la indexación, los mismos de destinationSeo', async () => {
+    const { indexingOf } = await import('@/lib/destination-content');
+    const seo = destinationSeo({ assertions: [assertion()], notices: [] }, 'locality', TODAY);
+    const indexing = indexingOf(seo);
+    expect(Object.keys(indexing).sort()).toEqual(['hasRequiredFields', 'sensitivity', 'statusFor']);
+    expect(indexing.hasRequiredFields).toBe(seo.hasRequiredFields);
+    expect(indexing.statusFor).toBe(seo.statusFor);
+    expect(indexing.sensitivity).toBe(seo.sensitivity);
+  });
+});

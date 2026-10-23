@@ -152,52 +152,87 @@ describe('estado derivado de un campo', () => {
     expect(fieldState([elevation()], [], f, 'volcano', TODAY).status).toBe('VERIFIED');
   });
 
+  it('una disputa que ya reemplazó otra versión no cuenta (y una abierta, sí)', () => {
+    const superseded = assertion({
+      status: 'disputed',
+      version: 1,
+      supersededAt: '2026-10-10T00:00:00Z',
+    });
+    const retractedLater = assertion({
+      id: '9f5a1e74-3c6d-4b8a-8d43-6e1c2a7b9f32',
+      status: 'retracted',
+      version: 2,
+    });
+    // v1 se discutió y la v2 que la reemplazó se retiró después: no queda nada vigente ni en disputa
+    expect(state([superseded, retractedLater])).toEqual({
+      status: 'UNKNOWN',
+      reason: 'not_investigated',
+    });
+    // Una disputa abierta (no reemplazada) sí se muestra como tal
+    expect(state([assertion({ status: 'disputed', version: 1 })])).toEqual({ status: 'DISPUTED' });
+  });
+
   it('una fecha de referencia inválida lanza: nunca se adivina «hoy»', () => {
     expect(() => state([], [], summary, 'hoy')).toThrow(RangeError);
     expect(() => state([], [], summary, '2026-02-31')).toThrow(RangeError);
   });
 
-  it('propiedad: VERIFIED nunca aparece sin pasar las puertas (fuzz determinista)', () => {
+  it('propiedad: VERIFIED si y solo si cumple todo (fuzz determinista con oráculo exacto)', () => {
+    // Antes solo 2 de 400 combinaciones llegaban a VERIFIED y las aserciones iban dentro de `if (VERIFIED)`: no
+    // probaba nada. Ahora cada atributo es «bueno» con probabilidad 0,8 (≈ un tercio de VERIFIED), la caracterización
+    // es EXACTA en los dos sentidos (bueno ⇒ VERIFIED y VERIFIED ⇒ bueno) y se exige que ocurran las dos cosas.
     let seed = 20261021;
     const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
     const pick = <T>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)] as T;
-    for (let i = 0; i < 400; i++) {
+    const mostly = <T>(good: readonly T[], bad: readonly T[]): T =>
+      rnd() < 0.8 ? pick(good) : pick(bad);
+    let verified = 0;
+    let other = 0;
+    for (let i = 0; i < 600; i++) {
+      const status = mostly(
+        ['verified'] as const,
+        ['draft', 'in_review', 'disputed', 'rejected', 'retracted'] as const,
+      );
+      // entry_rules: vigencia máxima 180 días desde la verificación (2026-10-01): estas son las buenas
+      const validUntil = mostly(
+        ['2026-10-21', '2027-03-01'],
+        ['2026-09-01', '2028-01-01', null, '2026-02-31'],
+      );
+      const confidence = mostly(['low', 'medium', 'high'] as const, [null]);
+      const supersededAt = mostly([null], ['2026-10-10T00:00:00Z']);
+      const verifiedAt = mostly(['2026-10-01T15:00:00Z'], [null, 'basura']);
+      const evidenceKind = mostly(['good'] as const, ['none', 'community', 'contradicts'] as const);
+      const items = {
+        good: [evidence()],
+        none: [],
+        community: [evidence({ sourceClass: 'community' })],
+        contradicts: [evidence({ stance: 'contradicts' })],
+      }[evidenceKind];
       const a = entryRules({
-        status: pick([
-          'draft',
-          'in_review',
-          'verified',
-          'disputed',
-          'rejected',
-          'retracted',
-        ] as const),
-        validUntil: pick([
-          '2026-09-01',
-          '2026-10-21',
-          '2027-03-01',
-          '2028-01-01',
-          null,
-          '2026-02-31',
-        ]),
-        confidence: pick(['low', 'medium', 'high', null] as const),
-        supersededAt: pick([null, '2026-10-10T00:00:00Z']),
-        verifiedAt: pick(['2026-10-01T15:00:00Z', null, 'basura']),
-        evidence: pick([
-          [],
-          [evidence()],
-          [evidence({ sourceClass: 'community' })],
-          [evidence({ stance: 'contradicts' })],
-        ]),
+        status,
+        validUntil,
+        confidence,
+        supersededAt,
+        verifiedAt,
+        evidence: items,
       });
+      const good =
+        status === 'verified' &&
+        ['2026-10-21', '2027-03-01'].includes(validUntil ?? '') &&
+        confidence !== null &&
+        supersededAt === null &&
+        verifiedAt === '2026-10-01T15:00:00Z' &&
+        evidenceKind === 'good';
       const s = state([a], [], rules);
-      if (s.status === 'VERIFIED') {
-        expect(a.status).toBe('verified');
-        expect(a.supersededAt).toBeNull();
-        expect(a.evidence.some((e) => e.stance === 'contradicts')).toBe(false);
-        expect(a.confidence).not.toBeNull();
-        expect(s.validUntil === null || s.validUntil >= TODAY).toBe(true);
-      }
+      expect(
+        s.status === 'VERIFIED',
+        JSON.stringify({ status, validUntil, confidence, supersededAt, verifiedAt, evidenceKind }),
+      ).toBe(good);
+      if (good) verified++;
+      else other++;
     }
+    expect(verified).toBeGreaterThan(100);
+    expect(other).toBeGreaterThan(100);
   });
 });
 

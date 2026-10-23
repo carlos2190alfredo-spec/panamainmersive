@@ -39,11 +39,15 @@ describe('registro de campos', () => {
     }
   });
 
-  it('lo que caduca no se verifica con fuentes más viejas que su vigencia', () => {
-    for (const f of CONTENT_FIELDS) {
-      if (f.maxValidityDays !== null) {
-        expect(f.evidence.maxAgeDays).toBeGreaterThanOrEqual(f.maxValidityDays > 365 ? 365 : 1);
-      }
+  it('lo sensible no se afirma por más tiempo del que dura la frescura de su fuente', () => {
+    // Una restricción, un riesgo o un estatus legal no pueden declararse vigentes por más días de lo que se admite que
+    // tenga la fuente que los respalda. (Lo general sí puede: «mejor época» admite fuentes de 730 días y vigencia de
+    // 365; lo de arriba sería un invariante falso para todo el registro.) Es una propuesta sin validar (F4-1).
+    const sensitive = CONTENT_FIELDS.filter((f) => requiresHumanReview(f.sensitivity));
+    expect(sensitive.length).toBeGreaterThan(0);
+    for (const f of sensitive) {
+      expect(f.maxValidityDays, f.key).not.toBeNull();
+      expect(f.evidence.maxAgeDays, f.key).toBeLessThanOrEqual(f.maxValidityDays ?? 0);
     }
   });
 

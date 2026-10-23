@@ -9,8 +9,17 @@ import {
   type PublishedSnapshot,
 } from '@/domains/content/snapshot';
 import rawPublished from '../../../../data/content/published.json';
-import { elevation, entryRules, assertion, evidence, original, translation } from './fixtures';
+import {
+  TODAY,
+  elevation,
+  entryRules,
+  assertion,
+  evidence,
+  original,
+  translation,
+} from './fixtures';
 import type { AssertionRecord } from '@/domains/content/assertion';
+import { buildContentView } from '@/domains/content/completeness';
 
 /** Lo que el exportador escribe de una afirmación: sin estado de flujo ni identidades de personas. */
 function exported(a: AssertionRecord): PublishedSnapshot['assertions'][number] {
@@ -349,5 +358,61 @@ describe('instantánea: lo que no pasa por las puertas', () => {
 
   it('snapshotAgeDays no inventa una edad para un instante inválido', () => {
     expect(snapshotAgeDays({ ...snap([]), generatedAt: 'ayer' }, '2026-10-21')).toBeNull();
+  });
+});
+
+/**
+ * El camino REAL de producción: instantánea → registros SIN personas (la instantánea no lleva identidades) → estado
+ * derivado → vista. Todas las demás pruebas del estado usan fixtures con autor y verificador, así que no ejercían este
+ * camino: si `state.ts` volviera a exigir identidades, cada ficha real quedaría «sin datos verificados» y la suite
+ * seguiría en verde.
+ */
+describe('de la instantánea al estado público', () => {
+  const view = (s: PublishedSnapshot, kind: 'locality' | 'volcano' = 'locality') =>
+    buildContentView(snapshotToRecords(parseSnapshot(s)), s.notices, kind, 'es', TODAY);
+
+  it('los registros de la instantánea no llevan personas y aun así quedan verificados', () => {
+    const s = snap([assertion(), entryRules({ id: '9f5a1e74-3c6d-4b8a-8d43-6e1c2a7b9f32' })]);
+    for (const r of snapshotToRecords(parseSnapshot(s))) {
+      expect(r.authorId).toBeNull();
+      expect(r.verifiedById).toBeNull();
+    }
+    expect(
+      view(s)
+        .verified.map((v) => v.field.key)
+        .sort(),
+    ).toEqual(['overview.summary', 'restrictions.entry_rules']);
+  });
+
+  it('una cantidad de la instantánea también se verifica (volcán)', () => {
+    const v = view(snap([elevation()]), 'volcano');
+    expect(v.verified.map((i) => i.field.key)).toEqual(['facts.elevation_m']);
+    expect(v.verified[0]?.quantity).toEqual({ value: 3475, unit: 'm' });
+  });
+
+  it('un aviso solo afecta al campo al que se refiere (no a todos los aplicables)', () => {
+    const v = view(
+      snap(
+        [assertion()],
+        [
+          {
+            destinationKey: 'boquete',
+            fieldKey: 'safety.hazards',
+            state: 'EXPIRED',
+            verifiedAt: '2026-06-01T12:00:00Z',
+            validUntil: '2026-09-01',
+          },
+          { destinationKey: 'boquete', fieldKey: 'visit.best_season', state: 'DISPUTED' },
+        ],
+      ),
+    );
+    expect(v.expired.map((e) => e.field.key)).toEqual(['safety.hazards']);
+    expect(v.expired[0]?.validUntil).toBe('2026-09-01');
+    expect(v.disputed.map((f) => f.key)).toEqual(['visit.best_season']);
+    expect(v.verified.map((i) => i.field.key)).toEqual(['overview.summary']);
+    // Los otros campos aplicables siguen siendo «sin investigar»: ni vencidos ni en disputa
+    const named = new Set([...v.expired.map((e) => e.field.key), ...v.disputed.map((f) => f.key)]);
+    expect(v.unknown.length).toBeGreaterThan(0);
+    for (const f of v.unknown) expect(named.has(f.key)).toBe(false);
   });
 });

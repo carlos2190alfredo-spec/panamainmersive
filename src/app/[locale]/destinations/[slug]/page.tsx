@@ -8,7 +8,7 @@ import { ScrollRegion } from '@/components/ScrollRegion';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SITE } from '@/config/site';
 import { PUBLISHED_CONTENT, contentFor } from '@/lib/content-snapshot';
-import { destinationSeo } from '@/lib/destination-content';
+import { destinationSeo, indexingOf } from '@/lib/destination-content';
 import { getTodayIsoDate } from '@/lib/today';
 import { COVERAGE, effectiveStatus } from '@/domains/tourism/coverage-evidence';
 import {
@@ -65,9 +65,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     }),
     // Se indexa solo en los idiomas donde el resumen VERIFICADO existe (original o traducción humana publicada),
     // y solo si la interfaz de ese idioma también es publicable (hoy es borrador/automática: nada se indexa).
-    hasRequiredFields: seo.hasRequiredFields,
-    statusFor: seo.statusFor,
-    sensitivity: seo.sensitivity,
+    ...indexingOf(seo),
   });
 }
 

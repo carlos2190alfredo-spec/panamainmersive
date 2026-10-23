@@ -79,7 +79,8 @@ test.describe('ficha con contenido verificado (es)', () => {
     ]) {
       await expect(unknown).not.toContainText(label);
     }
-    await expect(page.getByText(/Contenido publicado el/)).toBeVisible();
+    // La fecha es la de la exportación de TODO el sitio y se dice así; sale porque esta ficha publica algo
+    await expect(page.getByText(/Contenido del sitio actualizado por última vez el/)).toBeVisible();
   });
 
   test('un destino sin contenido no inventa nada', async ({ page }) => {
@@ -89,9 +90,12 @@ test.describe('ficha con contenido verificado (es)', () => {
     await expect(page.locator('section[aria-labelledby="content-unknown-title"]')).toContainText(
       'Resumen',
     );
-    await expect(page.getByText(/Contenido publicado el/)).toBeVisible(); // la fecha es la de la exportación, no del destino
+    // Sin nada que decir, tampoco se muestra la fecha de exportación de todo el sitio (no es de este destino)
+    await expect(page.getByText(/Contenido del sitio actualizado/)).toHaveCount(0);
   });
 });
+
+const SPANISH_IN = { pt: 'em espanhol', fr: 'en espagnol', de: 'auf Spanisch' } as const;
 
 test.describe('idioma sin fingir traducción', () => {
   test('en: la traducción humana publicada se muestra y se declara; lo demás cae al original con indicador', async ({
@@ -105,7 +109,7 @@ test.describe('idioma sin fingir traducción', () => {
 
     const season = article(page, 'content-visit-best_season');
     await expect(season).toContainText(
-      'Showing the original text in Español: there is no translation into this language yet.',
+      'Showing the original text in Spanish: there is no translation into this language yet.',
     );
     await expect(season.locator('[lang="es"]')).toContainText(SYNTHETIC.seasonEs);
     await expect(season).not.toContainText('Translation reviewed');
@@ -119,7 +123,9 @@ test.describe('idioma sin fingir traducción', () => {
       for (const id of ['content-overview-summary', 'content-visit-best_season']) {
         const item = article(page, id);
         await expect(item.locator('[lang="es"]')).toHaveCount(1);
-        await expect(item).toContainText('Español');
+        // El idioma del original se nombra en el idioma de la interfaz (nunca el endónimo dentro de la frase)
+        await expect(item).toContainText(SPANISH_IN[locale]);
+        await expect(item).not.toContainText('Español');
       }
       const body = (await page.locator('body').textContent()) ?? '';
       expect(body).not.toContain(SYNTHETIC.summaryEn);
@@ -148,11 +154,12 @@ test.describe('robustez', () => {
     await page.waitForLoadState('networkidle');
     expect(watch.errors).toEqual([]);
     expect(await watch.violations()).toEqual([]);
-    for (const robots of await page
+    const robotsTags = await page
       .locator('meta[name="robots"]')
-      .evaluateAll((els) => els.map((e) => e.getAttribute('content') ?? ''))) {
-      expect(robots).toMatch(/noindex/);
-    }
+      .evaluateAll((els) => els.map((e) => e.getAttribute('content') ?? ''));
+    // Debe EXISTIR: si la etiqueta desapareciera, recorrer una lista vacía «pasaba» sin comprobar nada.
+    expect(robotsTags.length).toBeGreaterThan(0);
+    for (const robots of robotsTags) expect(robots).toMatch(/noindex/);
   });
 
   for (const locale of ['es', 'de'] as const) {

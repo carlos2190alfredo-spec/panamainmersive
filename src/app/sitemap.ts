@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getEnv } from '@/config/env';
 import { DESTINATIONS, destinationSlug } from '@/domains/tourism/destinations';
 import { contentFor } from '@/lib/content-snapshot';
-import { destinationSeo } from '@/lib/destination-content';
+import { destinationSeo, indexingOf } from '@/lib/destination-content';
 import { absoluteUrl, localizedUrl, type Href } from '@/lib/seo';
 import { buildSitemap, type SitemapRoute } from '@/lib/sitemap';
 import { getTodayIsoDate } from '@/lib/today';
@@ -32,9 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         pathname: '/destinations/[slug]',
         params: { slug: destinationSlug(d, l) },
       }),
-      hasRequiredFields: seo.hasRequiredFields,
-      statusFor: seo.statusFor,
-      sensitivity: seo.sensitivity,
+      ...indexingOf(seo),
     };
   });
 

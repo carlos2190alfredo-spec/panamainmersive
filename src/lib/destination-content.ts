@@ -23,6 +23,16 @@ export interface DestinationSeo {
   readonly sensitivity: Sensitivity;
 }
 
+/**
+ * Lo que decide si una página de destino se indexa. La ficha (metadatos) y el sitemap lo reciben de AQUÍ en vez de
+ * componerlo cada uno: así no pueden discrepar por construcción, no solo por disciplina.
+ */
+export const indexingOf = (seo: DestinationSeo) => ({
+  hasRequiredFields: seo.hasRequiredFields,
+  statusFor: seo.statusFor,
+  sensitivity: seo.sensitivity,
+});
+
 export function destinationSeo(
   content: DestinationContent,
   kind: DestinationKind,
