@@ -6,7 +6,8 @@ Las mutaciones se aplican sobre las definiciones VIGENTES (la 0008 reemplaza fun
 afectaría a nada y «sobrevivir» no diría nada). Etiquetas: F = congelación/identidad, T = traducciones y evidencia,
 G = privilegios de columna, P = políticas RLS y vista, A = auditoría, D = semántica de días, E = exportador,
 C = fuentes de solo inserción, Y = idioma de las fuentes (migración 0010 y exportador),
-Z = serialización por destino y campo (migración 0011).
+Z = serialización por destino y campo (migración 0011), R = políticas RLS evaluadas una vez por consulta (migración 0012),
+X = agrupado de evidencia y traducciones del exportador.
 """
 import sys
 from lib import main, run_vitest
@@ -22,11 +23,13 @@ TESTS = [
     "tests/integration/translations.test.ts",
     "tests/integration/content-language.test.ts",
     "tests/integration/content-concurrency.test.ts",
+    "tests/integration/rls-initplan.test.ts",
 ]
 M07='db/migrations/0007_content_model.sql'
 M08='db/migrations/0008_content_hardening.sql'
 M10='db/migrations/0010_source_language.sql'
 M11='db/migrations/0011_serialize_assertions.sql'
+M12='db/migrations/0012_rls_initplan.sql'
 LOCK="perform pg_advisory_xact_lock(hashtextextended(new.destination_id::text || ':' || new.field_key, 0));"
 EXP='scripts/content/export-lib.ts'
 LCHK="language ~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$'"
@@ -123,6 +126,15 @@ MUTS=[
  ('Z6 el disparador deja de ir el primero',M11,"create trigger field_assertions_00_serialize before insert or update","create trigger field_assertions_zz_serialize before insert or update"),
  ('Z7 el disparador no corre al actualizar',M11,"field_assertions_00_serialize before insert or update on public.field_assertions","field_assertions_00_serialize before insert on public.field_assertions"),
  ('Z8 se bloquea en cada actualización (también al editar texto)',M11,"    lock_needed := new.status is distinct from old.status;","    lock_needed := true;"),
+ ('R1 el patrón no cubre app.current_user_id()',M12,"(is_[a-z]+|current_user_id)","(is_[a-z]+)"),
+ ('R2 el patrón solo cubre app.is_staff()',M12,"(is_[a-z]+|current_user_id)","(is_staff|current_user_id)"),
+ ('R3 no se reescribe el USING de las políticas',M12,"if wrapped_using is distinct from p.qual then","if false then"),
+ ('R4 no se reescribe el WITH CHECK de las políticas',M12,"if wrapped_check is distinct from p.with_check then","if false then"),
+ ('R5 se reenvuelve lo que ya estaba envuelto (sin la guarda de SELECT)',M12,"'(?<!SELECT )app","'app"),
+ ('R6 una pasada que no reescribe nada se da por buena',M12,"  if changed = 0 then","  if false then"),
+ ('R7 el envoltorio no es una subconsulta (solo paréntesis)',M12,"'(select app.\\1())', 'g');\n    wrapped_check","'(app.\\1())', 'g');\n    wrapped_check"),
+ ('X1 el agrupado descarta todo menos la última fila de cada afirmación',EXP,"if (group) group.push(row);","if (group) group[0] = row;"),
+ ('X2 el agrupado invierte el orden de cada afirmación',EXP,"if (group) group.push(row);","if (group) group.unshift(row);"),
 ]
 
 
