@@ -14,6 +14,7 @@ import {
   makeVerified,
   rowsOf,
   submit,
+  verify,
 } from './content-helpers';
 
 /**
@@ -226,6 +227,108 @@ describe('exportación de contenido publicado', () => {
     await db.owner.query(
       "insert into public.destinations (key, kind, status) values ('tras-export', 'locality', 'draft')",
     );
+  });
+
+  // Prueba de CARACTERIZACIÓN: fija lo que ya hacía el exportador (asociar a cada afirmación SU evidencia y SUS
+  // traducciones, en un orden documentado) para poder cambiar cómo las agrupa sin cambiar el resultado.
+  it('asocia a cada afirmación SU evidencia y SUS traducciones, en el orden documentado', async () => {
+    const casco = await destination(db, 'casco-antiguo', 'historic_district');
+    // A: dos fuentes y dos traducciones; B: una fuente y ninguna traducción; C: tres fuentes y una traducción. Los
+    // números distintos y las fuentes insertadas fuera de orden impiden que una correspondencia casual (mismo número,
+    // mismo orden de inserción) dé por buena una asociación equivocada.
+    const verifiedWith = async (
+      fieldKey: string,
+      sources: { url: string; daysAgo: number }[],
+      validUntilDays?: number,
+    ): Promise<string> => {
+      const id = await db.asCommit('authenticated', ids.editor, async (c) => {
+        const draft = await createDraft(c, {
+          destinationId: casco,
+          fieldKey,
+          text: `[prueba] ${fieldKey}`,
+          ...(validUntilDays === undefined ? {} : { validUntilDays }),
+        });
+        for (const s of sources) {
+          await addEvidence(
+            c,
+            draft,
+            await createSource(c, { url: s.url, retrievedDaysAgo: s.daysAgo }),
+          );
+        }
+        await submit(c, draft);
+        return draft;
+      });
+      await db.asCommit('authenticated', ids.reviewer, (c) => verify(c, id));
+      return id;
+    };
+    const a = await verifiedWith('overview.summary', [
+      { url: 'https://example.org/a-nueva', daysAgo: 10 },
+      { url: 'https://example.org/a-antigua', daysAgo: 40 },
+    ]);
+    await verifiedWith(
+      'visit.best_season',
+      [{ url: 'https://example.org/b-unica', daysAgo: 20 }],
+      100,
+    );
+    const c3 = await verifiedWith(
+      'access.how_to_get_there',
+      [
+        { url: 'https://example.org/c-3', daysAgo: 10 },
+        { url: 'https://example.org/c-1', daysAgo: 50 },
+        { url: 'https://example.org/c-2', daysAgo: 30 },
+      ],
+      100,
+    );
+    await db.asCommit('authenticated', ids.editor, async (c) => {
+      for (const [assertion, locale] of [
+        [a, 'pt'],
+        [a, 'en'],
+        [c3, 'fr'],
+      ] as const) {
+        await c.query(
+          `insert into public.assertion_translations (assertion_id, locale, text, provenance, status, translated_by)
+           values ($1, $2, $3, 'human_translation', 'draft', $4)`,
+          [assertion, locale, `[test] ${assertion === a ? 'A' : 'C'}-${locale}`, ids.editor],
+        );
+      }
+    });
+    await db.asCommit('authenticated', ids.reviewer, (c) =>
+      c.query(
+        `update public.assertion_translations set status = 'published', reviewed_by = $2, reviewed_at = now()
+          where assertion_id = any($1::uuid[])`,
+        [[a, c3], ids.reviewer],
+      ),
+    );
+
+    const { snapshot } = await exportPublished(db.owner, now());
+    const of = (fieldKey: string) =>
+      snapshot.assertions.find(
+        (x) => x.destinationKey === 'casco-antiguo' && x.fieldKey === fieldKey,
+      );
+    // Fuentes: por fecha de consulta ascendente, no por orden de inserción.
+    expect(of('overview.summary')?.evidence.map((e) => e.url)).toEqual([
+      'https://example.org/a-antigua',
+      'https://example.org/a-nueva',
+    ]);
+    expect(of('visit.best_season')?.evidence.map((e) => e.url)).toEqual([
+      'https://example.org/b-unica',
+    ]);
+    expect(of('access.how_to_get_there')?.evidence.map((e) => e.url)).toEqual([
+      'https://example.org/c-1',
+      'https://example.org/c-2',
+      'https://example.org/c-3',
+    ]);
+    // Textos: el original y después las traducciones por idioma, cada una de SU afirmación.
+    expect(of('overview.summary')?.texts.map((t) => [t.locale, t.text])).toEqual([
+      ['es', '[prueba] overview.summary'],
+      ['en', '[test] A-en'],
+      ['pt', '[test] A-pt'],
+    ]);
+    expect(of('visit.best_season')?.texts.map((t) => t.locale)).toEqual(['es']);
+    expect(of('access.how_to_get_there')?.texts.map((t) => [t.locale, t.text])).toEqual([
+      ['es', '[prueba] access.how_to_get_there'],
+      ['fr', '[test] C-fr'],
+    ]);
   });
 });
 

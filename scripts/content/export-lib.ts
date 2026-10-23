@@ -66,6 +66,23 @@ interface NoticeRow {
   valid_until: string | null;
 }
 
+/**
+ * Agrupa por afirmación UNA vez, conservando el orden de las filas (que ya vienen ordenadas por la consulta). Buscar la
+ * evidencia y las traducciones de cada afirmación con `filter` recorría todas las filas por cada afirmación: cuadrático
+ * (`pnpm perf:db`). Sin efecto con el registro actual, pero no hay motivo para dejarlo.
+ */
+function groupByAssertion<T extends { assertion_id: string }>(
+  rows: readonly T[],
+): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) {
+    const group = grouped.get(row.assertion_id);
+    if (group) group.push(row);
+    else grouped.set(row.assertion_id, [row]);
+  }
+  return grouped;
+}
+
 export interface ExportResult {
   readonly snapshot: PublishedSnapshot;
   /** Lo que ya NO cumple las puertas del registro vigente: no se publica y se dice (ADR-0020). */
@@ -127,6 +144,9 @@ export async function exportPublished(client: Client, now: Date): Promise<Export
       )
     ).rows;
 
+    const translationsOf = groupByAssertion(translations);
+    const evidenceOf = groupByAssertion(evidence);
+
     const raw = {
       schema: 1,
       generatedAt: now.toISOString(),
@@ -152,35 +172,31 @@ export async function exportPublished(client: Client, now: Date): Promise<Export
                   status: 'published',
                 },
               ]),
-          ...translations
-            .filter((t) => t.assertion_id === a.id)
-            .map((t) => ({
-              locale: t.locale,
-              text: t.text,
-              provenance: t.provenance,
-              status: t.status,
-            })),
+          ...(translationsOf.get(a.id) ?? []).map((t) => ({
+            locale: t.locale,
+            text: t.text,
+            provenance: t.provenance,
+            status: t.status,
+          })),
         ],
         confidence: a.confidence,
         verifiedAt: a.verified_at,
         validFrom: a.valid_from,
         validUntil: a.valid_until,
-        evidence: evidence
-          .filter((e) => e.assertion_id === a.id)
-          .map((e) => ({
-            id: e.id,
-            sourceClass: e.source_class,
-            institution: e.institution,
-            title: e.title,
-            url: e.url,
-            publishedOn: e.published_on,
-            retrievedAt: e.retrieved_at,
-            license: { name: e.license_name, url: e.license_url },
-            language: e.language,
-            stance: e.stance,
-            locator: e.locator,
-            excerpt: e.excerpt,
-          })),
+        evidence: (evidenceOf.get(a.id) ?? []).map((e) => ({
+          id: e.id,
+          sourceClass: e.source_class,
+          institution: e.institution,
+          title: e.title,
+          url: e.url,
+          publishedOn: e.published_on,
+          retrievedAt: e.retrieved_at,
+          license: { name: e.license_name, url: e.license_url },
+          language: e.language,
+          stance: e.stance,
+          locator: e.locator,
+          excerpt: e.excerpt,
+        })),
       })),
       notices: notices.map((n) =>
         n.state === 'EXPIRED'
