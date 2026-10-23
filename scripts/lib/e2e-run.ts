@@ -166,16 +166,16 @@ export async function waitForServer(
   };
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
-    if (exited !== undefined) fail();
+    let ok = false;
     try {
-      const response = await fetch(url);
-      if (response.ok) {
-        if (exited !== undefined) fail();
-        return;
-      }
+      ok = (await fetch(url)).ok;
     } catch {
       // aún no responde
     }
+    // FUERA del `try` (un `catch` que lo traga todo se llevaría el error). El servidor propio pudo morir mientras se
+    // esperaba (p. ej. EADDRINUSE) y estar respondiendo OTRO proceso: eso no se da por bueno.
+    if (exited !== undefined) fail();
+    if (ok) return;
     await new Promise((r) => setTimeout(r, 250));
   }
   throw new Error(
