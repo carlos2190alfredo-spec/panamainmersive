@@ -57,6 +57,11 @@ export interface EvidenceItem {
   /** Instante en que se CONSULTÓ la fuente (no cuándo se publicó). */
   readonly retrievedAt: string;
   readonly license: { readonly name: string; readonly url: string | null };
+  /**
+   * Idioma del DOCUMENTO citado (etiqueta BCP 47 canónica; `null` si no se sabe): título, institución, licencia y
+   * localizador están en él. La ficha lo marca con `lang` (WCAG 3.1.2) y nunca lo adivina.
+   */
+  readonly language: string | null;
   readonly stance: 'supports' | 'contradicts';
   /** Dónde dentro de la fuente (sección, página). */
   readonly locator: string | null;

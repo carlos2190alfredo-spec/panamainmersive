@@ -5,6 +5,7 @@ import {
   parseSnapshot,
   snapshotAgeDays,
   snapshotIssues,
+  sourcesWithoutLanguage,
   snapshotToRecords,
   type PublishedSnapshot,
 } from '@/domains/content/snapshot';
@@ -414,5 +415,70 @@ describe('de la instantánea al estado público', () => {
     const named = new Set([...v.expired.map((e) => e.field.key), ...v.disputed.map((f) => f.key)]);
     expect(v.unknown.length).toBeGreaterThan(0);
     for (const f of v.unknown) expect(named.has(f.key)).toBe(false);
+  });
+});
+
+describe('instantánea: idioma de las fuentes (F4-15)', () => {
+  const withLanguage = (language: unknown) => {
+    const a = snap([assertion()]);
+    const first = a.assertions[0]!;
+    return {
+      ...a,
+      assertions: [{ ...first, evidence: [{ ...first.evidence[0], language }] }],
+    };
+  };
+
+  it.each(['es', 'en', 'pt-BR', 'zh-Hant-TW', null])('acepta el idioma %j', (language) => {
+    const parsed = parseSnapshot(withLanguage(language));
+    expect(parsed.assertions[0]?.evidence[0]?.language).toBe(language);
+  });
+
+  it.each(['EN', 'en_US', 'en-us', 'english', '', ' es', 'es\n', 5, {}, undefined])(
+    'rechaza el idioma %j (mal formado o ausente: debe ser una etiqueta canónica o null)',
+    (language) => {
+      expect(() => parseSnapshot(withLanguage(language))).toThrow(SnapshotError);
+    },
+  );
+
+  it('una fuente SIN la clave `language` (forma anterior) falla en voz alta en vez de leerse como «desconocido»', () => {
+    const a = snap([assertion()]);
+    const first = a.assertions[0]!;
+    // La forma anterior: la misma evidencia SIN la clave `language`.
+    const legacy = Object.fromEntries(
+      Object.entries(first.evidence[0]!).filter(([key]) => key !== 'language'),
+    );
+    expect(() => parseSnapshot({ ...a, assertions: [{ ...first, evidence: [legacy] }] })).toThrow(
+      SnapshotError,
+    );
+  });
+
+  it('el idioma llega intacto a los registros que usa la ficha', () => {
+    const a = snap([assertion({ evidence: [evidence({ language: 'en' })] })]);
+    const records = snapshotToRecords(parseSnapshot(a));
+    expect(records[0]?.evidence[0]?.language).toBe('en');
+  });
+});
+
+describe('instantánea: fuentes sin idioma declarado', () => {
+  const cite = (url: string, language: string | null) =>
+    evidence({ url, language, id: crypto.randomUUID() });
+
+  it('sin afirmaciones no hay ninguna', () => {
+    expect(sourcesWithoutLanguage(EMPTY_SNAPSHOT)).toBe(0);
+  });
+
+  it('cuenta ENLACES distintos sin idioma (la misma fuente citada dos veces es una) y no cuenta las que lo declaran', () => {
+    const snapshot = snap([
+      assertion({
+        id: '7d3e9c52-1a4b-4f6e-8b21-4c9a0e5f7d10',
+        evidence: [cite('https://example.org/a', null), cite('https://example.org/b', 'en')],
+      }),
+      assertion({
+        id: '7d3e9c52-1a4b-4f6e-8b21-4c9a0e5f7d11',
+        fieldKey: 'access.how_to_get_there',
+        evidence: [cite('https://example.org/a', null), cite('https://example.org/c', null)],
+      }),
+    ]);
+    expect(sourcesWithoutLanguage(snapshot)).toBe(2);
   });
 });

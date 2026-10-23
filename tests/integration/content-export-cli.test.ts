@@ -100,6 +100,14 @@ describe('CLI content:export', () => {
     expect(existsSync(w.published)).toBe(false);
   });
 
+  it('avisa de las fuentes SIN idioma declarado (la ficha no puede marcar `lang`), sin convertirlo en un fallo', async () => {
+    const w = fresh();
+    const r = await runCli(w.cwd, ['--dry-run'], { DATABASE_URL: db.connectionString });
+    expect(r.code, r.stderr).toBe(0);
+    expect(JSON.parse(r.stdout)).toMatchObject({ sourcesWithoutLanguage: 1 });
+    expect(r.stderr).toMatch(/AVISO: 1 fuente\(s\) sin idioma declarado.*WCAG 3\.1\.2/);
+  });
+
   it('por defecto escribe un archivo válido y atómico (sin temporales) que --check reconoce al día', async () => {
     const w = fresh();
     const env = { DATABASE_URL: db.connectionString };

@@ -17,6 +17,10 @@ export const SYNTHETIC = {
   seasonEs: 'Segundo texto sintético E2E, sin traducción.',
   expiredEs: 'Reglas sintéticas E2E que ya vencieron.',
   disputedEs: 'Peligros sintéticos E2E en disputa.',
+  /** Idioma (sintético) del documento citado por el resumen: ninguno de los cinco de la interfaz, para no confundirlo. */
+  summarySourceLanguage: 'it',
+  /** Idioma del documento citado por la altitud: lleva subetiqueta de región, de punta a punta. */
+  elevationSourceLanguage: 'pt-BR',
 } as const;
 
 async function as(owner: Client, sub: string): Promise<void> {
@@ -32,6 +36,8 @@ interface Spec {
   quantity?: { value: number; unit: string };
   validDays?: number;
   sourceClass?: string;
+  /** Idioma del documento citado (BCP 47) o ausente: «no se sabe» (la ficha no marca `lang`). */
+  sourceLanguage?: string;
 }
 
 let sourceCounter = 0;
@@ -56,14 +62,15 @@ async function verified(owner: Client, spec: Spec): Promise<string> {
   const id = (rows[0] as { id: string }).id;
   sourceCounter += 1;
   const source = await owner.query<{ id: string }>(
-    `insert into public.source_records (source_class, institution, title, url, published_on, retrieved_at, license_name, license_url)
+    `insert into public.source_records (source_class, institution, title, url, published_on, retrieved_at, license_name, license_url, language)
      values ($1::public.content_source_class, 'Institución sintética E2E', $2, $3, '2026-01-15',
-             now() - interval '10 days', 'Licencia sintética E2E', 'https://example.org/licencia')
+             now() - interval '10 days', 'Licencia sintética E2E', 'https://example.org/licencia', $4::text)
      returning id`,
     [
       spec.sourceClass ?? 'official',
       `Documento sintético E2E ${String(sourceCounter)}`,
       `https://example.org/e2e/fuente-${String(sourceCounter)}`,
+      spec.sourceLanguage ?? null,
     ],
   );
   await owner.query(
@@ -104,6 +111,7 @@ export async function seedContent(owner: Client): Promise<void> {
     destination: 'boquete',
     fieldKey: 'overview.summary',
     text: SYNTHETIC.summaryEs,
+    sourceLanguage: SYNTHETIC.summarySourceLanguage,
   });
   await as(owner, PEOPLE.editor);
   await owner.query(
@@ -159,5 +167,6 @@ export async function seedContent(owner: Client): Promise<void> {
     fieldKey: 'facts.elevation_m',
     quantity: { value: 3475, unit: 'm' },
     sourceClass: 'scientific',
+    sourceLanguage: SYNTHETIC.elevationSourceLanguage,
   });
 }

@@ -16,6 +16,7 @@ export const evidence = (over: Partial<EvidenceItem> = {}): EvidenceItem => ({
   publishedOn: '2026-01-15',
   retrievedAt: '2026-09-20T12:00:00Z',
   license: { name: 'Licencia de prueba', url: 'https://example.org/licencia' },
+  language: null,
   stance: 'supports',
   locator: 'sección 2',
   excerpt: '[prueba] cita breve',

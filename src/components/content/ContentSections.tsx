@@ -1,6 +1,8 @@
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { Notice } from '@/components/Notice';
 import type { DestinationContentView, VerifiedItem } from '@/domains/content/completeness';
+import { isLanguageTag } from '@/domains/content/language-tag';
 import { safeHttpsUrl } from '@/domains/geography/area-detail';
 import {
   formatCalendarDate,
@@ -142,27 +144,44 @@ function VerifiedField({ item, locale }: { item: VerifiedItem; locale: Locale })
       <ul className={styles.sources}>
         {item.sources.map((source) => {
           const href = safeHttpsUrl(source.url);
+          // WCAG 3.1.2: el título, la institución, la licencia y el localizador están en el idioma del DOCUMENTO. Solo se
+          // marca si se SABE (y está bien formado: defensa en profundidad, igual que `safeHttpsUrl`); nunca se adivina.
+          const language = isLanguageTag(source.language) ? source.language : undefined;
+          const inSourceLanguage = (chunks: ReactNode): ReactNode =>
+            language ? <span lang={language}>{chunks}</span> : chunks;
           return (
             <li key={source.id}>
               {href ? (
-                <a href={href} rel="noopener noreferrer" target="_blank">
+                <a href={href} lang={language} rel="noopener noreferrer" target="_blank">
                   {source.title}
-                  <span className="visually-hidden"> {common('opensInNewTab')}</span>
+                  <span
+                    className="visually-hidden"
+                    lang={language ? LOCALE_INFO[locale].htmlLang : undefined}
+                  >
+                    {' '}
+                    {common('opensInNewTab')}
+                  </span>
                 </a>
               ) : (
-                <span>{source.title}</span>
+                <span lang={language}>{source.title}</span>
               )}
               {' · '}
-              {source.institution}
+              {inSourceLanguage(source.institution)}
               <span className={styles.meta}>
                 {' '}
-                {t('sourceMeta', {
+                {t.rich('sourceMeta', {
                   date: formatPanamaDateTime(locale, new Date(source.retrievedAt), {
                     dateStyle: 'long',
                   }),
                   license: source.license.name,
+                  doc: inSourceLanguage,
                 })}
-                {source.locator ? ` · ${t('locator', { locator: source.locator })}` : ''}
+                {source.locator ? (
+                  <>
+                    {' · '}
+                    {t.rich('locator', { locator: source.locator, doc: inSourceLanguage })}
+                  </>
+                ) : null}
               </span>
             </li>
           );

@@ -399,8 +399,8 @@
       "high": "hoch"
     },
     "sources": "Quellen",
-    "sourceMeta": "Abgerufen am {date} · Lizenz: {license}",
-    "locator": "Fundstelle in der Quelle: {locator}",
+    "sourceMeta": "Abgerufen am {date} · Lizenz: <doc>{license}</doc>",
+    "locator": "Fundstelle in der Quelle: <doc>{locator}</doc>",
     "translationReviewed": "Übersetzung von einer Person geprüft.",
     "originalShown": "Der Originaltext wird auf {language} angezeigt: {reason}",
     "reason": {

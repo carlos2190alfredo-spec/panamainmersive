@@ -51,19 +51,22 @@ export interface SourceInput {
   sourceClass?: string;
   retrievedDaysAgo?: number;
   url?: string;
+  /** Idioma del documento (etiqueta BCP 47 canónica) o `null`/ausente si no se sabe. */
+  language?: string | null;
 }
 
 export async function createSource(c: Client, input: SourceInput = {}): Promise<string> {
   const { rows } = await c.query<{ id: string }>(
     `insert into public.source_records
-       (source_class, institution, title, url, published_on, retrieved_at, license_name, license_url)
+       (source_class, institution, title, url, published_on, retrieved_at, license_name, license_url, language)
      values ($1::public.content_source_class, 'Institución de prueba', 'Documento de prueba', $2, '2026-01-15',
-             now() - make_interval(days => $3::int), 'Licencia de prueba', 'https://example.org/licencia')
+             now() - make_interval(days => $3::int), 'Licencia de prueba', 'https://example.org/licencia', $4::text)
      returning id`,
     [
       input.sourceClass ?? 'official',
       input.url ?? `https://example.org/${randomUUID().slice(0, 8)}`,
       input.retrievedDaysAgo ?? 10,
+      input.language ?? null,
     ],
   );
   return (rows[0] as { id: string }).id;
@@ -94,6 +97,8 @@ export const verify = (c: Client, id: string, confidence: 'low' | 'medium' | 'hi
 export interface VerifiedInput extends DraftInput {
   sourceClass?: string;
   retrievedDaysAgo?: number;
+  /** Idioma del documento citado (ver `SourceInput.language`). */
+  sourceLanguage?: string | null;
   author?: string;
   verifier?: string;
 }
@@ -106,6 +111,7 @@ export async function makeVerified(db: TestDb, input: VerifiedInput): Promise<st
     const src = await createSource(c, {
       sourceClass: input.sourceClass ?? 'official',
       retrievedDaysAgo: input.retrievedDaysAgo ?? 10,
+      language: input.sourceLanguage ?? null,
     });
     await addEvidence(c, draft, src);
     await submit(c, draft);

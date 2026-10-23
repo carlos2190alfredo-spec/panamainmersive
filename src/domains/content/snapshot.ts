@@ -12,6 +12,7 @@ import {
 import { dayOf, daysBetween, isIsoDate, isIsoInstant, panamaDayOf } from './dates';
 import { FIELD_KEYS, SOURCE_CLASSES, appliesTo, getField } from './fields';
 import { codePointLength, verificationIssues } from './gates';
+import { LANGUAGE_TAG } from './language-tag';
 
 /**
  * Instantánea PUBLICADA del contenido (`data/content/published.json`). La produce `pnpm content:export` leyendo la BD
@@ -41,6 +42,9 @@ const evidenceSchema = z.strictObject({
   publishedOn: isoDate.nullable(),
   retrievedAt: isoInstant,
   license: z.strictObject({ name: shortText, url: z.string().max(2048).nullable() }),
+  // Obligatoria (con `null` = «no se sabe»): una instantánea de la forma anterior falla en voz alta, no se lee como
+  // «desconocido». `schema` sigue en 1: no existe ninguna instantánea publicada con la forma anterior (la real está vacía).
+  language: z.string().regex(LANGUAGE_TAG).nullable(),
   stance: z.enum(['supports', 'contradicts']),
   locator: shortText.nullable(),
   excerpt: text(MAX_EXCERPT_LENGTH, 1).nullable(),
@@ -224,6 +228,20 @@ export class SnapshotError extends Error {
     this.name = 'SnapshotError';
     this.issues = issues;
   }
+}
+
+/**
+ * Cuántas fuentes (por ENLACE distinto) no declaran su idioma: la ficha no puede marcar `lang` en ellas (WCAG 3.1.2) y no
+ * lo adivina. Es un aviso para quien edita, no una puerta: el idioma es opcional.
+ */
+export function sourcesWithoutLanguage(snapshot: PublishedSnapshot): number {
+  const urls = new Set<string>();
+  for (const assertion of snapshot.assertions) {
+    for (const evidence of assertion.evidence) {
+      if (evidence.language === null) urls.add(evidence.url);
+    }
+  }
+  return urls.size;
 }
 
 /** Valida SOLO la forma (esquema estricto); lanza `SnapshotError`. No comprueba las puertas ni la semántica. */

@@ -380,3 +380,88 @@ describe('ficha en los cinco idiomas', () => {
     },
   );
 });
+
+describe('ficha: idioma de las fuentes (WCAG 3.1.2)', () => {
+  /** El bloque de fuentes de la primera afirmación (lo único que cambia con el idioma de la fuente). */
+  const sourcesOf = (html: string): string =>
+    /<ul class="[^"]*sources[^"]*">([\s\S]*?)<\/ul>/.exec(html)?.[1] ?? '';
+
+  it('con el idioma de la fuente conocido, marca título, institución, licencia y localizador', () => {
+    const html = render([assertion({ evidence: [evidence({ language: 'en' })] })], [], 'es');
+    const sources = sourcesOf(html);
+    expect(sources).toContain('lang="en"');
+    expect(sources).toMatch(/<a [^>]*lang="en"[^>]*>Documento de prueba/);
+    expect(sources).toMatch(/<span lang="en">Institución de prueba<\/span>/);
+    expect(sources).toMatch(/<span lang="en">Licencia de prueba<\/span>/);
+    expect(sources).toMatch(/<span lang="en">sección 2<\/span>/);
+  });
+
+  it('el texto de la interfaz que rodea a esos fragmentos NO se marca como del idioma de la fuente', () => {
+    const sources = sourcesOf(
+      render([assertion({ evidence: [evidence({ language: 'en' })] })], [], 'es'),
+    );
+    expect(sources).toMatch(/Consultada el [^<]*· Licencia: <span lang="en">/);
+    expect(sources).toMatch(/Dónde, en la fuente: <span lang="en">/);
+  });
+
+  it.each(LOCALES)(
+    '%s: el aviso «se abre en una pestaña nueva» vuelve al idioma de la interfaz dentro del enlace marcado',
+    (locale) => {
+      const sources = sourcesOf(
+        render([assertion({ evidence: [evidence({ language: 'it' })] })], [], locale),
+      );
+      expect(sources).toMatch(new RegExp(`<a [^>]*lang="it"`));
+      expect(sources).toMatch(new RegExp(`<span class="visually-hidden" lang="${locale}">`));
+    },
+  );
+
+  it('sin idioma de la fuente, el aviso oculto no lleva `lang` (hereda el de la página)', () => {
+    const sources = sourcesOf(
+      render([assertion({ evidence: [evidence({ language: null })] })], [], 'es'),
+    );
+    expect(sources).toMatch(/<span class="visually-hidden">/);
+  });
+
+  it('sin idioma conocido NO se adivina: ningún `lang` en las fuentes', () => {
+    const sources = sourcesOf(
+      render([assertion({ evidence: [evidence({ language: null })] })], [], 'es'),
+    );
+    expect(sources).not.toContain('lang=');
+    expect(sources).toContain('Documento de prueba');
+    expect(sources).toContain('Licencia de prueba');
+  });
+
+  it('un idioma malformado que llegara a la vista no se convierte en atributo (defensa en profundidad)', () => {
+    const html = render(
+      [assertion({ evidence: [evidence({ language: '"><script>x' })] })],
+      [],
+      'es',
+    );
+    expect(sourcesOf(html)).not.toContain('lang=');
+    expect(html).not.toContain('<script>x');
+  });
+
+  it.each(LOCALES)(
+    '%s: los fragmentos van marcados y no queda ninguna etiqueta ICU sin resolver',
+    (locale) => {
+      const html = render(
+        [
+          assertion({
+            evidence: [evidence({ language: 'pt-BR' })],
+            sourceLocale: locale === 'en' ? 'es' : 'en',
+            texts: [
+              original({ locale: locale === 'en' ? 'es' : 'en' }),
+              translation({ locale, text: '[prueba] texto' }),
+            ],
+          }),
+        ],
+        [],
+        locale,
+      );
+      const sources = sourcesOf(html);
+      expect(sources).toMatch(/<span lang="pt-BR">Licencia de prueba<\/span>/);
+      expect(sources).toMatch(/<span lang="pt-BR">sección 2<\/span>/);
+      expect(sources).not.toMatch(/&lt;|<\/?(license|locator)>/);
+    },
+  );
+});

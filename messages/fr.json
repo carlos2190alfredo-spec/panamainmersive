@@ -399,8 +399,8 @@
       "high": "élevée"
     },
     "sources": "Sources",
-    "sourceMeta": "Consultée le {date} · Licence\u00a0: {license}",
-    "locator": "Où, dans la source\u00a0: {locator}",
+    "sourceMeta": "Consultée le {date} · Licence\u00a0: <doc>{license}</doc>",
+    "locator": "Où, dans la source\u00a0: <doc>{locator}</doc>",
     "translationReviewed": "Traduction relue par une personne.",
     "originalShown": "Texte original affiché en {language}\u00a0: {reason}",
     "reason": {

@@ -301,6 +301,7 @@ describe('privilegios: lista blanca exacta', () => {
         SELECT: sorted([
           'id',
           'institution',
+          'language',
           'license_name',
           'license_url',
           'published_on',
@@ -690,6 +691,7 @@ describe('las fuentes son de solo inserción también para quien tiene todos los
     ['el título', "title = 'otro título'"],
     ['la institución', "institution = 'otra institución'"],
     ['la licencia', "license_name = 'otra licencia'"],
+    ['el idioma', "language = 'en'"],
   ])(
     'no se cambia %s de una fuente citada por lo verificado (ni como propietario)',
     async (_name, set) => {

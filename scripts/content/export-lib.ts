@@ -49,6 +49,7 @@ interface EvidenceRow {
   retrieved_at: string;
   license_name: string;
   license_url: string | null;
+  language: string | null;
 }
 interface TranslationRow {
   assertion_id: string;
@@ -98,7 +99,7 @@ export async function exportPublished(client: Client, now: Date): Promise<Export
         `select e.id, e.assertion_id, e.stance::text as stance, e.locator, e.excerpt,
                 s.source_class::text as source_class, s.institution, s.title, s.url,
                 ${day('s.published_on')} as published_on, ${instant('s.retrieved_at')} as retrieved_at,
-                s.license_name, s.license_url
+                s.license_name, s.license_url, s.language
            from public.assertion_evidence e
            join public.source_records s on s.id = e.source_record_id
           where e.assertion_id = any($1::uuid[])
@@ -175,6 +176,7 @@ export async function exportPublished(client: Client, now: Date): Promise<Export
             publishedOn: e.published_on,
             retrievedAt: e.retrieved_at,
             license: { name: e.license_name, url: e.license_url },
+            language: e.language,
             stance: e.stance,
             locator: e.locator,
             excerpt: e.excerpt,

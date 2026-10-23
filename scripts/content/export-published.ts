@@ -17,6 +17,7 @@ import {
   parseSnapshot,
   sameSnapshotContent,
   serializeSnapshot,
+  sourcesWithoutLanguage,
 } from '../../src/domains/content/snapshot';
 import { checkDatabaseTarget, refusalMessage } from '../db/target';
 import { UsageError, parseExportArgs, type ExportArgs } from './export-args';
@@ -52,7 +53,14 @@ try {
     notices: snapshot.notices.length,
     destinations: new Set(snapshot.assertions.map((a) => a.destinationKey)).size,
     excluded: excluded.length,
+    sourcesWithoutLanguage: sourcesWithoutLanguage(snapshot),
   };
+  if (summary.sourcesWithoutLanguage > 0) {
+    console.error(
+      `AVISO: ${String(summary.sourcesWithoutLanguage)} fuente(s) sin idioma declarado: la ficha no puede marcar \`lang\` ` +
+        'en su título, institución, licencia ni localizador (WCAG 3.1.2) y no lo adivina.',
+    );
+  }
   for (const e of excluded) {
     console.error(
       `EXCLUIDA ${e.destinationKey}/${e.fieldKey}@${String(e.version)} (${e.id}): ya no cumple ${e.codes.join(', ')}. ` +

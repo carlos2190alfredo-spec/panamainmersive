@@ -105,7 +105,7 @@ test.describe('idioma sin fingir traducción', () => {
     const summary = article(page, 'content-overview-summary');
     await expect(summary).toContainText(SYNTHETIC.summaryEn);
     await expect(summary).toContainText('Translation reviewed by a person.');
-    await expect(summary.locator('[lang="en"]')).toHaveCount(1);
+    await expect(summary.locator('p[lang="en"]')).toHaveCount(1); // el párrafo del texto (no el enlace «pestaña nueva», que lleva el idioma de la interfaz)
 
     const season = article(page, 'content-visit-best_season');
     await expect(season).toContainText(
@@ -131,6 +131,42 @@ test.describe('idioma sin fingir traducción', () => {
       expect(body).not.toContain(SYNTHETIC.summaryEn);
     });
   }
+});
+
+test.describe('idioma de las fuentes (WCAG 3.1.2)', () => {
+  const sourcesOf = (page: Page, id: string) => article(page, id).locator('ul');
+
+  for (const locale of LOCALES) {
+    test(`${locale}: título, institución, licencia y localizador llevan el idioma del DOCUMENTO; la interfaz que los rodea, el suyo`, async ({
+      page,
+    }) => {
+      await page.goto(pathOf('boquete', locale));
+      const sources = sourcesOf(page, 'content-overview-summary');
+      const marked = sources.locator(`[lang="${SYNTHETIC.summarySourceLanguage}"]`);
+      // enlace del título + institución + licencia + localizador
+      await expect(marked).toHaveCount(4);
+      await expect(sources.locator('a')).toHaveAttribute('lang', SYNTHETIC.summarySourceLanguage);
+      await expect(marked.nth(1)).toHaveText('Institución sintética E2E');
+      await expect(marked.nth(2)).toHaveText('Licencia sintética E2E');
+      await expect(marked.nth(3)).toHaveText('sección sintética');
+      // «se abre en una pestaña nueva» es texto de la interfaz: vuelve al idioma de la página dentro del enlace marcado
+      await expect(sources.locator('a .visually-hidden')).toHaveAttribute('lang', locale);
+    });
+  }
+
+  test('sin idioma declarado NO se adivina: ningún `lang` en las fuentes', async ({ page }) => {
+    await page.goto(pathOf('boquete', 'es'));
+    await expect(sourcesOf(page, 'content-visit-best_season').locator('[lang]')).toHaveCount(0);
+    await expect(sourcesOf(page, 'content-visit-best_season')).toContainText(
+      'Institución sintética E2E',
+    );
+  });
+
+  test('una etiqueta con región (pt-BR) llega al HTML tal cual', async ({ page }) => {
+    await page.goto(pathOf('volcan-baru', 'es'));
+    const sources = sourcesOf(page, 'content-facts-elevation_m');
+    await expect(sources.locator(`[lang="${SYNTHETIC.elevationSourceLanguage}"]`)).toHaveCount(4);
+  });
 });
 
 test.describe('cantidades', () => {
