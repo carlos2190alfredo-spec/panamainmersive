@@ -557,6 +557,9 @@ describe('paridad en modo directo: instantes explícitos alrededor de medianoche
     ['2026-10-02T04:59:59Z', '2026-04-05T00:00:00Z', []], // 180 días UTC
     ['2026-10-01T23:59:59Z', '2026-10-02T00:00:01Z', ['evidence_after_verification']], // consultada «después» (día UTC posterior)
     ['2026-10-01T23:59:59Z', '2026-10-01T23:59:59Z', []], // el mismo instante
+    // Días de CALENDARIO, no intervalos de 24 h: 181 días de calendario aunque pasen menos de 181 × 24 h
+    ['2026-10-01T00:30:00Z', '2026-04-03T23:30:00Z', ['evidence_stale']],
+    ['2026-10-01T23:30:00Z', '2026-04-04T00:30:00Z', []], // 180 de calendario (y menos de 180 × 24 h): dentro
   ] as const)('verificada %s · consultada %s', async (verifiedAt, retrievedAt, expected) => {
     const r = await rules(verifiedAt, retrievedAt);
     sameCodes(r);
