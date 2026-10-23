@@ -17,6 +17,8 @@ MUTATIONS = [
     ("G2 URL inválida con el código de «remota»", CLI, "process.exit(target.reason === 'invalid_url' ? 2 : 3);", "process.exit(3);"),
     ("W1 no limpia el temporal si falla el reemplazo", CLI, "      rmSync(tmp, { force: true });\n", ""),
     ("X1 las exclusiones no avisan con el código 4", CLI, "    process.exitCode = 4;", "    process.exitCode = 0;"),
+    ("L1 el resumen no cuenta las fuentes sin idioma", CLI, "sourcesWithoutLanguage: sourcesWithoutLanguage(snapshot),", "sourcesWithoutLanguage: 0,"),
+    ("L2 no avisa de las fuentes sin idioma", CLI, "if (summary.sourcesWithoutLanguage > 0) {", "if (summary.sourcesWithoutLanguage > 99) {"),
 ]
 
 if __name__ == "__main__":

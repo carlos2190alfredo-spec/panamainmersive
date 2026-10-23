@@ -5,7 +5,7 @@ que ejercen sus garantías. Uso:  python3 scripts/mutation/db.py [ID …]   (p. 
 Las mutaciones se aplican sobre las definiciones VIGENTES (la 0008 reemplaza funciones de la 0007: mutar la 0007 no
 afectaría a nada y «sobrevivir» no diría nada). Etiquetas: F = congelación/identidad, T = traducciones y evidencia,
 G = privilegios de columna, P = políticas RLS y vista, A = auditoría, D = semántica de días, E = exportador,
-C = fuentes de solo inserción.
+C = fuentes de solo inserción, Y = idioma de las fuentes (migración 0010 y exportador).
 """
 import sys
 from lib import main, run_vitest
@@ -19,9 +19,13 @@ TESTS = [
     "tests/integration/rls.test.ts",
     "tests/integration/audit.test.ts",
     "tests/integration/translations.test.ts",
+    "tests/integration/content-language.test.ts",
 ]
 M07='db/migrations/0007_content_model.sql'
 M08='db/migrations/0008_content_hardening.sql'
+M10='db/migrations/0010_source_language.sql'
+EXP='scripts/content/export-lib.ts'
+LCHK="language ~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$'"
 CC="""  content_changed :=
        new.source_locale is distinct from old.source_locale
     or new.original_text is distinct from old.original_text
@@ -97,6 +101,16 @@ MUTS=[
  ('D8 vigencia máxima: límite exclusivo',M08,"elsif f.max_validity_days is not null and span > f.max_validity_days then","elsif f.max_validity_days is not null and span >= f.max_validity_days then"),
  ('D9 valid_from el mismo día: se rechaza',M08,"a.valid_from > v_day then","a.valid_from >= v_day then"),
  ('E1 exportador no es de solo lectura','scripts/content/export-lib.ts',"begin isolation level repeatable read read only","begin isolation level repeatable read"),
+ ('Y1 el exportador no lee el idioma de la fuente',EXP,"s.license_name, s.license_url, s.language","s.license_name, s.license_url, null::text as language"),
+ ('Y2 el exportador publica siempre «idioma desconocido»',EXP,"language: e.language,","language: null,"),
+ ('Y3 sin restricción de idioma en la BD',M10,"  add column language text\n    constraint source_records_language_check\n    check (language is null or "+LCHK+");","  add column language text;"),
+ ('Y4 el idioma desconocido (null) se rechaza en la BD',M10,"check (language is null or "+LCHK,"check ("+LCHK,"equivalente","en PostgreSQL una restricción CHECK se cumple cuando la expresión da NULL: `language ~ patrón` con language nulo da NULL, así que `language is null or` es redundante (se conserva por claridad)"),
+ ('Y5 anon no puede leer el idioma',M10,"grant select (language) on public.source_records to anon;","-- (sin grant)"),
+ ('Y6 BD: región en minúsculas',M10,"(-([A-Z]{2}|[0-9]{3}))?$');","(-([A-Za-z]{2}|[0-9]{3}))?$');"),
+ ('Y7 BD: escritura en minúsculas',M10,"(-[A-Z][a-z]{3})?(-([A-Z]{2}","(-[A-Za-z]{4})?(-([A-Z]{2}"),
+ ('Y8 BD: sin ancla de inicio',M10,"language ~ '^[a-z]{2,3}","language ~ '[a-z]{2,3}"),
+ ('Y9 BD: sin ancla de fin',M10,"(-([A-Z]{2}|[0-9]{3}))?$');","(-([A-Z]{2}|[0-9]{3}))?');"),
+ ('Y10 BD: idioma de hasta 8 letras',M10,"language ~ '^[a-z]{2,3}(-","language ~ '^[a-z]{2,8}(-"),
 ]
 
 

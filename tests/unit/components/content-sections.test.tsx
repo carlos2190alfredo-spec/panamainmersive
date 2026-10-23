@@ -129,6 +129,29 @@ describe('ficha: contenido verificado', () => {
     }
   });
 
+  it('una fuente sin enlace seguro conserva el idioma de su título (la rama sin <a> también marca `lang`)', () => {
+    const base = buildContentView(
+      [assertion({ evidence: [evidence({ language: 'en' })] })],
+      [],
+      'locality',
+      'es',
+      TODAY,
+    );
+    const item = base.verified[0];
+    if (!item) throw new Error('sin ítem');
+    const view = {
+      ...base,
+      verified: [{ ...item, sources: [{ ...item.sources[0], url: 'javascript:alert(1)' }] }],
+    } as unknown as typeof base;
+    const html = renderToStaticMarkup(
+      <NextIntlClientProvider locale="es" messages={messages.es}>
+        <ContentSections view={view} locale="es" generatedAt={null} />
+      </NextIntlClientProvider>,
+    );
+    expect(html).not.toContain('<a ');
+    expect(html).toMatch(/<li><span lang="en">Documento de prueba<\/span>/);
+  });
+
   it('el texto se escapa: nada de HTML ni scripts desde los datos', () => {
     const html = render(
       [
