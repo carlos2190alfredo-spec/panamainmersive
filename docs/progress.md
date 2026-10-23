@@ -6,14 +6,14 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                                                                                                         | Notas                                                                                |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                     | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                        | Detalle abajo                                                                        |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                       | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                          |
-| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                    | Entregas 3, 3b, 3c y 3d; cierre abajo                                                |
-| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020); **sin ninguna afirmación verificada real** | Entregas 4a y 4b; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5–10                      | PENDIENTE                                                                                                                                                                                      | Ver `docs/backlog.md`                                                                |
+| Fase                      | Estado                                                                                                                                                                                                                                                                                              | Notas                                                                                    |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                                                                                                                          | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                    |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                                                                                                                             | Detalle abajo                                                                            |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                            | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                              |
+| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                         | Entregas 3, 3b, 3c y 3d; cierre abajo                                                    |
+| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto); **sin ninguna afirmación verificada real** | Entregas 4a, 4b y 4c; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
+| 5–10                      | PENDIENTE                                                                                                                                                                                                                                                                                           | Ver `docs/backlog.md`                                                                    |
 
 ## Entrega 1 — Foundation
 
@@ -469,7 +469,7 @@ pnpm perf:vitals --runs 5                                         # línea base 
 
 ### Qué no pudo verificarse
 
-- **La dimensión de orquestación y CI no se revisó** (F4-17): `.github/workflows/ci.yml` y los scripts de orquestación están **IMPLEMENTED, no VERIFIED** fuera de este entorno.
+- **La dimensión de orquestación y CI no se revisó** (F4-17; **se revisó después: entrega 4c**): `.github/workflows/ci.yml` y los scripts de orquestación están **IMPLEMENTED, no VERIFIED** fuera de este entorno.
 - **Nada con contenido real**: la instantánea publicada sigue **vacía** y todo usa datos sintéticos.
 - **`published.json` falsificado con coherencia** no se detecta: no hay hash, firma ni comprobación contra la BD en CI. El único control real es la revisión del `git diff` (F4-14).
 - **Caducidad en la primera visita**: ISR es _stale-while-revalidate_; un dato vencido puede mostrarse como vigente a la primera persona tras un periodo sin visitas. No hay regeneración programada (F4-16).
@@ -489,8 +489,76 @@ pnpm perf:vitals --runs 5                                         # línea base 
 
 ### Pendiente
 
-Revisar orquestación y CI (F4-17), procedencia de la instantánea (F4-14), idioma de las fuentes (F4-15), regeneración programada (F4-16), ejecutar las mutaciones en CI (T-13), contenido real (F4-6), interfaz de autoría (F4-2) y las decisiones de arriba. Ver `docs/backlog.md`.
+Revisar orquestación y CI (F4-17, **hecho en la entrega 4c**), procedencia de la instantánea (F4-14), idioma de las fuentes (F4-15), regeneración programada (F4-16), ejecutar las mutaciones en CI (T-13), contenido real (F4-6), interfaz de autoría (F4-2) y las decisiones de arriba. Ver `docs/backlog.md`.
 
 ### Siguiente acción concreta
 
 Con una persona editora, igual que en la 4a: validar los umbrales (F4-1) y redactar **un** resumen real con fuente primaria oficial para ver la primera ficha. Antes de **publicar** cualquier contenido real: decidir F4-14 (si no, un `published.json` coherente pero inventado pasa todos los controles) y F4-16. Lo que más valor da sin depender de nadie sigue siendo la **interfaz de autoría** (F4-2).
+
+## Entrega 4c — Fase 4: revisión de la orquestación y el CI (F4-17)
+
+Alcance: **no hay funcionalidad nueva de contenido ni de producto**. La dimensión que la segunda revisión no llegó a cubrir (orquestadores E2E, `check:bundle`, la herramienta de mutación y `ci.yml`) se encargó a un agente sin contexto previo sobre una copia congelada. El patrón que encontró: **puertas que podían dar verde sin haber medido ni ejecutado nada**. Esta entrega es lo que se halló, lo que se corrigió, lo que mis propias correcciones dejaron sin proteger (lo reveló la mutación) y lo que **sigue sin poder comprobarse**.
+
+### Qué funciona (VERIFIED en local, 2026-10-23)
+
+- **Orquestadores E2E** (`test:e2e:content`, `test:e2e:db`, sobre `scripts/lib/e2e-run.ts`): en **CI «no puedo ejecutar la suite» es un fallo** (antes salía con 0 y el job quedaba verde sin probar nada); puerto libre elegido por el sistema y **verificación de que responde el servidor propio** (un servidor ajeno ya no se da por bueno); build asíncrono con plazo; limpieza **una sola vez y sin bloquear** ante SIGINT/SIGTERM (**8 de 8 Ctrl+C emulados sin huérfanos**), lanzados con `node --import tsx` (el CLI de `tsx` mata al hijo); barrido de clústeres y registros huérfanos con comprobación de pid; `PI_PG_BIN_DIR` y selección de la versión de PostgreSQL **con PostGIS**.
+- **Playwright**: `forbidOnly` y `failOnFlakyTests` en las **tres** configuraciones en CI; informe JSON en CI.
+- **`pnpm check:e2e-skips`**: presupuesto de pruebas **omitidas** (56 en CI sin el mapa base, **medido**; con el mapa real, 0). Falla si no pasó ninguna prueba, hay fallos o intermitentes, el informe es incoherente o se supera el presupuesto, agrupando por motivo.
+- **`pnpm check:bundle`**: presupuestos validados (`JS_BUDGET_KB=2l0` daba `NaN` y nunca comparaba), un recurso ausente o con `?dpl=` ya no cuenta como 0 KB, una página sin scripts falla, los `.mjs` (MapLibre) se escanean en busca de secretos. Probado como script completo sobre un `.next` sintético **y** contra el build real (recurso renombrado → falla).
+- **Herramienta de mutación**: códigos de salida 0/1/2/3 documentados (un ID inexistente, mutaciones todas inválidas o pruebas **omitidas** ya no terminan en «0 supervivientes»; un árbol sucio ya no sale con el código de «sobrevive alguna»; `git` fallando no se lee como «limpio»), marca `equivalente` que **exige justificación escrita**, ejecutor de pytest y nombres de prueba duplicados sin pisarse.
+- **`ci.yml`**: `timeout-minutes`, `main` no se cancela, job **`ci-ok`** (falla si algo falló, se canceló u omitió), trazas de Playwright si falla, versiones impresas, nombre honesto del job de E2E. `pnpm typecheck` y `pnpm lint` generan antes los tipos de rutas (fallaban en una copia limpia); `pnpm check` encadena las cuatro puertas.
+- **`e2e/map.spec.ts`**: una aserción de leyenda envuelta en `.catch(() => undefined)` llevaba **desde la Fase 2** sin poder fallar y, además, era **falsa**; ahora comprueba la leyenda real (y la inversa al desactivar).
+
+### Cómo ejecutarlo
+
+```bash
+pnpm check                                                        # typecheck + lint + format + 938 unitarias
+pnpm test:integration                                             # 339 (incluye las señales del clúster con procesos reales)
+. .venv/bin/activate && pnpm test:pipelines                       # 119 (ETL + herramienta de mutación)
+SITE_ENV=development pnpm build && pnpm check:bundle              # presupuestos con guardas
+CI=true pnpm test:e2e && pnpm check:e2e-skips --max-skipped 56    # 160 · presupuesto de omitidas (56 sin el mapa base)
+pnpm test:e2e:content && pnpm test:e2e:db                         # 21 · 7
+python3 scripts/mutation/ci.py                                    # 105 mutaciones de esta revisión (≈ 16 min) · también db.py, ts.py, cli.py
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-23)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **938** (49 ficheros) · `pnpm test:integration`: **339** (17 ficheros; 0 clústeres huérfanos) · `pnpm test:pipelines`: **119** · `pnpm test:e2e` con `CI=true` y el mapa real: **160 pasan, 0 omitidas, 0 intermitentes**; con el mapa oculto (como el CI real): **104 pasan y 56 omitidas** · `pnpm test:e2e:content`: **21** · `pnpm test:e2e:db`: **7** (sin restos: ni procesos, ni `/tmp/pi-*`, ni `.e2e-content-app/`) · `pnpm check:bundle`: OK sobre un build nuevo (ficha 191,1 KB, Explorar 205,4 KB, mapa diferido 460,7 KB gzip) · **mutación: `ci.py` 105 (103 detectadas + 2 equivalentes justificadas, 0 supervivientes); las 80 de la entrega 4b **repetidas sobre el código final**: `cli.py` 6/6, `ts.py` 23/23 y `db.py` 50 detectadas + `D1` (el aviso del reloj: eran las 05:48 UTC, fuera de la ventana 00:00–05:00 en que se detecta), **0 supervivientes****.
+
+### Lo que se encontró y cambió (honestamente)
+
+- **La revisión** (un agente, **12 hallazgos**): no me fié del informe, los comprobé yo uno a uno contra HEAD. **Reproducidos**: 1, 2, 4, 5, 6 y 7; del 3 reproduje la **causa raíz** (un servidor ajeno en el puerto) pero **no** la cifra literal del revisor («21 pasan con un servidor viejo y una regresión sembrada»: mi ejecución sí detectó la regresión); **confirmados por inspección**: 8 y 12; **por lectura** o como nota de documentación: 9, 10 y 11. Todos los corregibles se corrigieron con prueba roja → verde.
+- **Errores míos descubiertos al corregir:**
+  1. **YAML inválido que mis pruebas no vieron.** El nombre del job de E2E contenía `: `; mis 20 guardas textuales de `ci.yml` pasaban y lo detectó Prettier. Desde entonces está dicho en la prueba: la sintaxis la vigila `pnpm format`.
+  2. **Un «pasó» que no probaba nada.** Mi primera comprobación manual de que una aserción podía fallar usó un ancla que Prettier había reformateado: la mutación **no se aplicó** y salió «1 passed». Lo vi porque el script de reemplazo falló; repetí con un ancla verificada.
+  3. **Mis pruebas nuevas eran más débiles de lo que creía.** La mutación de mis propias correcciones: **89 de 106 muertas en la primera pasada, 16 sobrevivían y 1 inválida.** Entre ellas, la más grave: un servidor ajeno que responde cuando el propio ya murió (**el caso del hallazgo #3**) no tenía prueba; tampoco la limpieza repetida ante una segunda señal (indetectable con mi fixture), `stopGroup` sobre nietos, el plazo del build, `PI_PG_BIN_DIR` vacío, los presupuestos del mapa y del CSS, y los valores por defecto de las señales del clúster. La prueba del «pid reutilizado» usaba **el pid del propio worker de Vitest**: si el código regresaba, habría matado al ejecutor.
+  4. **Un defecto latente en mi código**: `waitForServer` lanzaba su error dentro de un `try` con un `catch` que lo tragaba todo y solo funcionaba por una segunda comprobación redundante (E-74). Simplificado a una comprobación fuera del `try`.
+  5. **La herramienta de mutación tenía huecos propios** (selección mezclada con un ID inexistente, base incompleta, ancla duplicada, restauración y código de salida ante señales) y **perdía una prueba** por un título duplicado (937 frente a 938; E-75). Todo con prueba.
+  6. **Dos «equivalentes» y una que no lo era.** Q1 y Q2 (quitar `if (postmasterAlive())`) son equivalentes de verdad y quedan justificadas por escrito; L1 parecía equivalente y era un hueco real.
+  7. **Una sorpresa del entorno**: el PID 1 no recoge zombis, así que `kill(pid, 0)` da «vivo» para un proceso ya muerto (E-73); la prueba de nietos lee `/proc`.
+- **Lo que no toqué y por qué**: `i18n.spec.ts:128` (una espera de sincronización cuyo fallo detecta el `click` siguiente) y `helpers.ts:93` (segundo canal de violaciones CSP ya sumado) tragan errores pero **no** vacían ninguna aserción.
+
+### Qué no pudo verificarse
+
+- **`ci.yml` nunca se ejecutó** (no hay remoto): es **IMPLEMENTED, no VERIFIED**. Sus guardas son textuales (no lo ejecutan) y el YAML lo valida Prettier.
+- **Chromium 141 en local, 156 en el CI** (E-68): todo E2E/axe/WebGL/CSP se verificó con el 141; **nada se ejecutó sobre el 156** y este entorno no instala navegadores.
+- **El presupuesto de 56 omitidas** se midió ocultando el mapa en local, no en GitHub.
+- **Los guiones completos** `e2e-content.ts` y `e2e-db.ts` solo se comprobaron a mano (cada pieza tiene su prueba; T-14). El Ctrl+C se **emuló** con `setsid` y `kill -INT -- -PGID`, no en una terminal interactiva.
+- **Acciones de terceros por etiqueta, no por hash** (F4-17b): no hay red hacia GitHub para consultarlos y uno supuesto sería peor.
+- `test:e2e:db` **sigue fuera del CI**: necesita datos gitignorados y, desde esta entrega, en CI faltar datos es un fallo.
+- **Las mutaciones prueban las pruebas locales**, no el CI. Lo demás de la Fase 4 sigue como en la 4b: **nada con contenido real** (la instantánea sigue vacía), `published.json` falsificado con coherencia no se detecta (F4-14), la caducidad en la primera visita (F4-16), datos de fuente sin `lang` (F4-15).
+
+### Decisiones que necesitan a una persona (no puedo tomarlas yo)
+
+Las seis de la 4b (**F4-1**, **F4-3**, **F4-5**, **F4-4/F4-16**, **F4-12**, **F4-14**) y dos nuevas:
+
+7. **¿Se conecta un remoto?** Sin él, `ci.yml` no puede ejecutarse (T-15), no se pueden fijar las acciones por hash (F4-17b) ni exigir `ci-ok` como único check obligatorio. Publicar o crear un remoto necesita tu autorización explícita.
+8. **¿Debe el CI generar el mapa base** (F3-14: Python + tippecanoe + red hacia Overture, ≈ 5 min)? Hoy 56 de 160 pruebas E2E se omiten en CI; con el mapa el presupuesto bajaría a 0.
+
+### Pendiente
+
+Primera ejecución real de `ci.yml` y comparación de Chromium (T-15, requiere remoto), fijar acciones por hash (F4-17b), pruebas de punta a punta de los guiones de orquestación y limpieza de señales de `perf:vitals` (T-14), ejecutar las mutaciones de forma periódica (T-13, ahora ≈ 26 min), y lo de la 4b: procedencia de la instantánea (F4-14), idioma de las fuentes (F4-15), regeneración programada (F4-16), contenido real (F4-6), interfaz de autoría (F4-2) y las decisiones de arriba. Ver `docs/backlog.md`.
+
+### Siguiente acción concreta
+
+Igual que en la 4a y la 4b, lo que más valor da depende de una persona: validar los umbrales de evidencia (F4-1) y redactar **un** resumen real con fuente primaria oficial para ver la primera ficha; antes de **publicar** contenido real, decidir F4-14 y F4-16. Para el CI, la acción que desbloquea todo lo pendiente es **conectar un remoto** (decisión 7) y mirar la primera ejecución. Lo que sigue sin depender de nadie es la **interfaz de autoría** (F4-2), que necesita antes una decisión de autenticación.

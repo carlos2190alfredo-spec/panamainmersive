@@ -13,7 +13,7 @@ SITE_ENV=development pnpm build && pnpm check:bundle       # build + secretos en
 pnpm test:e2e                                              # Playwright sobre el build de producción (incluye el mapa con WebGL real)
 CI=true pnpm test:e2e && pnpm check:e2e-skips --max-skipped 56   # como en CI: informe JSON en test-results/ + presupuesto de omitidas (56 sin el mapa base; con él, 0)
 pnpm data:anchors && pnpm data:build                       # datos del mapa (Python + tippecanoe; ver docs/setup.md §6)
-. .venv/bin/activate && pnpm test:pipelines                # ETL de Python (90 pruebas, sin red; `.venv` activado porque los scripts usan `python3 -I`)
+. .venv/bin/activate && pnpm test:pipelines                # Python: ETL y herramienta de mutación (119 pruebas, sin red; `.venv` activado porque los scripts usan `python3 -I`)
 pnpm data:ingest && pnpm db:import-areas --manifest …      # ingesta controlada de áreas (docs/setup.md §7, ADR-0015)
 pnpm test:e2e:content                                      # ficha con contenido verificado: PG temporal → exportación → copia de la app → Next (docs/testing.md)
 pnpm content:export [--check|--dry-run]                    # contenido público de DATABASE_URL → data/content/published.json (docs/setup.md §8, ADR-0019)

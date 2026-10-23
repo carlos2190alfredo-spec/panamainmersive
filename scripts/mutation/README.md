@@ -43,11 +43,18 @@ herramienta están en `pipelines/tests/test_mutation_lib.py`.
 
 ## Límites conocidos
 
+El informe de Vitest se indexa por «archivo › nombre completo»; dos casos de un `it.each` con el mismo título se distinguen con un
+sufijo `#2` (antes se pisaban y la última ganaba).
+
 Si Vitest agota el plazo (30 min) solo se detiene el proceso directo, no necesariamente sus procesos hijo; la mutación
 queda `INVÁLIDA` y el archivo se restaura, pero conviene comprobar que no quedan procesos huérfanos.
 
 `D1` (`app.panama_today()` calculado en UTC) solo se detecta entre las 00:00 y las 05:00 UTC, cuando el día de Panamá y el
 UTC difieren, y PostgreSQL no permite falsear `now()`. Se avisa como «depende del reloj» en lugar de fallar.
+
+## Mutantes equivalentes
+
+Una mutación que **no cambia el comportamiento observable** (p. ej. quitar una comprobación previa que una segunda barrera ya hace redundante) se marca con `"equivalente", "justificación"` al final de su tupla. Se ejecuta y se informa como `EQUIVALENTE (justificado: …)`; no hace fallar la ejecución, pero **exige la justificación por escrito**: sin texto (o solo espacios) cuenta como superviviente. `ci.py` tiene dos (Q1, Q2). Antes de marcar una, intenta escribir la prueba: L1 («un ID inexistente se acepta») parecía equivalente porque una segunda barrera da el mismo código de salida, y era un hueco real (una selección mezclada con un ID inexistente se ejecutaba ignorándolo).
 
 ## Cómo añadir una mutación
 
