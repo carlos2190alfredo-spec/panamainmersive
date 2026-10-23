@@ -177,6 +177,12 @@ export interface StartOptions {
    * suya no llega a ejecutarse.
    */
   readonly handleSignals?: boolean;
+  /**
+   * Por defecto el clúster es de PRUEBAS: sin `fsync`, `synchronous_commit` ni `full_page_writes` (rápido, no durable).
+   * `durable: true` deja los valores por defecto de PostgreSQL, que son los de producción: lo necesitan las mediciones
+   * de coste de escritura, donde el `COMMIT` espera al disco (`pnpm perf:db`). Las pruebas no lo usan.
+   */
+  readonly durable?: boolean;
 }
 
 export async function startTestCluster(options: StartOptions = {}): Promise<TestCluster> {
@@ -228,7 +234,9 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       '-D',
       data,
       '-o',
-      `-c listen_addresses='' -c unix_socket_directories='${dir}' -c port=${port} -c fsync=off -c synchronous_commit=off -c full_page_writes=off`,
+      `-c listen_addresses='' -c unix_socket_directories='${dir}' -c port=${port}${
+        options.durable ? '' : ' -c fsync=off -c synchronous_commit=off -c full_page_writes=off'
+      }`,
       '-l',
       join(dir, 'postgres.log'),
       '-w',

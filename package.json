@@ -33,7 +33,8 @@
     "db:import-areas": "tsx scripts/db/import-areas.ts",
     "content:export": "tsx scripts/content/export-published.ts",
     "test:e2e:content": "node --import tsx scripts/e2e-content.ts",
-    "perf:vitals": "tsx scripts/perf/vitals.ts"
+    "perf:vitals": "tsx scripts/perf/vitals.ts",
+    "perf:db": "node --import tsx scripts/perf/db-cost.ts"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "5.3.0",
