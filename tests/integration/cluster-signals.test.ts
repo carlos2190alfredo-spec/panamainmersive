@@ -16,13 +16,19 @@ describe('limpieza del clúster ante señales', () => {
     for (const d of temps.splice(0)) rmSync(d, { recursive: true, force: true });
   });
 
-  async function interrupt(signals: NodeJS.Signals[], gapMs: number) {
+  async function interrupt(signals: NodeJS.Signals[], gapMs: number, mode?: 'default') {
     const sandbox = mkdtempSync(join(tmpdir(), 'pi-signals-'));
     temps.push(sandbox);
     chmodSync(sandbox, 0o755); // como root, el usuario `postgres` debe poder atravesar el directorio
     const child = spawn(
       'setsid', // su propio grupo de procesos, como el primer plano de una terminal
-      [process.execPath, '--import', 'tsx', 'tests/integration/fixtures/cluster-fixture.ts'],
+      [
+        process.execPath,
+        '--import',
+        'tsx',
+        'tests/integration/fixtures/cluster-fixture.ts',
+        ...(mode ? [mode] : []),
+      ],
       {
         cwd: process.cwd(),
         env: { ...process.env, TMPDIR: sandbox },
@@ -72,6 +78,13 @@ describe('limpieza del clúster ante señales', () => {
 
   it('una señal (Ctrl-C): se para PostgreSQL y se borra el directorio', async () => {
     const { clusterDir, alive, leftovers } = await interrupt(['SIGINT'], 0);
+    expect(existsSync(clusterDir)).toBe(false);
+    expect(leftovers).toEqual([]);
+    expect(alive).toBe(false);
+  }, 60_000);
+
+  it('con las opciones POR DEFECTO (como el globalSetup de Vitest) una señal también lo limpia', async () => {
+    const { clusterDir, alive, leftovers } = await interrupt(['SIGINT'], 0, 'default');
     expect(existsSync(clusterDir)).toBe(false);
     expect(leftovers).toEqual([]);
     expect(alive).toBe(false);

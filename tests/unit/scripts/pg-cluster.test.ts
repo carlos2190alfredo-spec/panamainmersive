@@ -47,13 +47,23 @@ describe('selección del PostgreSQL de las pruebas', () => {
   it('hay PostgreSQL pero ninguna versión tiene PostGIS → «no disponible», diciendo por qué', () => {
     const roots = layout({ '16': { postgis: false } });
     expect(() => findBinDir({ env: {}, ...roots })).toThrow(PostgresUnavailableError);
-    expect(() => findBinDir({ env: {}, ...roots })).toThrow(/PostGIS/);
+    // El mensaje de la causa concreta (la genérica de «no hay PostgreSQL» también nombra a PostGIS y no orienta igual).
+    expect(() => findBinDir({ env: {}, ...roots })).toThrow(
+      /ninguna versión instalada tiene PostGIS/,
+    );
   });
 
   it('PI_PG_BIN_DIR manda: una ruta con initdb se usa tal cual', () => {
     const roots = layout({ '16': { postgis: true } });
     const bin = join(roots.libRoot, '16', 'bin');
     expect(findBinDir({ env: { PI_PG_BIN_DIR: bin }, ...roots })).toBe(bin);
+  });
+
+  it("PI_PG_BIN_DIR definida pero VACÍA se ignora (típico de `env: PI_PG_BIN_DIR: ''` en un CI)", () => {
+    const roots = layout({ '16': { postgis: true } });
+    expect(findBinDir({ env: { PI_PG_BIN_DIR: '' }, ...roots })).toBe(
+      join(roots.libRoot, '16', 'bin'),
+    );
   });
 
   it('PI_PG_BIN_DIR apuntando a donde no hay initdb → «no disponible» (así se simula en las pruebas)', () => {

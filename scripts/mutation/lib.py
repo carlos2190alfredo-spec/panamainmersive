@@ -143,7 +143,10 @@ class AnchorError(Exception):
 
 
 def main(mutations, runner, selection: list[str], *, min_base: int) -> int:
-    """`mutations`: (etiqueta, archivo, ancla, reemplazo[, 'reloj']). Devuelve el código de salida (ver arriba)."""
+    """`mutations`: (etiqueta, archivo, ancla, reemplazo[, 'reloj' | 'equivalente', justificación]). Devuelve el código de salida.
+
+    Una mutación `equivalente` (no cambia el comportamiento observable) solo se admite si lleva su justificación por escrito.
+    """
     known = {m[0].split()[0] for m in mutations}
     unknown = [s for s in selection if s not in known]
     if unknown:
@@ -169,10 +172,11 @@ def _evaluate(chosen, runner, min_base: int) -> int:
     if red or len(base) < min_base:
         print("La base debe ser verde y completa antes de mutar:", red[:3])
         return EXIT_NOT_EVALUATED
-    survivors, clock, invalid, killed_labels = [], [], [], []
+    survivors, clock, equivalent, invalid, killed_labels = [], [], [], [], []
     for item in chosen:
         label, path, old, new = item[:4]
-        clock_dependent = len(item) > 4 and item[4] == "reloj"
+        note = item[4] if len(item) > 4 else None
+        why = item[5].strip() if len(item) > 5 and isinstance(item[5], str) else ""
         try:
             res = mutate_and_run(path, old, new, runner)
         except AnchorError as error:
@@ -193,10 +197,16 @@ def _evaluate(chosen, runner, min_base: int) -> int:
         print(f"{'MATA     ' if killed else 'SOBREVIVE'}  {label}  ({len(killed)} pruebas fallan)")
         if killed:
             killed_labels.append(label)
+        elif note == "reloj":
+            clock.append(label)
+        elif note == "equivalente" and why:
+            equivalent.append((label, why))  # sin justificación escrita NO se admite: cuenta como superviviente
         else:
-            (clock if clock_dependent else survivors).append(label)
+            survivors.append(label)
     for label in clock:
         print(f"AVISO (depende del reloj, no se puede falsear `now()`): {label}")
+    for label, why in equivalent:
+        print(f"EQUIVALENTE (justificado: {why}): {label}")
     print(f"\nMATAN: {len(killed_labels)} · SOBREVIVEN: {len(survivors)} · INVÁLIDAS: {len(invalid)}")
     for label in survivors:
         print("  - sobrevive:", label)

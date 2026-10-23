@@ -78,14 +78,22 @@ describe('barrida de clústeres temporales huérfanos', () => {
     expect(existsSync(a) || existsSync(b)).toBe(false);
   });
 
-  it('un pid vivo que NO es de ese clúster (pid reutilizado) no se mata: solo se borra el directorio', () => {
+  it('un pid vivo que NO es de ese clúster (pid reutilizado) no se mata: solo se borra el directorio', async () => {
     const r = root();
-    const dir = cluster(r, 'pi-pg-reused', 30 * MINUTE, process.pid); // el pid de esta prueba: vivo y ajeno
+    // Un proceso vivo y AJENO (su línea de órdenes no contiene la ruta del clúster). Nunca el de la propia prueba: si el
+    // código regresara, la barrida mataría al worker de Vitest en vez de dar un fallo legible.
+    const stranger = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], {
+      stdio: 'ignore',
+    });
+    children.push(stranger);
+    const dir = cluster(r, 'pi-pg-reused', 30 * MINUTE, stranger.pid);
     expect(sweepStaleClusters({ root: r, now: NOW, staleRunningMs: 10 * MINUTE })).toEqual([
       'pi-pg-reused',
     ]);
     expect(existsSync(dir)).toBe(false);
-    expect(() => process.kill(process.pid, 0)).not.toThrow(); // seguimos vivos
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(stranger.signalCode, 'el proceso ajeno recibió una señal').toBeNull();
+    expect(stranger.exitCode).toBeNull();
   });
 
   it('uno antiguo cuyo PostgreSQL SIGUE vivo y es suyo: se detiene y se borra solo pasado el plazo largo', async () => {

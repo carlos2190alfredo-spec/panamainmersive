@@ -12,6 +12,7 @@ import importlib.util
 import json
 import signal
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -209,6 +210,77 @@ class TestRunVitest:
 
         monkeypatch.setattr(lib.subprocess, "run", escribe_resultado)
         assert lib.run_vitest("unit") == {"a.test.ts › suite uno": "passed"}
+
+
+def test_una_seleccion_mezclada_con_un_id_inexistente_se_rechaza_entera(lib, repo):
+    """`M1` existe y `F99` no: ejecutar solo `M1` e ignorar `F99` en silencio daría un «0» que no es lo que se pidió."""
+    runner = Runner(repo, when_mutated=KILLS)
+    assert lib.main([mutation()], runner, ["M1", "F99"], min_base=2) == 2
+    assert runner.calls == 0
+
+
+def test_una_base_incompleta_no_permite_mutar(lib, repo):
+    """Una base verde pero con menos pruebas que `min_base` (¿se omitió un archivo?) no demuestra nada."""
+    runner = Runner(repo, when_mutated=KILLS)
+    assert lib.main([mutation()], runner, [], min_base=5) == 2
+    assert runner.calls == 1, "solo la base: no se muta nada"
+    assert (repo / TARGET).read_text(encoding="utf-8") == "x = 1\n"
+
+
+def test_un_ancla_duplicada_es_invalida(lib, repo):
+    (repo / TARGET).write_text("x = 1\nx = 1\n", encoding="utf-8")
+    git(repo, "commit", "-q", "-am", "dos veces")
+    assert lib.main([mutation()], Runner(repo, when_mutated=KILLS), [], min_base=2) == 3
+
+
+class TestEquivalentes:
+    def test_una_equivalente_justificada_no_hace_fallar(self, lib, repo, capsys):
+        m = mutation() + ("equivalente", "una segunda barrera ya cubre este caso")
+        assert lib.main([m], Runner(repo, when_mutated=SURVIVES), [], min_base=2) == 0
+        assert "una segunda barrera ya cubre este caso" in capsys.readouterr().out
+
+    def test_sin_justificacion_escrita_cuenta_como_superviviente(self, lib, repo):
+        assert lib.main([mutation() + ("equivalente",)], Runner(repo, when_mutated=SURVIVES), [], min_base=2) == 1
+        assert lib.main([mutation() + ("equivalente", "  ")], Runner(repo, when_mutated=SURVIVES), [], min_base=2) == 1
+
+    def test_si_una_marcada_equivalente_muere_no_pasa_nada(self, lib, repo):
+        m = mutation() + ("equivalente", "justificación")
+        assert lib.main([m], Runner(repo, when_mutated=KILLS), [], min_base=2) == 0
+
+
+class TestSenales:
+    """README: «los archivos se restauran siempre, también con Ctrl+C». Se comprueba con un proceso real y una señal real."""
+
+    SCRIPT = """
+import importlib.util, pathlib, sys, time
+spec = importlib.util.spec_from_file_location("m", sys.argv[1])
+lib = importlib.util.module_from_spec(spec); spec.loader.exec_module(lib)
+root = pathlib.Path(sys.argv[2]); lib.ROOT = root
+target = root / "target.txt"
+def runner():
+    if "x = 1" not in target.read_text():
+        (root / "mutado").write_text("1")  # aviso: el archivo ya está mutado
+        time.sleep(60)
+    return {"t1": "passed", "t2": "passed"}
+sys.exit(lib.main([("M1 x", "target.txt", "x = 1", "x = 2")], runner, [], min_base=2))
+"""
+
+    @pytest.mark.parametrize(("senal", "codigo"), [(signal.SIGINT, 130), (signal.SIGTERM, 143)])
+    def test_restaura_el_archivo_y_sale_con_128_mas_la_senal(self, repo, senal, codigo):
+        import time
+
+        proc = subprocess.Popen([sys.executable, "-c", self.SCRIPT, str(LIB), str(repo)])
+        try:
+            deadline = time.time() + 30
+            while not (repo / "mutado").exists():
+                assert time.time() < deadline and proc.poll() is None, "el proceso no llegó a mutar"
+                time.sleep(0.05)
+            proc.send_signal(senal)
+            assert proc.wait(timeout=30) == codigo
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+        assert (repo / TARGET).read_text(encoding="utf-8") == "x = 1\n"
 
 
 class TestRunPytest:

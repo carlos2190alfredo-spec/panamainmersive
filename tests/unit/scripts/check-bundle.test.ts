@@ -154,14 +154,32 @@ describe('check-bundle (script completo)', () => {
     expect(result.stderr).toMatch(/el mapa pesa/);
   });
 
-  it.each(['2l0', '0', '-5', 'NaN'])(
-    'un presupuesto no válido (JS_BUDGET_KB=%s) detiene la puerta con código 2',
-    async (value) => {
-      const result = await run(materialize(healthyTree()), { JS_BUDGET_KB: value });
-      expect(result.code).toBe(2);
-      expect(result.stderr).toContain('JS_BUDGET_KB');
-    },
-  );
+  it.each(
+    ['JS_BUDGET_KB', 'CSS_BUDGET_KB', 'MAP_LAZY_BUDGET_KB'].flatMap((name) =>
+      ['2l0', '0', '-5', 'NaN'].map((value) => [name, value] as const),
+    ),
+  )('un presupuesto no válido (%s=%s) detiene la puerta con código 2', async (name, value) => {
+    const result = await run(materialize(healthyTree()), { [name]: value });
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(name);
+  });
+
+  it('superar el presupuesto de CSS FALLA', async () => {
+    const result = await run(materialize(healthyTree()), { CSS_BUDGET_KB: '0.001' });
+    expect(result.code).toBe(1);
+    expect(result.stderr).toMatch(/CSS .* KB > presupuesto/);
+  });
+
+  it('una hoja de estilo referenciada que no existe FALLA y se nombra (no cuenta como 0)', async () => {
+    const tree = healthyTree();
+    tree['.next/server/app/es.html'] =
+      '<html><head><link rel="stylesheet" href="/_next/static/css/app.css?dpl=abc">' +
+      '<link rel="stylesheet" href="/_next/static/css/falta.css?dpl=abc">' +
+      '<script src="/_next/static/chunks/main.js?dpl=abc" async></script></head></html>';
+    const result = await run(materialize(tree));
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('/_next/static/css/falta.css');
+  });
 
   it('no hay build: código 2 con el aviso', async () => {
     const result = await run(materialize({ 'vacio.txt': '' }));

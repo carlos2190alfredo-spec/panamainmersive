@@ -134,6 +134,16 @@ describe('problemas de una medición de página', () => {
     );
     expect(problems.join('\n')).toContain('/_next/static/falta.js');
   });
+
+  it('una hoja de estilo referenciada que no existe también es un problema que la nombra', () => {
+    const problems = pageProblems(
+      'ficha',
+      ok,
+      { bytes: 190 * 1024, missing: [] },
+      { bytes: 4096, missing: ['/_next/static/css/falta.css'] },
+    );
+    expect(problems.join('\n')).toContain('/_next/static/css/falta.css');
+  });
 });
 
 describe('qué archivos de cliente se escanean en busca de secretos', () => {
