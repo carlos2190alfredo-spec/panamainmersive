@@ -6,14 +6,14 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                                                                                                                                                                                                                                                              | Notas                                                                                        |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                                                                                                                                                                          | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                        |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                                                                                                                                                                             | Detalle abajo                                                                                |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                                                                            | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                                  |
-| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                                                                         | Entregas 3, 3b, 3c y 3d; cierre abajo                                                        |
-| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto) y el **idioma de las fuentes** (4d, WCAG 3.1.2); **sin ninguna afirmación verificada real** | Entregas 4a, 4b, 4c y 4d; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5–10                      | PENDIENTE                                                                                                                                                                                                                                                                                                                                           | Ver `docs/backlog.md`                                                                        |
+| Fase                      | Estado                                                                                                                                                                                                                                                                                                                                                                                  | Notas                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                                                                                                                                                                                                              | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                            |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                                                                                                                                                                                                                 | Detalle abajo                                                                                    |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                                                                                                                | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                                      |
+| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                                                                                                             | Entregas 3, 3b, 3c y 3d; cierre abajo                                                            |
+| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto) el **idioma de las fuentes** (4d, WCAG 3.1.2) y la **concurrencia** del modelo (4e); **sin ninguna afirmación verificada real** | Entregas 4a, 4b, 4c, 4d y 4e; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
+| 5–10                      | PENDIENTE                                                                                                                                                                                                                                                                                                                                                                               | Ver `docs/backlog.md`                                                                            |
 
 ## Entrega 1 — Foundation
 
@@ -620,3 +620,52 @@ T-16 (registro IANA, `dir`, leer la norma), T-14 y T-15 (guiones de orquestació
 ### Siguiente acción concreta
 
 **Lo independiente de las personas en la Fase 4 está agotado**: lo que queda necesita una decisión (autenticación para F4-2, despliegue para F4-16, procedencia para F4-14) o contenido real. Las fases 5–10 están además bloqueadas por L-05 (cobertura Google/Mapillary `UNKNOWN`) y por no haber contenido que contar. Se puede preparar el esqueleto puro de un recorrido guiado (esquema de pasos con cámara y referencias a contenido verificado), pero **no lo recomiendo hasta que exista contenido**: construir la interfaz de un recorrido vacío sería inventar cobertura. Lo que más valor da sigue siendo una sesión corta contigo: validar los umbrales (F4-1), redactar **un** resumen real con fuente primaria oficial (con el idioma de la fuente) y decidir si se conecta un remoto.
+
+## Entrega 4e — Fase 4: concurrencia del modelo de contenido (F4-8)
+
+Alcance: **la mitad de F4-8 que se puede cerrar sin nadie**: qué pasa cuando dos personas actúan a la vez sobre el mismo campo del mismo destino. Hasta aquí «verificado, versionado e inmutable» —la promesa central del modelo— solo se había probado con una conexión a la vez. La otra mitad (coste de las políticas RLS con más datos) sigue pendiente. Esta fue una **hipótesis comprobada, no una corrección a ciegas**: primero se midió qué fallaba.
+
+### Qué funciona (VERIFIED en local, 2026-10-23)
+
+- **Pruebas de concurrencia reales** (`content-concurrency.test.ts`, 11): conexiones propias con la intercalación **fijada sin `sleep`** (una retiene su transacción; la otra se lanza sin esperarla y se sigue cuando `pg_stat_activity` dice `Lock`).
+- **Qué se halló** antes de corregir (7 de 10 fallaban): **no había corrupción** (los índices únicos `assertion_unique_version` y `field_assertions_one_current` hacían su trabajo), pero sí **errores espurios** `23505`: de **ocho** borradores simultáneos, **cuatro** fallaban; la verificación **legítima** de una versión nueva fallaba si otra se verificaba a la vez; y verificar una versión anterior daba «clave duplicada» en vez de `assertion_older_version`.
+- **Migración `0011`** (ADR-0022): un disparador mínimo, `field_assertions_00_serialize`, toma un bloqueo consultivo de transacción por (destino, campo) al insertar y al cambiar de estado, **el primero** por orden alfabético (una prueba lo exige). Granularidad exacta: campos o destinos distintos, y editar el texto de un borrador, **no esperan**. Las funciones grandes de la 0007/0008 **no se reescriben**; los índices únicos siguen como red de seguridad.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm test:integration                       # 368 (incluye content-concurrency: 11)
+python3 scripts/mutation/db.py              # 69 mutaciones (≈ 10 min), con Z1–Z8 de la 0011
+pnpm check && pnpm test:e2e:content && pnpm test:e2e:db   # 1018 · 28 · 7
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-23)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **1018** · `pnpm test:integration`: **368** (19 ficheros; 0 clústeres huérfanos) · `pnpm test:e2e:content`: **28** · `pnpm test:e2e:db`: **7** · concurrencia: **9 repeticiones seguidas** sin un fallo · **mutación: Z1–Z8, 8 de 8 a la primera; `db.py` completo sobre el código final: 67 detectadas, `D1` avisa (reloj), `Y4` equivalente justificada, 0 supervivientes**.
+
+### Lo que se encontró y cambió (honestamente)
+
+- **Mi predicción acertó a medias, y es lo que conviene decir**: esperaba «sin corrupción pero con errores espurios» y fue exactamente así; lo que **no** esperaba era que de **ocho** simultáneos fallaran **cuatro** (la mitad), ni que la verificación legítima de una versión nueva fuera una de las víctimas.
+- **Un defecto de diseño en mi propia migración, visto antes de confirmarla**: `if tg_op = 'INSERT' or new.status is distinct from old.status` depende del orden de evaluación del `OR` (en un `INSERT`, `old` no está asignado y referenciarlo da error). Funcionaba por el cortocircuito de izquierda a derecha, que la documentación no garantiza; la condición es ahora explícita.
+- **Una decisión de diseño sin prueba**: «editar el texto de un borrador no necesita bloqueo» estaba dicha en el SQL y ninguna prueba la exigía (la mutación Z8 habría sobrevivido). Se cubrió **antes** de mutar.
+- **Lo que no he comprobado**: cómo lee esto la documentación de PostgreSQL sobre instantáneas por sentencia (este entorno no puede consultarla); lo que sé es que **las pruebas pasan** (E-77).
+
+### Qué no pudo verificarse
+
+- **Un _pooler_ o una base remota (Supabase)**: probado solo por socket Unix local. El bloqueo es de transacción (`xact`), que en principio es compatible con un _pooler_ en modo transacción, pero **no lo probé**.
+- **El coste de la contención y de las políticas RLS con más datos** (la otra mitad de F4-8): sin medir.
+- **Transacciones largas** (bloquean ese destino y campo hasta terminar) y **varios campos por transacción** (podrían dar `40P01`): la interfaz de autoría (F4-2) deberá usar transacciones cortas.
+- **Estabilidad en CI**: las pruebas de concurrencia son las más propensas a ser intermitentes; en local no fallaron en 9 repeticiones, pero `ci.yml` nunca se ejecutó (no hay remoto).
+- Todo lo anterior: contenido real (la instantánea sigue **vacía**), lectores de pantalla reales, Chromium 141 local frente a 156 en CI.
+
+### Decisiones que necesitan a una persona (no puedo tomarlas yo)
+
+Las nueve de la 4d. Sin cambios.
+
+### Pendiente
+
+Coste de las políticas RLS y _pooler_ (F4-8, segunda mitad), T-16, T-14, T-15, F4-17b, F4-14, F4-16, F4-6, F4-2 y las decisiones de arriba. Ver `docs/backlog.md`.
+
+### Siguiente acción concreta
+
+Lo independiente de las personas **dentro del modelo de contenido** está agotado; lo que queda necesita decisión o contenido (F4-2, F4-14, F4-16, F4-6) o un entorno con red (T-15). Quedan dos deudas técnicas locales menores (T-14, medir el coste RLS). Lo que más valor da sigue siendo una sesión corta contigo: umbrales (F4-1), **un** resumen real con fuente primaria y su idioma, y si se conecta un remoto.
