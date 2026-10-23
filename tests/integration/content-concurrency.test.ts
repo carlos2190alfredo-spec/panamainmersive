@@ -225,6 +225,26 @@ describe('versiones: dos borradores del mismo campo a la vez', () => {
   });
 });
 
+describe('lo que NO necesita esperar', () => {
+  it('editar el texto de un borrador no espera a quien está creando otra versión del mismo campo', async () => {
+    const destinationId = await draftDestination();
+    const existing = await db.asCommit('authenticated', ids.editor, (c) =>
+      createDraft(c, { destinationId }),
+    );
+    const creator = await openSession('authenticated', ids.editor);
+    await createDraft(creator.client, { destinationId }); // retiene el bloqueo del campo
+    const editor = await openSession('authenticated', ids.editor);
+    await within(
+      5000,
+      editor.client.query(
+        "update public.field_assertions set original_text = '[prueba] editado' where id = $1",
+        [existing],
+      ),
+      'editar el texto de un borrador',
+    );
+  });
+});
+
 describe('verificación: dos personas revisoras a la vez sobre el mismo campo', () => {
   it('v1 y v2 a la vez: la segunda espera, reemplaza a la primera y no falla (antes: 23505)', async () => {
     const destinationId = await draftDestination();

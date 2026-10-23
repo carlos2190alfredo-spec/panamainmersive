@@ -5,7 +5,8 @@ que ejercen sus garantías. Uso:  python3 scripts/mutation/db.py [ID …]   (p. 
 Las mutaciones se aplican sobre las definiciones VIGENTES (la 0008 reemplaza funciones de la 0007: mutar la 0007 no
 afectaría a nada y «sobrevivir» no diría nada). Etiquetas: F = congelación/identidad, T = traducciones y evidencia,
 G = privilegios de columna, P = políticas RLS y vista, A = auditoría, D = semántica de días, E = exportador,
-C = fuentes de solo inserción, Y = idioma de las fuentes (migración 0010 y exportador).
+C = fuentes de solo inserción, Y = idioma de las fuentes (migración 0010 y exportador),
+Z = serialización por destino y campo (migración 0011).
 """
 import sys
 from lib import main, run_vitest
@@ -20,10 +21,13 @@ TESTS = [
     "tests/integration/audit.test.ts",
     "tests/integration/translations.test.ts",
     "tests/integration/content-language.test.ts",
+    "tests/integration/content-concurrency.test.ts",
 ]
 M07='db/migrations/0007_content_model.sql'
 M08='db/migrations/0008_content_hardening.sql'
 M10='db/migrations/0010_source_language.sql'
+M11='db/migrations/0011_serialize_assertions.sql'
+LOCK="perform pg_advisory_xact_lock(hashtextextended(new.destination_id::text || ':' || new.field_key, 0));"
 EXP='scripts/content/export-lib.ts'
 LCHK="language ~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$'"
 CC="""  content_changed :=
@@ -111,6 +115,14 @@ MUTS=[
  ('Y8 BD: sin ancla de inicio',M10,"language ~ '^[a-z]{2,3}","language ~ '[a-z]{2,3}"),
  ('Y9 BD: sin ancla de fin',M10,"(-([A-Z]{2}|[0-9]{3}))?$');","(-([A-Z]{2}|[0-9]{3}))?');"),
  ('Y10 BD: idioma de hasta 8 letras',M10,"language ~ '^[a-z]{2,3}(-","language ~ '^[a-z]{2,8}(-"),
+ ('Z1 sin bloqueo: la serialización no hace nada',M11,"    "+LOCK,"    perform 1;"),
+ ('Z2 las verificaciones no se serializan',M11,"    lock_needed := new.status is distinct from old.status;","    lock_needed := false;"),
+ ('Z3 la creación de borradores no se serializa',M11,"    lock_needed := true;","    lock_needed := false;"),
+ ('Z4 el bloqueo no distingue el campo (solo el destino)',M11,"hashtextextended(new.destination_id::text || ':' || new.field_key, 0)","hashtextextended(new.destination_id::text, 0)"),
+ ('Z5 el bloqueo no distingue el destino (solo el campo)',M11,"hashtextextended(new.destination_id::text || ':' || new.field_key, 0)","hashtextextended(new.field_key, 0)"),
+ ('Z6 el disparador deja de ir el primero',M11,"create trigger field_assertions_00_serialize before insert or update","create trigger field_assertions_zz_serialize before insert or update"),
+ ('Z7 el disparador no corre al actualizar',M11,"field_assertions_00_serialize before insert or update on public.field_assertions","field_assertions_00_serialize before insert on public.field_assertions"),
+ ('Z8 se bloquea en cada actualización (también al editar texto)',M11,"    lock_needed := new.status is distinct from old.status;","    lock_needed := true;"),
 ]
 
 
