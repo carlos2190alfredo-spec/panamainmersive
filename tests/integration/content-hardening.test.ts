@@ -221,6 +221,11 @@ describe('R-4 · la BD no acepta lo que el exportador rechazaría (DB ⊆ domini
 
   it('enlaces: lo que la BD acepta, new URL() también', async () => {
     const urls = [
+      // Las cuatro del hallazgo original (el CHECK de la 0007 las aceptaba y `new URL()` las rechaza)
+      'https://?x',
+      'https://:80',
+      'https://%zz',
+      'https://[::1',
       'https://%',
       'https://:1',
       'https://user@',

@@ -115,10 +115,12 @@ DATABASE_URL=postgresql://… pnpm content:export --check     # sale con 1 si el
 ```
 
 - **Solo lee**, con el rol `anon` y en una transacción de solo lectura: sale únicamente lo verificado, vigente, no reemplazado y de destinos publicados, sin identidades de personas.
-- **Revalida** todo con las puertas del dominio. Si algo no cuadra **lanza y no escribe nada** (no repara ni recorta). Lo mismo hace el build con un `published.json` inválido.
-- Una base que **no** sea local exige `CONTENT_CONFIRM_REMOTE=<host>`. **No se ha exportado desde ninguna base remota.**
+- **Revalida** con las puertas del dominio todo lo que la instantánea permite comprobar (no las dos de identidad, que `anon` no puede leer: ADR-0020). Si algo no cuadra **lanza y no escribe nada** (no repara ni recorta). Lo mismo hace el build con un `published.json` incoherente. **No** detecta uno falsificado con coherencia (F4-14): la barrera real es la revisión del `git diff`.
+- Una base que **no** sea local exige `CONTENT_CONFIRM_REMOTE=<host>`, y el host que cuenta es el que **`pg` resuelve** (`?host=`, socket, `[::1]`); una URL que no se puede interpretar se rechaza **sin mostrarla**. La guardia es por **nombre**: un túnel a producción en `localhost` se ve como local. **No se ha exportado desde ninguna base remota.**
+- **Los argumentos son estrictos** (código 2 ante lo desconocido o incompleto: `--chek`, `--check=true`, `--out` sin valor, `--check` con `--dry-run`): el modo por defecto escribe el archivo versionado.
 - Revisa el `git diff` de `data/content/published.json` antes de desplegar: es el contenido que verá el público.
 - **Una disputa o retirada hecha en la BD no llega a la web hasta exportar y desplegar** (F4-4).
+- **La caducidad se aplica al regenerar, no a medianoche**: la ficha y el sitemap se regeneran cada hora, pero ISR es _stale-while-revalidate_ (la primera visita tras el plazo recibe la versión anterior; sin tráfico no hay regeneración). `pnpm check:bundle` comprueba que ambos tienen `revalidate` en el build. Regeneración programada: F4-16.
 - `pnpm test:e2e:content` prueba todo el recorrido con contenido **sintético** en una base temporal y una copia temporal de la app (`.e2e-content-app/`, ignorada por git y borrada al terminar): no toca `data/content/published.json` ni el build del proyecto.
 
 ### 8.1 Exclusiones al exportar y cambio de umbrales (ADR-0020)

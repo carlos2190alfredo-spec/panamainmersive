@@ -15,7 +15,8 @@ import { codePointLength, verificationIssues } from './gates';
 
 /**
  * Instantánea PUBLICADA del contenido (`data/content/published.json`). La produce `pnpm content:export` leyendo la BD
- * como `anon` (la RLS decide qué sale) y la revalida con las mismas puertas del dominio. La aplicación solo lee
+ * como `anon` (la RLS decide qué sale) y la revalida con las puertas del dominio, salvo las dos de identidad
+ * (`verifier_*`: `anon` no puede leer personas; ADR-0020). La aplicación solo lee
  * este archivo: sin BD, el contenido es el de la última exportación. No lleva identidades de personas.
  * Se usa solo en el servidor (zod no debe viajar al navegador: E-51).
  */

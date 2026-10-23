@@ -40,8 +40,10 @@ export type GateCode = (typeof GATE_CODES)[number];
 
 export interface GateOptions {
   /**
-   * `required` (datos de la BD): se comprueban verificador y autor. `unavailable` (instantánea publicada): no
-   * lleva identidades, así que esa puerta la garantiza el exportador contra la BD.
+   * `required` (datos de la BD): se comprueban verificador y autor. `unavailable` (instantánea publicada): no lleva
+   * identidades (`anon` no puede leerlas), así que NI el exportador NI el cargador revalidan `verifier_missing` ni
+   * `verifier_is_author`: solo se garantizan al verificar, con el disparador y el `CHECK` de la BD. Quien edite a mano
+   * `published.json` no tropieza con ellas (docs/security.md, ADR-0020).
    */
   readonly people: 'required' | 'unavailable';
 }

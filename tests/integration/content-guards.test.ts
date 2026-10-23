@@ -15,7 +15,7 @@ import {
 /**
  * Garantías del modelo de contenido que NINGUNA prueba ejercía, descubiertas por una revisión independiente que
  * aplicó mutaciones al SQL y comprobó que la suite seguía verde (22 de 39 sobrevivían). Cada prueba de aquí mata
- * al menos una de esas mutaciones: se comprueba con `docs/testing.md` (procedimiento de mutación) y no por ser
+ * al menos una de esas mutaciones: se comprueba con `python3 scripts/mutation/db.py` (README en esa carpeta) y no por ser
  * «obvias». Son garantías de seguridad, no de comodidad:
  *   · lo verificado es inmutable columna por columna (si no, se cambia lo verificado sin volver a verificarlo);
  *   · la autoría y la identidad no se reescriben (si no, «nadie verifica lo que redactó» se salta);

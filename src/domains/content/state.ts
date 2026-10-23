@@ -38,7 +38,7 @@ export function fieldState(
   if (!appliesTo(field, kind)) return { status: 'UNKNOWN', reason: 'not_applicable' };
 
   const mine = assertions.filter((a) => a.fieldKey === field.key);
-  // La instantánea no lleva identidades: esa puerta la garantiza el exportador contra la BD.
+  // La instantánea no lleva identidades (`anon` no puede leerlas): `verifier_*` solo las comprueba la BD al verificar.
   const current = mine
     .filter(
       (a) =>

@@ -13,8 +13,9 @@ import {
  *
  * Lee como `anon` en una transacción de SOLO LECTURA y con una instantánea consistente: la RLS decide qué sale
  * (verificado, vigente, no reemplazado, destino publicado, traducciones humanas publicadas) y los privilegios por columna
- * impiden siquiera pedir identidades de personas. Después REVALIDA todo con las puertas del dominio y rechaza la
- * instantánea entera si algo no cuadra: no repara ni omite en silencio.
+ * impiden siquiera pedir identidades de personas. Después REVALIDA con las puertas del dominio todo lo que una
+ * instantánea permite comprobar (no las dos de identidad: `anon` no puede leerlas) y rechaza la instantánea entera si
+ * algo no cuadra: no repara ni omite en silencio. Una exclusión por umbrales endurecidos es la única excepción (ADR-0020).
  */
 const ISO_INSTANT = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const instant = (column: string) => `to_char(${column} at time zone 'UTC', ${ISO_INSTANT})`;

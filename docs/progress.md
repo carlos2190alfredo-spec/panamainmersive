@@ -1,19 +1,19 @@
 # Progreso
 
-Última actualización: **2026-10-21**. Proyecto nuevo en `/home/user/panama-immersive` (`/home/user` estaba vacío: no se ha tocado nada fuera de esta carpeta).
+Última actualización: **2026-10-23**. Proyecto nuevo en `/home/user/panama-immersive` (`/home/user` estaba vacío: no se ha tocado nada fuera de esta carpeta).
 
 Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una prueba pasando) · **BLOCKED** (falta credencial/acceso/decisión externa) · **DEFERRED** (pospuesto a propósito).
 
 ## Estado por fase
 
-| Fase                      | Estado                                                                                                                         | Notas                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                     | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00          |
-| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                        | Detalle abajo                                                                  |
-| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                       | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                    |
-| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                    | Entregas 3, 3b, 3c y 3d; cierre abajo                                          |
-| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019); **sin ninguna afirmación verificada real** | Entrega 4a; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5–10                      | PENDIENTE                                                                                                                      | Ver `docs/backlog.md`                                                          |
+| Fase                      | Estado                                                                                                                                                                                         | Notas                                                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 0 — Discovery             | **VERIFIED** (documentación completa, evidencias con fiabilidad declarada)                                                                                                                     | Fuentes oficiales no accesibles: `docs/research/evidence-log.md` E-00                |
+| 1 — Foundation            | **VERIFIED** salvo CI (IMPLEMENTED, no ejecutable aquí)                                                                                                                                        | Detalle abajo                                                                        |
+| 2 — Exploración de Panamá | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                       | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                          |
+| 3 — GIS                   | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                    | Entregas 3, 3b, 3c y 3d; cierre abajo                                                |
+| 4 — Destinos              | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020); **sin ninguna afirmación verificada real** | Entregas 4a y 4b; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
+| 5–10                      | PENDIENTE                                                                                                                                                                                      | Ver `docs/backlog.md`                                                                |
 
 ## Entrega 1 — Foundation
 
@@ -429,3 +429,68 @@ Contenido real (F4-6), interfaz de autoría y revisión (F4-2), medios e histori
 ### Siguiente acción concreta
 
 Con una persona editora: (1) validar o cambiar los umbrales de `src/domains/content/fields.ts` (y su espejo en la migración, con una migración **nueva**); (2) elegir **un** destino y redactar su resumen con una fuente primaria oficial, verificarlo por el flujo y ejecutar `pnpm content:export` para ver la primera ficha real. Lo siguiente que más valor da sin depender de nadie es la **interfaz de autoría** (F4-2): hoy el cuello de botella es cargar contenido por SQL.
+
+## Entrega 4b — Fase 4: endurecimiento tras dos revisiones independientes y línea base de rendimiento
+
+Alcance: **no hay funcionalidad nueva de contenido**. Se encargaron dos tandas de revisión adversarial a agentes sin contexto previo para romper lo que construí en la 4a; esta entrega es lo que se halló, lo que se corrigió y lo que **no** se pudo comprobar. Además, una línea base de rendimiento (M-06).
+
+### Qué funciona (VERIFIED en local, 2026-10-23)
+
+- **Migraciones `0008` y `0009`** (la `0007` no se toca): solo quien creó un borrador lo edita; las traducciones no sobreviven a un cambio del original y `translated_by` es inmutable; una versión anterior no reemplaza a una posterior; vigencia coherente (`valid_from` ≤ día de verificación, `valid_until` no vencida); `minCount` cuenta documentos distintos; **la BD es al menos tan estricta como el dominio y el exportador**; ids asignados por el servidor, tamaños en puntos de código, enlaces que `new URL()` acepta, «en blanco» como `trim()`; vista `security_barrier`; función de puertas revocada a `authenticated`; **`source_records` de solo inserción también para el propietario** (0009).
+- **Exportador**: excluye **con ruido** (código de salida 4) lo que ya no cumple el registro vigente y sigue **fallando** ante lo malformado; escritura **atómica** (con limpieza del temporal si falla el reemplazo); la instantánea valida `generatedAt` y los avisos; la edad se cuenta en el día de Panamá.
+- **CLI endurecidos** (`db:migrate`, `db:import-areas`, `content:export`): la guardia de «base remota» decide sobre el host que **`pg` resuelve**; una URL malformada se rechaza **sin mostrarla**; los argumentos son **estrictos** (código 2).
+- **Ficha**: sin el aviso contradictorio «no está redactada» junto a un campo vencido; la fecha de exportación se dice «del sitio» y no sale en un destino vacío; «Fiabilité :» con espacio duro; el idioma del original se nombra en el idioma de la página; sitemap con `revalidate` (medido: antes `false`), verificado en el build por `pnpm check:bundle`.
+- **Pruebas de mutación reproducibles desde el repositorio** (`scripts/mutation/`): **80 mutaciones, 0 supervivientes** (51 de SQL y exportador, 23 de TypeScript, 6 del CLI). Una (`D1`, el reloj) solo se detecta entre las 00:00 y las 05:00 UTC y la herramienta lo avisa.
+- **Línea base de rendimiento** (`pnpm perf:vitals`, M-06): móvil **emulado**; las páginas de texto pintan en ≈ 0,4–0,5 s sin cambios de diseño; Explorar tarda ≈ 3,1 s hasta mapa listo (WebGL por software: **no representativo**). Informativa, no es una puerta.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm typecheck && pnpm lint && pnpm format && pnpm test         # 787 unitarias
+pnpm test:integration                                            # 336 (BD temporal; incluye el CLI como proceso real)
+SITE_ENV=development pnpm build && pnpm check:bundle             # presupuestos + `revalidate` de la ficha y el sitemap
+pnpm test:e2e && pnpm test:e2e:db && pnpm test:e2e:content       # 160 · 7 · 21
+python3 scripts/mutation/db.py                                    # ≈ 7 min · también ts.py (≈ 2 min) y cli.py (≈ 1 min)
+pnpm perf:vitals --runs 5                                         # línea base emulada (docs/performance.md M-06)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-23)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **787** (40 ficheros) · `pnpm test:integration`: **336** (16 ficheros; **43** de garantías del modelo de contenido, **13** del CLI como proceso, 0 clústeres huérfanos) · `pnpm test:pipelines`: **90** · `pnpm test:e2e`: **160** · `pnpm test:e2e:db`: **7** · `pnpm test:e2e:content`: **21** (con axe en cinco idiomas y dos temas) · `pnpm check:bundle`: OK (ficha 191,1 KB, Explorar 205,4 KB, mapa diferido 460,7 KB gzip; **la ficha y el sitemap se regeneran cada 3600 s**) · **80 mutaciones, 0 supervivientes** (`scripts/mutation/`).
+
+### Lo que se encontró y cambió (honestamente)
+
+- **Las dos revisiones terminaron a medias y eso me engañó una vez.** La primera ejecución agotó el límite de sesión: solo 2 de 7 dimensiones y **ningún** verificador. **Mi script contaba un verificador caído como «no refutado» y marcó los 16 hallazgos como «confirmados»**: era un error mío. Los traté como no verificados y los reproduje uno a uno con pruebas rojas; el script se corrigió (un verificador que falla ya no confirma nada). La segunda tanda terminó igual: 4 revisores con **31 hallazgos**, **ningún verificador** y **el revisor de orquestación y CI no corrió**. Los comprobé yo contra HEAD: **5** ya estaban corregidos (solo faltaba su guarda), **22** eran reales y se corrigieron con prueba roja → verde, **4** eran afirmaciones de documentación exageradas o falsas.
+- **Hallazgos graves de la primera tanda** (ADR-0020): la separación de funciones tenía un hueco (un admin reescribía el borrador de otra persona y lo verificaba) y una traducción «revisada» podía acompañar a un texto distinto del que revisó la persona.
+- **Lo que la segunda tanda demostró sobre mis pruebas**: **22 de 39 mutaciones del SQL y 12 de 23 de la ruta de producción sobrevivían con la suite en verde** y no eran equivalentes: `created_by` mutable (un editor podía reasignarse la autoría), `destination_id`/`field_key` mutables en lo verificado, la procedencia de una traducción (lavar una automática como humana), `reviewed_by` legible por `anon`, auditoría sin cubrir dos tablas, exportador sin `read only`, y: si `state.ts` exigiera identidades, **toda ficha real** quedaría «sin datos» con la suite verde (mis fixtures siempre llevaban autor y verificador).
+- **Afirmaciones mías que eran falsas o exageradas, ya corregidas** (`docs/security.md`, ADR-0019 con nota explícita): «ni el propietario lo salta (probado)» (falso para las fuentes); «la ficha se regenera cada hora» presentado como control suficiente (ISR es _stale-while-revalidate_) y el sitemap **no se regeneraba**; «revalida todo con las puertas del dominio» (las dos de identidad no se pueden revalidar con `anon`); «probado columna por columna» (se probaban algunas); «las que sobreviven son equivalentes» (22 no lo eran); «`published.json` editado a mano rompe el build» (solo si es incoherente); el índice de ADR con filas sin «Estado».
+- **Errores de mis propias pruebas descubiertos al corregir**: exportaban con un `NOW` fijo anterior al `verified_at` real de la BD (pasaban solo porque nadie comparaba los dos relojes); una prueba de «lavado» de traducciones también cambiaba `translated_by`, que otra cláusula ya rechazaba con el mismo mensaje, así que no aislaba la procedencia (la mutación sobrevivió y la reescribí); mi primer arnés de mutación **contaba como «superviviente» una mutación que rompía la migración** (corría 0 pruebas) y el ancla de otra mutación dejó de coincidir tras reformatear con Prettier (el script abortó antes de aplicar nada: lo vi por el error, no por un falso «verde»). Desde ahí las reglas están en `scripts/mutation/lib.py`.
+- **Hallazgos que no se mantuvieron**: `valid_from` «ignorado» (ya lo rechazaba la 0008), `evidence_insecure_url` más débil en la BD (la 0008 lo igualó), >20 evidencias o fechas infinitas (ya cubiertas), escritura no atómica (ya lo era; sí faltaba limpiar el temporal).
+
+### Qué no pudo verificarse
+
+- **La dimensión de orquestación y CI no se revisó** (F4-17): `.github/workflows/ci.yml` y los scripts de orquestación están **IMPLEMENTED, no VERIFIED** fuera de este entorno.
+- **Nada con contenido real**: la instantánea publicada sigue **vacía** y todo usa datos sintéticos.
+- **`published.json` falsificado con coherencia** no se detecta: no hay hash, firma ni comprobación contra la BD en CI. El único control real es la revisión del `git diff` (F4-14).
+- **Caducidad en la primera visita**: ISR es _stale-while-revalidate_; un dato vencido puede mostrarse como vigente a la primera persona tras un periodo sin visitas. No hay regeneración programada (F4-16).
+- **`app.panama_today()` en UTC** solo se detecta entre las 00:00 y las 05:00 UTC (no se puede falsear `now()`).
+- **`generateMetadata` de la ficha** no tiene prueba unitaria (usa APIs de solicitud de Next); lo cubren `indexingOf` (compartido con el sitemap, que sí se prueba) y el E2E con el estado real de la interfaz. La rama «publicada» de un E2E no existe: con el estado real nada es publicable.
+- **Los datos de las fuentes se pintan sin `lang`** (WCAG 3.1.2, AA): `source_records` no guarda su idioma (F4-15).
+- **Nada se ejecutó contra una base remota ni contra Supabase**; la guardia de «base remota» es por nombre (un túnel a `localhost` pasa).
+
+### Decisiones que necesitan a una persona (no puedo tomarlas yo)
+
+1. **F4-1** validar los umbrales de evidencia por campo (¿basta **una** fuente oficial para un peligro?).
+2. **F4-3** ¿se muestran traducciones automáticas etiquetadas del contenido, o solo original/humana (hoy)?
+3. **F4-5** criterio legal sobre citar fuentes y política de derechos por fuente.
+4. **F4-4 y F4-16** cadencia de exportación/despliegue y regeneración programada (importa sobre todo para seguridad).
+5. **F4-12** ¿hace falta co-redacción de borradores? (hoy solo quien lo creó lo edita).
+6. **F4-14** cómo se protege la procedencia de `published.json` antes de publicar contenido real (CODEOWNERS, comprobación en CI contra una base, o firma).
+
+### Pendiente
+
+Revisar orquestación y CI (F4-17), procedencia de la instantánea (F4-14), idioma de las fuentes (F4-15), regeneración programada (F4-16), ejecutar las mutaciones en CI (T-13), contenido real (F4-6), interfaz de autoría (F4-2) y las decisiones de arriba. Ver `docs/backlog.md`.
+
+### Siguiente acción concreta
+
+Con una persona editora, igual que en la 4a: validar los umbrales (F4-1) y redactar **un** resumen real con fuente primaria oficial para ver la primera ficha. Antes de **publicar** cualquier contenido real: decidir F4-14 (si no, un `published.json` coherente pero inventado pasa todos los controles) y F4-16. Lo que más valor da sin depender de nadie sigue siendo la **interfaz de autoría** (F4-2).
