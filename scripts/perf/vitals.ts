@@ -11,16 +11,15 @@
  * su tiempo NO es representativo. No mide INP (requiere interacción real) ni FPS. No es una puerta: no afirma
  * cumplimiento, solo da números con su contexto.
  */
-import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { join } from 'node:path';
-import { chromium, devices } from '@playwright/test';
+import { chromium, devices, type Browser } from '@playwright/test';
 import { launchOptions } from '../../e2e/launch-options';
 import { PATHS } from '../../e2e/helpers';
+import { exitWith, pickPort, startServer, waitForServer, withTermination } from '../lib/e2e-run';
 
 const ROOT = process.cwd();
-const PORT = Number(process.env.PERF_PORT ?? 3400);
 const args = process.argv.slice(2);
 const value = (name: string) => {
   const i = args.indexOf(name);
@@ -104,28 +103,6 @@ const median = (xs: number[]): number => {
 };
 const range = (xs: number[]): [number, number] => [Math.min(...xs), Math.max(...xs)];
 
-async function waitFor(url: string, ms: number): Promise<void> {
-  const deadline = Date.now() + ms;
-  while (Date.now() < deadline) {
-    try {
-      if ((await fetch(url)).ok) return;
-    } catch {
-      // aún no responde
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`El servidor no respondió en ${ms / 1000} s: ${url}`);
-}
-
-function stopServer(child: ChildProcess | undefined): void {
-  if (!child?.pid) return;
-  try {
-    process.kill(-child.pid, 'SIGTERM');
-  } catch {
-    // ya terminó
-  }
-}
-
 async function main(): Promise<number> {
   if (!existsSync(join(ROOT, '.next/BUILD_ID'))) {
     console.log(
@@ -134,19 +111,27 @@ async function main(): Promise<number> {
     return 0;
   }
   const mapData = existsSync(join(ROOT, 'public/data/panama-basemap.pmtiles'));
-  const server = spawn(
+  // Puerto libre elegido por el sistema (o el de PERF_PORT, que debe estarlo) y servidor PROPIO verificado: el mismo
+  // criterio que los orquestadores de pruebas (scripts/lib/e2e-run.ts).
+  const port = await pickPort(process.env.PERF_PORT);
+  const server = startServer(
     process.execPath,
-    [join(ROOT, 'node_modules/next/dist/bin/next'), 'start', '-p', String(PORT)],
-    {
-      cwd: ROOT,
-      detached: true,
-      stdio: 'ignore',
-      env: { ...process.env, SITE_ENV: 'development' },
-    },
+    [join(ROOT, 'node_modules/next/dist/bin/next'), 'start', '-p', String(port)],
+    { cwd: ROOT, env: { ...process.env, SITE_ENV: 'development' } },
   );
-  const browser = await chromium.launch(launchOptions);
-  try {
-    await waitFor(`http://localhost:${PORT}/api/health`, 60_000);
+  // Una sola limpieza (servidor Y navegador) aunque la pidan a la vez una señal y el `finally`; sin ella, Ctrl+C dejaba
+  // `next start` huérfano y, si fallaba el arranque del navegador, también.
+  let opened: Browser | undefined;
+  let cleaning: Promise<void> | undefined;
+  const cleanup = (): Promise<void> =>
+    (cleaning ??= (async () => {
+      server.stop();
+      await opened?.close();
+    })());
+  return withTermination(cleanup, async () => {
+    const browser = await chromium.launch(launchOptions);
+    opened = browser;
+    await waitForServer(`http://localhost:${String(port)}/api/health`, 60_000, server);
 
     // Calibración: tiempo de un bucle fijo SIN limitación de CPU (da la escala de esta máquina).
     const cal = await browser.newPage();
@@ -202,7 +187,7 @@ async function main(): Promise<number> {
           requests += 1;
         });
         await page.addInitScript(INIT_SCRIPT);
-        await page.goto(`http://localhost:${PORT}${target.path}`, { waitUntil: 'load' });
+        await page.goto(`http://localhost:${String(port)}${target.path}`, { waitUntil: 'load' });
         if (target.map) {
           await page
             .waitForFunction(
@@ -282,16 +267,7 @@ async function main(): Promise<number> {
       console.log(`\nResultados en bruto: ${JSON_OUT}`);
     }
     return 0;
-  } finally {
-    await browser.close();
-    stopServer(server);
-  }
+  });
 }
 
-main().then(
-  (code) => process.exit(code),
-  (error: unknown) => {
-    console.error(error);
-    process.exit(1);
-  },
-);
+exitWith(main);

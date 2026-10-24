@@ -223,12 +223,28 @@ export function runCommand(
   return { child, result };
 }
 
+let requestedExit: number | undefined;
+
+/** ¿Llegó una señal de terminación a un guion que registró `onTerminate`? */
+export function wasInterrupted(): boolean {
+  return requestedExit !== undefined;
+}
+
+/**
+ * Código de salida de un guion: si lo interrumpió una señal, el convencional (130/143) y NO el 1 de un fallo que es solo
+ * consecuencia de la interrupción (el build o Playwright mueren con el grupo y el guion lo contaba como «falló»).
+ */
+export function exitCodeFor(code: number): number {
+  return requestedExit ?? code;
+}
+
 /**
  * Registra la limpieza para SIGINT/SIGTERM. Se ejecuta UNA vez aunque lleguen más señales mientras limpia (con
  * `process.once` la segunda señal restauraba la acción por defecto y mataba la limpieza a medias) y después sale con
  * 130/143. Devuelve una función que quita los manejadores.
  */
 export function onTerminate(cleanup: () => void | Promise<void>): () => void {
+  requestedExit = undefined; // una ejecución nueva
   let running = false;
   const listeners = (
     [
@@ -239,6 +255,7 @@ export function onTerminate(cleanup: () => void | Promise<void>): () => void {
     const listener = () => {
       if (running) return;
       running = true;
+      requestedExit = code;
       Promise.resolve()
         .then(cleanup)
         .catch((error: unknown) => {
@@ -254,4 +271,43 @@ export function onTerminate(cleanup: () => void | Promise<void>): () => void {
   return () => {
     for (const [signal, listener] of listeners) process.off(signal, listener);
   };
+}
+
+/**
+ * Ejecuta `body` con su limpieza registrada para SIGINT/SIGTERM y la garantiza al terminar (bien, mal o interrumpido).
+ * El ORDEN importa y por eso vive aquí, una sola vez: primero se ESPERA la limpieza y solo después se sueltan los
+ * manejadores. Al revés, una segunda señal (la que reenvía `tsx`, o un segundo Ctrl-C) caía con la acción por defecto
+ * y mataba el proceso a mitad de limpiar, dejando clúster, servidor y copia de la app.
+ */
+export async function withTermination<T>(
+  cleanup: () => void | Promise<void>,
+  body: () => Promise<T>,
+): Promise<T> {
+  // La limpieza se ejecuta UNA vez aunque la pidan a la vez una señal y el `finally` (el llamante no tiene que ser idempotente).
+  let cleaning: Promise<void> | undefined;
+  const once = (): Promise<void> => (cleaning ??= Promise.resolve().then(cleanup));
+  const untrack = onTerminate(once);
+  try {
+    return await body();
+  } finally {
+    await once();
+    untrack();
+  }
+}
+
+/**
+ * Punto de entrada de un guion: sale con el código de `main` o, si lo interrumpió una señal, con el convencional
+ * (130/143) y SIN imprimir como error lo que es solo consecuencia de la interrupción (el build o Playwright mueren con
+ * el grupo y el guion lo contaba como «falló» con salida 1).
+ */
+export function exitWith(main: () => Promise<number>): void {
+  main().then(
+    (code) => {
+      process.exit(exitCodeFor(code));
+    },
+    (error: unknown) => {
+      if (!wasInterrupted()) console.error(error);
+      process.exit(exitCodeFor(1));
+    },
+  );
 }

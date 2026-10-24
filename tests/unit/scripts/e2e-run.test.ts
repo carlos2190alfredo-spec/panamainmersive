@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  exitCodeFor,
   isCi,
   isPortFree,
   omission,
@@ -14,6 +15,7 @@ import {
   startServer,
   stopGroup,
   waitForServer,
+  wasInterrupted,
 } from '../../../scripts/lib/e2e-run';
 
 /**
@@ -287,5 +289,87 @@ describe('limpieza ante una señal', () => {
     // Un solo `inicio`: con la guardia quitada cada señal arrancaba otra limpieza (3 inicios).
     expect(marks).toBe('inicio\nlimpieza\n');
     expect(code).toBe(130);
+  });
+});
+
+describe('un guion completo: `withTermination` y `exitWith`', () => {
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+  });
+
+  async function run(mode: 'ok' | 'fail' | 'derived', signals: [string, number][] = []) {
+    const dir = mkdtempSync(join(tmpdir(), 'pi-orchestrated-'));
+    dirs.push(dir);
+    const marks = join(dir, 'marks.txt');
+    const child = spawn(
+      process.execPath,
+      ['--import', 'tsx', 'tests/unit/scripts/fixtures/orchestrated-fixture.ts', marks, mode],
+      { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    let stderr = '';
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    const exited = new Promise<number | null>((resolve) =>
+      child.once('exit', (code) => resolve(code)),
+    );
+    await new Promise<void>((resolve, reject) => {
+      child.stdout.on('data', (chunk: Buffer) => {
+        if (chunk.toString().includes('listo')) resolve();
+      });
+      child.once('error', reject);
+      child.once('exit', () => {
+        resolve(); // en `ok` y `fail` el guion puede terminar antes de que se lea la línea
+      });
+    });
+    for (const [signal, waitMs] of signals) {
+      child.kill(signal as NodeJS.Signals);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+    const code = await exited;
+    return { code, stderr, marks: existsSync(marks) ? readFileSync(marks, 'utf8') : '' };
+  }
+
+  it('sin señal: la limpieza se ejecuta igualmente y el código es el del guion', async () => {
+    expect(await run('ok')).toMatchObject({ code: 0, marks: 'inicio\nlimpieza\n', stderr: '' });
+  });
+
+  it('un fallo PROPIO se imprime y sale con 1 (la traducción a 130 solo vale con una señal)', async () => {
+    const r = await run('fail');
+    expect(r.code).toBe(1);
+    expect(r.stderr).toContain('fallo propio del guion');
+    expect(r.marks).toBe('inicio\nlimpieza\n');
+  });
+
+  it('un fallo DERIVADO de la señal sale con 130 y no se imprime como error (antes salía con 1)', async () => {
+    const r = await run('derived', [['SIGINT', 0]]);
+    expect(r.code).toBe(130);
+    expect(r.stderr).not.toContain('fallo derivado');
+    expect(r.marks).toBe('inicio\nlimpieza\n');
+  });
+
+  it('con SIGTERM, 143', async () => {
+    expect((await run('derived', [['SIGTERM', 0]])).code).toBe(143);
+  });
+
+  it('una segunda señal MIENTRAS LIMPIA no la interrumpe: se espera la limpieza antes de soltar los manejadores', async () => {
+    // El trabajo falla a los 20 ms y la limpieza dura 300 ms: la segunda y la tercera señal llegan a mitad de limpiar.
+    // Con los manejadores soltados antes (el orden antiguo) esa segunda señal mataba el proceso: solo `inicio`.
+    const r = await run('derived', [
+      ['SIGINT', 120],
+      ['SIGINT', 20],
+      ['SIGTERM', 20],
+    ]);
+    expect(r.marks).toBe('inicio\nlimpieza\n');
+    expect(r.code).toBe(130);
+  });
+});
+
+describe('código de salida de un guion', () => {
+  it('sin señales, es el propio y no hay interrupción', () => {
+    expect(wasInterrupted()).toBe(false);
+    expect(exitCodeFor(0)).toBe(0);
+    expect(exitCodeFor(7)).toBe(7);
   });
 });

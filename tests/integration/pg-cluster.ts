@@ -193,6 +193,18 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
     // la barrida es una cortesía: nunca debe impedir arrancar
   }
   const isRoot = process.getuid?.() === 0;
+  // Mientras arranca no hay manejador de señales de nadie y `execFileSync` bloquea el bucle de eventos: un Ctrl-C en ese
+  // intervalo mataba el proceso (acción por defecto) y dejaba el directorio `pi-pg-*` y, a veces, el PostgreSQL. Se
+  // RETIENEN las señales y, si llegó alguna, se limpia y se sale con el código convencional (130/143).
+  let interrupted: 130 | 143 | undefined;
+  const holdInt = () => (interrupted ??= 130);
+  const holdTerm = () => (interrupted ??= 143);
+  process.on('SIGINT', holdInt);
+  process.on('SIGTERM', holdTerm);
+  const release = () => {
+    process.off('SIGINT', holdInt);
+    process.off('SIGTERM', holdTerm);
+  };
   const dir = mkdtempSync(join(tmpdir(), 'pi-pg-'));
   const data = join(dir, 'data');
 
@@ -210,14 +222,22 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
     await execFileAsync(file, [...argv]);
   };
 
-  if (isRoot) {
-    const uid = Number(execFileSync('id', ['-u', 'postgres'], { encoding: 'utf8' }));
-    const gid = Number(execFileSync('id', ['-g', 'postgres'], { encoding: 'utf8' }));
-    chownSync(dir, uid, gid);
-  }
-
-  const port = await freePort();
+  // TODO lo que sigue a la creación del directorio va DENTRO del `try`: una señal que mate cualquier llamada síncrona
+  // (incluidas las de `id` del `chown`) debe pasar por la limpieza, no dejar el directorio atrás.
+  // Si llegó una señal mientras se esperaba algo asíncrono, no se lanza el paso siguiente (un Ctrl-C no debe esperar a
+  // `initdb`): se aborta y el `catch` limpia y sale con 130/143.
+  const checkpoint = () => {
+    if (interrupted !== undefined) throw new Error('arranque interrumpido por una señal');
+  };
+  let port: number;
   try {
+    if (isRoot) {
+      const uid = Number(execFileSync('id', ['-u', 'postgres'], { encoding: 'utf8' }));
+      const gid = Number(execFileSync('id', ['-g', 'postgres'], { encoding: 'utf8' }));
+      chownSync(dir, uid, gid);
+    }
+    port = await freePort();
+    checkpoint();
     run('initdb', [
       '-D',
       data,
@@ -230,6 +250,7 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       '--locale=C.UTF-8',
       '--no-sync',
     ]);
+    checkpoint();
     run('pg_ctl', [
       '-D',
       data,
@@ -243,7 +264,25 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       'start',
     ]);
   } catch (error) {
+    release();
+    try {
+      // Un arranque a medias puede haber dejado un postmaster vivo: se para ANTES de borrarle el directorio.
+      run('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);
+    } catch {
+      // no había servidor
+    }
     rmSync(dir, { recursive: true, force: true });
+    // El proceso hijo (initdb, pg_ctl) muere con el grupo ANTES de que el bucle de eventos vea la señal: se reconoce por
+    // cómo murió el hijo (por la señal, o con 130/143 si `runuser` la tradujo).
+    const e = error as { signal?: string | null; status?: number | null };
+    const byUser =
+      interrupted ??
+      (e.signal === 'SIGINT' || e.status === 130
+        ? 130
+        : e.signal === 'SIGTERM' || e.status === 143
+          ? 143
+          : undefined);
+    if (byUser !== undefined) process.exit(byUser);
     throw error;
   }
 
@@ -295,6 +334,12 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       // mejor esfuerzo: ya se está saliendo
     }
   });
+  release();
+  if (interrupted !== undefined) {
+    // La señal llegó con el arranque ya terminado (o en una espera asíncrona): se limpia y se sale como siempre.
+    stop();
+    process.exit(interrupted);
+  }
   if (options.handleSignals ?? true) {
     // `on`, no `once`: con `once`, tras la primera señal Node restaura la acción por defecto y una SEGUNDA (la que
     // reenvía `tsx`, o un segundo Ctrl-C) mataba el proceso entre `pg_ctl stop` y el borrado del directorio.

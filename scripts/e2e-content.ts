@@ -28,13 +28,14 @@ import { migrate } from './db/lib';
 import { exportPublished } from './content/export-lib';
 import { seedContent } from './e2e-content-seed';
 import {
-  onTerminate,
+  exitWith,
   pickPort,
   runCommand,
   skip,
   startServer,
   stopGroup,
   waitForServer,
+  withTermination,
   type CommandRun,
   type ServerHandle,
 } from './lib/e2e-run';
@@ -91,95 +92,87 @@ async function main(): Promise<number> {
       server?.stop();
       await Promise.all([cluster.stopAsync(), rm(APP, { recursive: true, force: true })]);
     })());
-  const untrack = onTerminate(cleanup);
-  try {
-    const admin = new Client({
-      host: cluster.host,
-      port: cluster.port,
-      user: 'postgres',
-      database: 'postgres',
-    });
-    await admin.connect();
-    await admin.query('create database pi_e2e_content');
-    await admin.end();
-
-    const owner = new Client({
-      host: cluster.host,
-      port: cluster.port,
-      user: 'postgres',
-      database: 'pi_e2e_content',
-    });
-    await owner.connect();
-    await migrate(owner, join(ROOT, 'db/migrations'));
-    await owner.query('set search_path = public, extensions');
-    await seedContent(owner);
-    const { snapshot, excluded } = await exportPublished(owner, new Date());
-    if (excluded.length > 0)
-      throw new Error(`La siembra sintética no debería excluir nada: ${JSON.stringify(excluded)}`);
-    await owner.end();
-    console.log(
-      `Contenido exportado: ${String(snapshot.assertions.length)} afirmaciones, ${String(snapshot.notices.length)} avisos.`,
-    );
-
-    prepareApp(serializeSnapshot(snapshot));
-    console.log('Construyendo la copia de la aplicación con ese contenido…');
-    // Asíncrono: con `spawnSync` el bucle de eventos quedaba bloqueado y no se podía atender ninguna señal.
-    build = runCommand(process.execPath, [NEXT_BIN, 'build'], {
-      cwd: APP,
-      env: { ...process.env, SITE_ENV: 'development' },
-      timeoutMs: BUILD_TIMEOUT_MS,
-    });
-    const built = await build.result;
-    if (built.status !== 0) {
-      console.error(built.output.slice(-6000));
-      throw new Error('Falló el build de la copia.');
-    }
-
-    server = startServer(process.execPath, [NEXT_BIN, 'start', '-p', String(port)], {
-      cwd: APP,
-      env: { ...process.env, SITE_ENV: 'development' },
-    });
-    await waitForServer(`http://localhost:${String(port)}/api/health`, 60_000, server);
-
-    const child = spawn(
-      'pnpm',
-      [
-        'exec',
-        'playwright',
-        'test',
-        '--config',
-        'playwright.content.config.ts',
-        ...process.argv.slice(2),
-      ],
-      {
-        cwd: ROOT,
-        stdio: 'inherit',
-        detached: true, // su propio grupo: la limpieza lo para entero (workers incluidos) ante una señal
-        env: { ...process.env, E2E_CONTENT_PORT: String(port) },
-      },
-    );
-    playwright = child;
-    return await new Promise<number>((resolve, reject) => {
-      child.once('error', reject); // p. ej. `pnpm` fuera del PATH: antes quedaba todo huérfano
-      child.once('exit', (code) => {
-        resolve(code ?? 1);
+  return withTermination(cleanup, async () => {
+    try {
+      const admin = new Client({
+        host: cluster.host,
+        port: cluster.port,
+        user: 'postgres',
+        database: 'postgres',
       });
-    });
-  } catch (error) {
-    if (server) console.error(`\nSalida del servidor de la prueba:\n${server.tail()}\n`);
-    throw error;
-  } finally {
-    untrack();
-    await cleanup();
-  }
+      await admin.connect();
+      await admin.query('create database pi_e2e_content');
+      await admin.end();
+
+      const owner = new Client({
+        host: cluster.host,
+        port: cluster.port,
+        user: 'postgres',
+        database: 'pi_e2e_content',
+      });
+      await owner.connect();
+      await migrate(owner, join(ROOT, 'db/migrations'));
+      await owner.query('set search_path = public, extensions');
+      await seedContent(owner);
+      const { snapshot, excluded } = await exportPublished(owner, new Date());
+      if (excluded.length > 0)
+        throw new Error(
+          `La siembra sintética no debería excluir nada: ${JSON.stringify(excluded)}`,
+        );
+      await owner.end();
+      console.log(
+        `Contenido exportado: ${String(snapshot.assertions.length)} afirmaciones, ${String(snapshot.notices.length)} avisos.`,
+      );
+
+      prepareApp(serializeSnapshot(snapshot));
+      console.log('Construyendo la copia de la aplicación con ese contenido…');
+      // Asíncrono: con `spawnSync` el bucle de eventos quedaba bloqueado y no se podía atender ninguna señal.
+      build = runCommand(process.execPath, [NEXT_BIN, 'build'], {
+        cwd: APP,
+        env: { ...process.env, SITE_ENV: 'development' },
+        timeoutMs: BUILD_TIMEOUT_MS,
+      });
+      const built = await build.result;
+      if (built.status !== 0) {
+        console.error(built.output.slice(-6000));
+        throw new Error('Falló el build de la copia.');
+      }
+
+      server = startServer(process.execPath, [NEXT_BIN, 'start', '-p', String(port)], {
+        cwd: APP,
+        env: { ...process.env, SITE_ENV: 'development' },
+      });
+      await waitForServer(`http://localhost:${String(port)}/api/health`, 60_000, server);
+
+      const child = spawn(
+        'pnpm',
+        [
+          'exec',
+          'playwright',
+          'test',
+          '--config',
+          'playwright.content.config.ts',
+          ...process.argv.slice(2),
+        ],
+        {
+          cwd: ROOT,
+          stdio: 'inherit',
+          detached: true, // su propio grupo: la limpieza lo para entero (workers incluidos) ante una señal
+          env: { ...process.env, E2E_CONTENT_PORT: String(port) },
+        },
+      );
+      playwright = child;
+      return await new Promise<number>((resolve, reject) => {
+        child.once('error', reject); // p. ej. `pnpm` fuera del PATH: antes quedaba todo huérfano
+        child.once('exit', (code) => {
+          resolve(code ?? 1);
+        });
+      });
+    } catch (error) {
+      if (server) console.error(`\nSalida del servidor de la prueba:\n${server.tail()}\n`);
+      throw error;
+    }
+  });
 }
 
-main().then(
-  (code) => {
-    process.exit(code);
-  },
-  (error: unknown) => {
-    console.error(error);
-    process.exit(1);
-  },
-);
+exitWith(main);

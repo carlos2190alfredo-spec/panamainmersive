@@ -25,12 +25,13 @@ import {
 import { importAreas } from './db/import-areas-lib';
 import { migrate } from './db/lib';
 import {
-  onTerminate,
+  exitWith,
   pickPort,
   skip,
   startServer,
   stopGroup,
   waitForServer,
+  withTermination,
   type ServerHandle,
 } from './lib/e2e-run';
 
@@ -78,110 +79,100 @@ async function main(): Promise<number> {
       server?.stop();
       await cluster.stopAsync();
     })());
-  const untrack = onTerminate(cleanup);
-  try {
-    const admin = new Client({
-      host: cluster.host,
-      port: cluster.port,
-      user: 'postgres',
-      database: 'postgres',
-    });
-    await admin.connect();
-    await admin.query('create database pi_e2e');
-    await admin.end();
+  return withTermination(cleanup, async () => {
+    try {
+      const admin = new Client({
+        host: cluster.host,
+        port: cluster.port,
+        user: 'postgres',
+        database: 'postgres',
+      });
+      await admin.connect();
+      await admin.query('create database pi_e2e');
+      await admin.end();
 
-    const owner = new Client({
-      host: cluster.host,
-      port: cluster.port,
-      user: 'postgres',
-      database: 'pi_e2e',
-    });
-    await owner.connect();
-    await migrate(owner, join(ROOT, 'db/migrations'));
-    // `migrate` restaura el search_path; PostGIS vive en `extensions` (igual que Supabase y que `db:import-areas`).
-    await owner.query('set search_path = public, extensions');
-    const result = await importAreas(owner, {
-      manifestPath: manifest,
-      targetEnv: 'development',
-      policies: RIGHTS_POLICIES,
-      publish: true,
-    });
-    console.log(
-      `Importadas ${result.areas.created} áreas (publicadas) desde ${manifest.replace(`${ROOT}/`, '')}`,
-    );
+      const owner = new Client({
+        host: cluster.host,
+        port: cluster.port,
+        user: 'postgres',
+        database: 'pi_e2e',
+      });
+      await owner.connect();
+      await migrate(owner, join(ROOT, 'db/migrations'));
+      // `migrate` restaura el search_path; PostGIS vive en `extensions` (igual que Supabase y que `db:import-areas`).
+      await owner.query('set search_path = public, extensions');
+      const result = await importAreas(owner, {
+        manifestPath: manifest,
+        targetEnv: 'development',
+        policies: RIGHTS_POLICIES,
+        publish: true,
+      });
+      console.log(
+        `Importadas ${result.areas.created} áreas (publicadas) desde ${manifest.replace(`${ROOT}/`, '')}`,
+      );
 
-    // Una publicada con nombre (para el enlace profundo) y una DESPUBLICADA con nombre (debe verse como «sin ficha»).
-    const named = await owner.query<{ ovid: string; name: string }>(
-      `select a.external_ref ->> 'overture_id' as ovid, n.name
+      // Una publicada con nombre (para el enlace profundo) y una DESPUBLICADA con nombre (debe verse como «sin ficha»).
+      const named = await owner.query<{ ovid: string; name: string }>(
+        `select a.external_ref ->> 'overture_id' as ovid, n.name
          from public.geographic_areas a
          join public.geographic_area_names n on n.area_id = a.id and n.provenance = 'source_local'
         order by a.external_ref ->> 'overture_id'`,
-    );
-    const unpublished = named.rows[0];
-    const published = named.rows.at(-1);
-    if (!unpublished || !published || unpublished.ovid === published.ovid) {
-      throw new Error('No hay suficientes áreas con nombre para preparar la prueba.');
-    }
-    await owner.query(
-      "update public.geographic_areas set is_public = false where external_ref ->> 'overture_id' = $1",
-      [unpublished.ovid],
-    );
-    await owner.end();
+      );
+      const unpublished = named.rows[0];
+      const published = named.rows.at(-1);
+      if (!unpublished || !published || unpublished.ovid === published.ovid) {
+        throw new Error('No hay suficientes áreas con nombre para preparar la prueba.');
+      }
+      await owner.query(
+        "update public.geographic_areas set is_public = false where external_ref ->> 'overture_id' = $1",
+        [unpublished.ovid],
+      );
+      await owner.end();
 
-    const databaseUrl = `postgresql://postgres@/pi_e2e?host=${encodeURIComponent(cluster.host)}&port=${cluster.port}`;
-    server = startServer(
-      process.execPath,
-      [join(ROOT, 'node_modules/next/dist/bin/next'), 'start', '-p', String(port)],
-      { cwd: ROOT, env: { ...process.env, SITE_ENV: 'development', DATABASE_URL: databaseUrl } },
-    );
-    await waitForServer(`http://localhost:${String(port)}/api/health`, 60_000, server);
+      const databaseUrl = `postgresql://postgres@/pi_e2e?host=${encodeURIComponent(cluster.host)}&port=${cluster.port}`;
+      server = startServer(
+        process.execPath,
+        [join(ROOT, 'node_modules/next/dist/bin/next'), 'start', '-p', String(port)],
+        { cwd: ROOT, env: { ...process.env, SITE_ENV: 'development', DATABASE_URL: databaseUrl } },
+      );
+      await waitForServer(`http://localhost:${String(port)}/api/health`, 60_000, server);
 
-    const child = spawn(
-      'pnpm',
-      [
-        'exec',
-        'playwright',
-        'test',
-        '--config',
-        'playwright.db.config.ts',
-        ...process.argv.slice(2),
-      ],
-      {
-        cwd: ROOT,
-        stdio: 'inherit',
-        detached: true, // su propio grupo: la limpieza lo para entero (workers incluidos) ante una señal
-        env: {
-          ...process.env,
-          E2E_DB_PORT: String(port),
-          E2E_PUBLISHED_OVID: published.ovid,
-          E2E_PUBLISHED_NAME: published.name,
-          E2E_UNPUBLISHED_OVID: unpublished.ovid,
-          E2E_PUBLISHED_COUNT: String(result.areas.created - 1),
+      const child = spawn(
+        'pnpm',
+        [
+          'exec',
+          'playwright',
+          'test',
+          '--config',
+          'playwright.db.config.ts',
+          ...process.argv.slice(2),
+        ],
+        {
+          cwd: ROOT,
+          stdio: 'inherit',
+          detached: true, // su propio grupo: la limpieza lo para entero (workers incluidos) ante una señal
+          env: {
+            ...process.env,
+            E2E_DB_PORT: String(port),
+            E2E_PUBLISHED_OVID: published.ovid,
+            E2E_PUBLISHED_NAME: published.name,
+            E2E_UNPUBLISHED_OVID: unpublished.ovid,
+            E2E_PUBLISHED_COUNT: String(result.areas.created - 1),
+          },
         },
-      },
-    );
-    playwright = child;
-    return await new Promise<number>((resolve, reject) => {
-      child.once('error', reject); // p. ej. `pnpm` fuera del PATH: antes quedaba todo huérfano
-      child.once('exit', (code) => {
-        resolve(code ?? 1);
+      );
+      playwright = child;
+      return await new Promise<number>((resolve, reject) => {
+        child.once('error', reject); // p. ej. `pnpm` fuera del PATH: antes quedaba todo huérfano
+        child.once('exit', (code) => {
+          resolve(code ?? 1);
+        });
       });
-    });
-  } catch (error) {
-    if (server) console.error(`\nSalida del servidor de la prueba:\n${server.tail()}\n`);
-    throw error;
-  } finally {
-    untrack();
-    await cleanup();
-  }
+    } catch (error) {
+      if (server) console.error(`\nSalida del servidor de la prueba:\n${server.tail()}\n`);
+      throw error;
+    }
+  });
 }
 
-main().then(
-  (code) => {
-    process.exit(code);
-  },
-  (error: unknown) => {
-    console.error(error);
-    process.exit(1);
-  },
-);
+exitWith(main);
