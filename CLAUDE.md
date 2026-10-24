@@ -80,4 +80,4 @@ Actualiza `docs/progress.md` en cada entrega: qué funciona, cómo ejecutarlo, q
 
 ## Dónde mirar
 
-`docs/architecture.md` (visión y revisión crítica) · `docs/decisions/` (ADR) · `docs/i18n.md` (rutas, traducciones, SEO) · `docs/data-model.md` (BD y RLS) · `docs/gis.md` (§9 basemap) · `docs/provider-rights.md` · `docs/testing.md` · ADR-0014.
+`docs/deploy.md` (despliegue: staging privado ensayado en local, producción pública bloqueada) · `docs/architecture.md` (visión y revisión crítica) · `docs/decisions/` (ADR) · `docs/i18n.md` (rutas, traducciones, SEO) · `docs/data-model.md` (BD y RLS) · `docs/gis.md` (§9 basemap) · `docs/provider-rights.md` · `docs/testing.md` · ADR-0014.

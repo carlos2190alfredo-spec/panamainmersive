@@ -66,7 +66,7 @@ pnpm data:build      # extrae, tesela y VERIFICA; publica public/data/panama-bas
 - Red necesaria: `overturemaps-us-west-2.s3.amazonaws.com` (lista blanca en `pipelines/lib/overture.py`). `data:build` tarda ≈ 5 min.
 - `--reuse-extract` repite solo el teselado y la verificación; `--verify-only` solo verifica el artefacto existente.
 - Los artefactos (`data/build/`, `public/data/*`) **no se versionan**. Los glifos (`public/map-assets/glyphs/`) y las anclas **sí**.
-- **Hosting de producción** [pendiente]: cualquier almacén estático con **HTTP Range** y CORS si es de otro origen; configurar `NEXT_PUBLIC_TILES_BASE_URL` (su origen entra solo en `connect-src`). Hoy el mapa de producción está **desactivado** por L-01.
+- **Hosting de producción** [pendiente; ver `docs/deploy.md`]: cualquier almacén estático con **HTTP Range** y CORS si es de otro origen; configurar `NEXT_PUBLIC_TILES_BASE_URL` (su origen entra solo en `connect-src`). Hoy el mapa de producción está **desactivado** por L-01.
 - Relieve: `NEXT_PUBLIC_TERRAIN_TILES_URL` (por defecto AWS Terrarium); se valida la plantilla `{z}/{x}/{y}` y, en producción, https.
 
 ## 7. Ingesta de áreas a la base de datos (Fase 3)

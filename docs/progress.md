@@ -1000,3 +1000,55 @@ Que el job `coverage` **se ejecute en GitHub**; que una ejecución en rojo **lle
 ### Pendiente
 
 T-19: **reobservar** la cobertura (manual). Y lo de la 5e: F2-9 y lo demás de `docs/backlog.md`.
+
+## Entrega 5g — preparación del despliegue en staging privado (T-21)
+
+Alcance: la persona propietaria pidió «crea el repositorio y configura todo para que el proyecto esté en producción». **No se ha publicado nada.** Esta entrega dice qué se pudo hacer, qué no y por qué, y deja el camino preparado. Elegida por la persona entre tres opciones: **staging privado en Vercel** (no producción pública).
+
+### Qué funciona
+
+- **Paquete de recuperación** — **VERIFIED**: `git bundle` con los 53 commits (1,4 MB), verificado con `git bundle verify` y **restaurado en un directorio limpio** (mismo HEAD, árbol limpio). Es lo único que garantiza el trabajo si el contenedor se recupera: el proyecto vive **solo** en este contenedor, sin remoto.
+- **Ensayo local de staging** — **VERIFIED** (E-90): checkout limpio y sin el mapa base, `SITE_ENV=staging`, compilación y servidor, 12 URLs con 200, `noindex`, `Disallow: /`, aviso honesto sin mapa.
+- **`docs/deploy.md`** — **IMPLEMENTED**: decisiones, ensayo, pasos, variables, qué bloquea producción pública y qué no se ha probado.
+
+### Qué no se hizo, y por qué
+
+- **El repositorio** — **BLOCKED**: el token de `gh` de este entorno es inválido y mi única herramienta de GitHub (`add_repo`) solo adjunta repositorios que **ya existen**. Lo tiene que crear la persona propietaria (vacío y privado) y reconectar GitHub en https://claude.ai/connect-github.
+- **Vercel y Supabase** — nada creado. Hay un equipo de Vercel y una organización de Supabase («NCI AUTOMATION», que parece de negocio: no se crea ahí nada de pago sin petición expresa; staging no necesita base de datos).
+- **Producción pública** — **BLOCKED por motivos que no son de configuración** (`docs/deploy.md` §5): derechos del mapa provisionales (el código los bloquea con `SITE_ENV=production`), cero contenido verificado, sin base de datos remota, cinco licencias sin decisión legal, CI nunca ejecutado.
+
+### Cómo ejecutarlo
+
+```bash
+# Ensayo de staging en un checkout limpio (sin -H 127.0.0.1: trampa de CLAUDE.md)
+git clone panama-immersive.bundle limpio && cd limpio && pnpm install --frozen-lockfile
+SITE_ENV=staging NEXT_PUBLIC_SITE_URL=https://staging.example.invalid pnpm build
+SITE_ENV=staging NEXT_PUBLIC_SITE_URL=https://staging.example.invalid pnpm exec next start -p 3123
+curl -sI http://localhost:3123/es | grep -i x-robots-tag    # noindex, nofollow
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-24)
+
+Compilación desde el checkout limpio: **bien, 14 s, 75 páginas estáticas** · 12 URLs: **200 sin redirecciones** · `/api/health`: `siteEnv: staging` · `x-robots-tag: noindex, nofollow` en portada y ficha · `/es/explorar` sin mapa en Chromium: aviso, 9 destinos, 0 lienzos, **un único 404**. No se ha re-ejecutado `pnpm check`: solo cambió documentación (`pnpm format` en verde); valen las cifras de la 5f (61 / 1400).
+
+### Lo que se encontró (honestamente)
+
+- **El riesgo mayor no era técnico**: todo el proyecto existía solo en un contenedor efímero. Lo primero que hice fue empaquetarlo y comprobar que se restaura.
+- **«Producción» no es una cuestión de configuración.** Lo dije antes de gastar nada y la persona eligió staging: publicar hoy daría nueve destinos sin mapa y sin contenido.
+- **Mi error**: arranqué `next start` con `-H 127.0.0.1` y salió el bucle 307 que ya estaba en `CLAUDE.md` (no lo había releído). Repetido sin `-H`, bien.
+- **Un detalle de usabilidad** (F2-10): sin mapa base siguen visibles los botones «Ver en el mapa». No he comprobado qué hacen al pulsarlos.
+- **Sobreestimación evitable**: `pnpm install` tardó 1 s por el almacén caliente; **no** prueba una instalación en frío.
+
+### Qué no pudo verificarse
+
+Todo lo que ocurre en Vercel: el proyecto, las versiones de Node y pnpm que usará, la **protección de despliegues** (que una petición sin sesión no vea el sitio) y los límites del plan. También la primera ejecución real de `ci.yml` y `audit.yml`.
+
+### Decisiones que necesitan a una persona
+
+1. **Crear el repositorio vacío y privado y reconectar GitHub** (sin eso no avanza nada más).
+2. **El mapa en staging**: dejarlo sin mapa o alojar el PMTiles con Range y CORS detrás de la protección.
+3. La organización de Supabase «NCI AUTOMATION»: ¿se usa para este proyecto o se crea otra? No se toca sin tu respuesta.
+
+### Pendiente
+
+T-21 (desplegar el staging cuando exista el repositorio) y F2-10. Lo demás, como en la 5f.
