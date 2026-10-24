@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   coverageFreshness,
   daysBetween,
@@ -50,6 +50,31 @@ describe('daysBetween (días de calendario ISO, sin horas ni zonas)', () => {
   ])('una fecha inválida («%s») se rechaza', (bad) => {
     expect(() => daysBetween(bad, '2026-10-24')).toThrow(/fecha/);
     expect(() => daysBetween('2026-10-24', bad)).toThrow(/fecha/);
+  });
+});
+
+describe('los días de calendario no dependen de la zona horaria del equipo', () => {
+  const original = process.env.TZ;
+  afterEach(() => {
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
+  });
+
+  // Con el día leído en hora local, una zona al este de UTC lo corre al día anterior (y falla la comprobación de
+  // ida y vuelta). Este contenedor está en UTC: sin forzar otras zonas la prueba no mediría nada.
+  it.each([
+    ['Asia/Tokyo', -540],
+    ['Pacific/Kiritimati', -840],
+    ['America/Los_Angeles', 480],
+  ])('%s', (zone, offsetMinutes) => {
+    process.env.TZ = zone;
+    // Control: el motor aplicó la zona (si no, esta prueba pasaría por la razón equivocada).
+    expect(new Date(2026, 0, 15).getTimezoneOffset()).toBe(offsetMinutes);
+    expect(daysBetween('2026-10-20', '2027-01-18')).toBe(90);
+    expect(coverageFreshness([row()], '2026-12-19', 30)).toMatchObject({
+      status: 'expiring',
+      daysLeft: 30,
+    });
   });
 });
 
@@ -125,6 +150,26 @@ describe('coverageFreshness', () => {
       'E-25',
     ]);
     expect(coverageFreshness(rows, '2026-10-24', warn).evidenceIds).toEqual([]);
+  });
+
+  it('la observación que caduca JUSTO en el umbral cuenta como «por caducar» (no solo las anteriores)', () => {
+    // 2026-12-19 → 2027-01-18: 30 días.
+    expect(coverageFreshness([row()], '2026-12-19', 30)).toMatchObject({ expiring: 1, expired: 0 });
+    expect(coverageFreshness([row()], '2026-12-19', 29)).toMatchObject({ expiring: 0, expired: 0 });
+  });
+
+  it('una observación que caduca el mismo día que se hizo es válida y ya está caducada', () => {
+    // Rechazarla («no se pudo evaluar») diría menos que lo que es verdad: no hay vigencia ninguna.
+    const same = row({ observedAt: '2026-10-24', expiresAt: '2026-10-24' });
+    expect(coverageFreshness([same], '2026-10-24', 30)).toMatchObject({
+      status: 'expired',
+      daysLeft: 0,
+      expired: 1,
+    });
+  });
+
+  it('sin observaciones dice que no hay nada que vigilar (no un error de fecha que despiste)', () => {
+    expect(() => coverageFreshness([], '2026-10-24', 30)).toThrow(/no hay ninguna observación/);
   });
 
   it('un umbral de 0 solo avisa el mismo día de la caducidad', () => {

@@ -2,6 +2,8 @@ import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { daysBetween } from '../../../scripts/lib/coverage-freshness';
+import { COVERAGE_EXPIRES_AT } from '../../../src/domains/tourism/coverage-evidence';
 
 /**
  * `scripts/check-coverage.ts` de punta a punta (`pnpm check:coverage`): la lógica pura se prueba en
@@ -65,24 +67,57 @@ describe('check-coverage (con la evidencia real)', () => {
     expect((await run(['--today', '2027-01-10', '--warn-days', '10'])).code).toBe(1);
   });
 
-  it('sin `--today` usa el día de hoy: sale con 0 o con 1, nunca con 2, y nombra la fecha de caducidad', async () => {
+  it('`--today=FECHA` (con `=`) equivale a `--today FECHA`', async () => {
+    const r = await run(['--today=2026-10-24']);
+    expect(r.code, r.stderr).toBe(0);
+    expect(r.stdout).toContain('86 días');
+  });
+
+  it('sin `--today` usa el día de HOY (UTC): los días que cuenta salen del reloj, no de una fecha fija', async () => {
+    const utcDay = () => new Date().toISOString().slice(0, 10);
+    const before = utcDay();
     const r = await run([]);
-    expect([0, 1]).toContain(r.code);
-    expect(r.stdout + r.stderr).toContain('2027-01-18');
+    const after = utcDay();
+    // El día puede cambiar mientras corre el proceso: vale el de antes o el de después.
+    const expected = [before, after].map((day) => {
+      const left = daysBetween(day, COVERAGE_EXPIRES_AT);
+      return left <= 0 ? `hace ${String(-left)} días` : `quedan ${String(left)} días`;
+    });
+    const output = r.stdout + r.stderr;
+    expect(r.code).not.toBe(2);
+    expect(
+      expected.some((fragment) => output.includes(fragment)),
+      `«${output.trim()}» no contiene ninguno de: ${expected.join(' | ')}`,
+    ).toBe(true);
   });
 
   it.each([
-    ['un argumento desconocido', ['--lo-que-sea']],
-    ['una ruta suelta', ['hoy']],
-    ['`--today` sin valor', ['--today']],
-    ['`--today` con una fecha inexistente', ['--today', '2026-02-31']],
-    ['`--today` con otro formato', ['--today', '24/10/2026']],
-    ['`--warn-days` sin valor', ['--warn-days']],
-    ['`--warn-days` negativo', ['--warn-days', '-1']],
-    ['`--warn-days` no numérico', ['--warn-days', 'mucho']],
-    ['`--warn-days` con decimales', ['--warn-days', '1.5']],
-  ])('%s: sale con 2 (no se pudo evaluar), nunca con 0', async (_label, args) => {
-    const r = await run(args);
-    expect(r.code).toBe(2);
-  });
+    ['un argumento desconocido', ['--lo-que-sea'], /Argumento no reconocido/],
+    ['una ruta suelta', ['hoy'], /Argumento no reconocido/],
+    ['`--today` sin valor', ['--today'], /necesita un valor/],
+    ['`--today` seguido de otra bandera', ['--today', '--warn-days', '5'], /necesita un valor/],
+    ['`--today` con una fecha inexistente', ['--today', '2026-02-31'], /fecha/],
+    ['`--today` con otro formato', ['--today', '24/10/2026'], /fecha/],
+    ['`--today=` con una fecha inexistente', ['--today=2026-02-31'], /fecha/],
+    ['`--warn-days` sin valor', ['--warn-days'], /necesita un valor/],
+    [
+      '`--warn-days` seguido de otra bandera',
+      ['--warn-days', '--today', '2026-10-24'],
+      /necesita un valor/,
+    ],
+    ['`--warn-days` negativo', ['--warn-days', '-1'], /necesita un entero/],
+    ['`--warn-days` no numérico', ['--warn-days', 'mucho'], /necesita un entero/],
+    ['`--warn-days` con decimales', ['--warn-days', '1.5'], /necesita un entero/],
+    ['`--warn-days=` negativo', ['--warn-days=-1'], /necesita un entero/],
+    ['`--warn-days=` no numérico', ['--warn-days=mucho'], /necesita un entero/],
+    ['`--warn-days=` con decimales', ['--warn-days=1.5'], /necesita un entero/],
+    ['`--warn-days=` vacío', ['--warn-days='], /necesita un entero/],
+  ] as [string, string[], RegExp][])(
+    '%s: sale con 2 (no se pudo evaluar) y dice por qué, nunca con 0',
+    async (_label, args, why) => {
+      const r = await run(args);
+      expect(r.code).toBe(2);
+      expect(r.stderr).toMatch(why);
+    },
+  );
 });

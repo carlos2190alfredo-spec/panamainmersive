@@ -11,6 +11,7 @@ O = los guiones usan el ciclo de vida compartido · T = arranque del clúster in
 X = limpieza de `e2e-content` (contra la prueba de punta a punta de los guiones) ·
 A = `action-pins.ts` (acciones fijadas por hash) · B = `check-action-pins.ts` · Y13–Y17 = `ci.yml` y `dependabot.yml` (fijado).
 D = `dependency-policy.ts` (licencias y avisos) · E = `check-deps.ts` · F = `audit.yml` · J = `data/dependency-policy.json` · Y18–Y19 = `ci.yml` (licencias).
+H = `coverage-freshness.ts` · I = `check-coverage.ts` · Z = `audit.yml` (job `coverage`) — aviso de caducidad de la cobertura (T-19).
 
 Cada grupo tiene su ejecutor: TypeScript contra la suite unitaria COMPLETA (las pruebas del pegamento lanzan los scripts
 de verdad), los de señales contra su prueba de integración y `lib.py` contra pytest.
@@ -34,6 +35,8 @@ DEP = ".github/dependabot.yml"
 DP = "scripts/lib/dependency-policy.ts"
 CD = "scripts/check-deps.ts"
 AUD = ".github/workflows/audit.yml"
+CF = "scripts/lib/coverage-freshness.ts"
+CK = "scripts/check-coverage.ts"
 POL = "data/dependency-policy.json"
 PW = "playwright.config.ts"
 PWC = "playwright.content.config.ts"
@@ -277,15 +280,65 @@ DEPS_MUTATIONS = [
     ("F1 la auditoría ya no tiene calendario", AUD, "  schedule:\n    - cron: '17 6 * * 1'\n", ""),
     ("F2 la auditoría se engancha a cada push", AUD, "  workflow_dispatch:\n", "  workflow_dispatch:\n  push:\n"),
     ("F3 la auditoría puede escribir en el repositorio", AUD, "  contents: read\n", "  contents: write\n"),
-    ("F4 la auditoría sin timeout", AUD, "    timeout-minutes: 10\n", ""),
+    ("F4 la auditoría sin timeout", AUD, "    name: Avisos de seguridad de las dependencias (producción y desarrollo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n", "    name: Avisos de seguridad de las dependencias (producción y desarrollo)\n    runs-on: ubuntu-24.04\n"),
     ("F5 el flujo ejecuta otra cosa", AUD, "      - run: pnpm check:audit\n", "      - run: pnpm check:licenses\n"),
-    ("F6 un fallo de la auditoría no se ve", AUD, "    timeout-minutes: 10\n", "    timeout-minutes: 10\n    continue-on-error: true\n"),
+    ("F6 un fallo de la auditoría no se ve", AUD, "    name: Avisos de seguridad de las dependencias (producción y desarrollo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n", "    name: Avisos de seguridad de las dependencias (producción y desarrollo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    continue-on-error: true\n"),
     # --- ci.yml (licencias) -------------------------------------------------------------------------------------------------
     ("Y18 el job `check` no comprueba las licencias", YML, "      - run: pnpm check:licenses\n", ""),
     ("Y19 la auditoría de avisos se engancha a cada cambio", YML, "      - run: pnpm check:licenses\n", "      - run: pnpm check:licenses\n      - run: pnpm check:audit\n"),
     # --- data/dependency-policy.json (la política real) ----------------------------------------------------------------------
     ("J1 la política real admite una licencia de copyleft fuerte", POL, '"dev": ["MPL-2.0"]', '"dev": ["MPL-2.0", "GPL-3.0-only"]'),
     ("J2 una excepción real nombra un paquete que no existe", POL, '"package": "caniuse-lite",', '"package": "caniuse-lite-inexistente",'),
+]
+
+# Aviso antes de que caduque la evidencia de cobertura (T-19): la lógica, su CLI y el job semanal.
+COVERAGE_MUTATIONS = [
+    # --- coverage-freshness.ts -----------------------------------------------------------------------------------------------
+    ("H1 el día de la caducidad aún no cuenta como caducada", CF, "    if (left <= 0) expired += 1;", "    if (left < 0) expired += 1;"),
+    ("H2 la que caduca justo en el umbral no cuenta como «por caducar»", CF, "    else if (left <= warnDays) expiring += 1;", "    else if (left < warnDays) expiring += 1;"),
+    ("H3 el estado del día de la caducidad es «por caducar»", CF, "daysLeft <= 0 ? 'expired'", "daysLeft < 0 ? 'expired'"),
+    ("H4 justo en el umbral todavía no avisa", CF, "daysLeft <= warnDays ? 'expiring'", "daysLeft < warnDays ? 'expiring'"),
+    ("H5 manda la ÚLTIMA en caducar, no la primera", CF, "    if (r.expiresAt < firstExpiry) firstExpiry = r.expiresAt;", "    if (r.expiresAt > firstExpiry) firstExpiry = r.expiresAt;"),
+    ("H6 sin observaciones no se rechaza con su motivo", CF, "  if (rows.length === 0) {\n    throw new Error('no hay ninguna observación de cobertura: no hay nada que vigilar');\n  }\n", ""),
+    ("H7 el umbral no se valida", CF, "  if (!Number.isInteger(warnDays) || warnDays < 0) {", "  if (false) {"),
+    ("H8 un umbral negativo se acepta", CF, "!Number.isInteger(warnDays) || warnDays < 0", "!Number.isInteger(warnDays)"),
+    ("H9 una fecha imposible (2026-02-31) se acepta", CF, "new Date(ms).toISOString().slice(0, 10) !== day", "false"),
+    ("H10 una caducidad anterior a la observación se acepta", CF, "    if (daysBetween(r.observedAt, r.expiresAt) < 0) {", "    if (false) {"),
+    ("H11 caducar el mismo día de observar se rechaza", CF, "    if (daysBetween(r.observedAt, r.expiresAt) < 0) {", "    if (daysBetween(r.observedAt, r.expiresAt) <= 0) {"),
+    ("H12 las evidencias a reobservar incluyen las vigentes", CF, "    if (left <= warnDays) for (const id of r.evidence) ids.add(id);", "    for (const id of r.evidence) ids.add(id);"),
+    ("H13 las evidencias a reobservar no se ordenan", CF, "evidenceIds: [...ids].sort(),", "evidenceIds: [...ids],"),
+    ("H14 las evidencias justo en el umbral no se listan", CF, "    if (left <= warnDays) for (const id of r.evidence) ids.add(id);", "    if (left < warnDays) for (const id of r.evidence) ids.add(id);"),
+    ("H15 los días se restan al revés", CF, "(toUtcMs(to) - toUtcMs(from)) / MS_PER_DAY", "(toUtcMs(from) - toUtcMs(to)) / MS_PER_DAY"),
+    ("H16 los destinos se cuentan por observaciones", CF, "destinations: new Set(rows.map((r) => r.destination)).size,", "destinations: rows.length,"),
+    ("H17 una caducada también cuenta como «por caducar»", CF, "    else if (left <= warnDays) expiring += 1;", "    if (left <= warnDays) expiring += 1;"),
+    ("H18 el día se interpreta en la zona horaria del equipo", CF, "Date.parse(`${day}T00:00:00Z`)", "Date.parse(`${day}T00:00:00`)"),
+    # --- check-coverage.ts ----------------------------------------------------------------------------------------------------
+    ("I1 el umbral por defecto es 0", CK, "const DEFAULT_WARN_DAYS = 30;", "const DEFAULT_WARN_DAYS = 0;"),
+    ("I2 caducar no hace fallar", CK, "  return 1;\n}\n\nprocess.exit", "  return 0;\n}\n\nprocess.exit"),
+    ("I3 «no se pudo evaluar» sale con 0", CK, "    return 2;\n  }\n\n  const summary", "    return 0;\n  }\n\n  const summary"),
+    ("I4 un argumento desconocido se ignora", CK, "      return `Argumento no reconocido: ${String(arg)}`;", "      continue;"),
+    ("I5 unos argumentos inválidos salen con 0", CK, "    console.error(options);\n    return 2;", "    console.error(options);\n    return 0;"),
+    ("I6 `--warn-days` acepta cualquier cosa", CK, "        if (!/^\\d+$/.test(v)) return `\\`--warn-days\\` necesita un entero ≥ 0: «${v}»`;\n        warnDays = Number(v);\n      } else {", "        warnDays = Number(v);\n      } else {"),
+    ("I7 `--warn-days=N` no se reconoce", CK, "arg.startsWith('--warn-days=')", "false"),
+    ("I8 `--today=FECHA` no se reconoce", CK, "arg.startsWith('--today=')", "false"),
+    ("I9 `--today` no consume su valor", CK, "      i += 1;\n", ""),
+    ("I10 `--warn-days` toma como valor la bandera siguiente", CK, "next === undefined || next.startsWith('--') ? undefined : next", "next"),
+    ("I11 sin `--today` usa un día fijo", CK, "let today = new Date().toISOString().slice(0, 10);", "let today = '2000-01-01';"),
+    ("I12 el aviso no nombra las evidencias a reobservar", CK, "result.evidenceIds.length > 0 ? ` Evidencias: ${result.evidenceIds.join(', ')}.` : '';", "'';"),
+    ("I13 «hace N días» sale con el signo cambiado", CK, "String(-result.daysLeft)", "String(result.daysLeft)"),
+    ("I14 caducada y por caducar intercambian el mensaje", CK, "  if (result.status === 'expired') {", "  if (result.status !== 'expired') {"),
+    ("I15 un día sin problemas sale con 1", CK, "    return 0;\n  }\n  const how", "    return 1;\n  }\n  const how"),
+    ("I16 `--warn-days=` acepta cualquier cosa", CK, "      const v = arg.slice('--warn-days='.length);\n      if (!/^\\d+$/.test(v)) return `\\`--warn-days\\` necesita un entero ≥ 0: «${v}»`;\n", "      const v = arg.slice('--warn-days='.length);\n"),
+    # --- audit.yml: el job `coverage` -------------------------------------------------------------------------------------------
+    ("Z1 el job de cobertura sin timeout", AUD, "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n", "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n"),
+    ("Z2 un fallo de la cobertura no se ve", AUD, "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n", "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    continue-on-error: true\n"),
+    ("Z3 el job de cobertura ejecuta otra cosa", AUD, "      - run: pnpm check:coverage\n", "      - run: pnpm check:audit\n"),
+    ("Z4 el job de cobertura instala sin congelar el lockfile", AUD, "      - run: pnpm install --frozen-lockfile\n      - run: pnpm check:coverage\n", "      - run: pnpm install\n      - run: pnpm check:coverage\n"),
+    ("Z5 el job de cobertura no instala nada", AUD, "      - run: pnpm install --frozen-lockfile\n      - run: pnpm check:coverage\n", "      - run: pnpm check:coverage\n"),
+    ("Z6 el job de cobertura usa una acción sin fijar por hash", AUD, "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0\n", "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n"),
+    ("Z7 el job de cobertura nunca se ejecuta", AUD, "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n", "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    if: false\n    timeout-minutes: 10\n"),
+    ("Z8 el job de cobertura puede escribir en el repositorio", AUD, "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n", "    name: Evidencia de cobertura vigente (caduca en menos de 30 días = fallo)\n    runs-on: ubuntu-24.04\n    permissions:\n      contents: write\n    timeout-minutes: 10\n"),
+    ("Z9 el paso de la cobertura se omite", AUD, "      - run: pnpm check:coverage\n", "      - run: pnpm check:coverage\n        if: false\n"),
 ]
 
 # La herramienta de mutación contra su propia suite.
@@ -313,6 +366,7 @@ GROUPS = [
     (SCRIPT_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/e2e-scripts.test.ts"]), 10),
     (PIN_MUTATIONS, lambda: run_vitest("unit", ["tests/unit/scripts/action-pins.test.ts", "tests/unit/scripts/check-action-pins.test.ts", "tests/unit/scripts/ci-workflow.test.ts"]), 100),
     (DEPS_MUTATIONS, lambda: run_vitest("unit", ["tests/unit/scripts/dependency-policy.test.ts", "tests/unit/scripts/check-deps.test.ts", "tests/unit/scripts/audit-workflow.test.ts", "tests/unit/scripts/ci-workflow.test.ts"]), 100),
+    (COVERAGE_MUTATIONS, lambda: run_vitest("unit", ["tests/unit/scripts/coverage-freshness.test.ts", "tests/unit/scripts/check-coverage.test.ts", "tests/unit/scripts/audit-workflow.test.ts", "tests/unit/scripts/action-pins.test.ts", "tests/unit/scripts/check-action-pins.test.ts"]), 160),
     (LIB_MUTATIONS, lambda: run_pytest(["pipelines/tests/test_mutation_lib.py"]), 20),
 ]
 

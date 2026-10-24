@@ -89,6 +89,16 @@ describe('audit.yml', () => {
     expect(jobs.coverage).not.toContain('check:audit');
   });
 
+  it('ningún job ni paso lleva `if:` (un job que nunca se ejecuta sería un verde que no mide nada)', () => {
+    expect(workflow).not.toMatch(/^\s*(-\s+)?if:/m);
+  });
+
+  it('ningún job cambia los permisos: solo vale el `contents: read` de arriba', () => {
+    for (const [id, body] of Object.entries(jobs)) {
+      expect(body, `job ${id}`).not.toMatch(/^\s+permissions:/m);
+    }
+  });
+
   it('no usa `continue-on-error` (un fallo de la auditoría tiene que verse en rojo)', () => {
     expect(workflow).not.toMatch(/continue-on-error/);
   });
