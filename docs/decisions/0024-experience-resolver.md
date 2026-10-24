@@ -48,7 +48,7 @@ La primera versión de la histéresis medía **cuánto llevaba la representació
 
 ## Consecuencias
 
-- **El 2027-01-18 caduca la evidencia de cobertura de terreno de los nueve destinos** (`COVERAGE_EXPIRES_AT`, 90 días): desde ese día el resolver degradaría a `MAP_2D` (con causa `expired`). Una prueba con los datos reales lo fija y T-19 pide **reobservar** antes. Hoy nada lo vigila fuera de esa prueba.
+- **El 2027-01-18 caduca la evidencia de cobertura de terreno de los nueve destinos** (`COVERAGE_EXPIRES_AT`, 90 días): desde ese día el resolver degradaría a `MAP_2D` (con causa `expired`). Una prueba con los datos reales lo fija y T-19 pide **reobservar** antes. _Actualización (entrega 5f)_: ya hay un aviso automático, `pnpm check:coverage` (falla desde 30 días antes) y el job semanal `coverage` de `audit.yml` (IMPLEMENTED, no VERIFIED: no hay remoto); **reobservar sigue siendo manual**.
 - `NEEDS` y `KIND_ORDER` son `Record<…>` sobre los tipos cerrados: añadir una representación o un tipo de destino **no compila** hasta decidir qué necesita y dónde va.
 - Un proveedor nuevo es una fila de entrada (`ProviderState`) y una política de derechos, no un cambio de código del resolver.
 
