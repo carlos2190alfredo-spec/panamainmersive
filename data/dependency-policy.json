@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "reviewedOn": "2026-10-24",
+  "note": "Política de dependencias y licencias (PROMPT-MAESTRO §18; docs/security.md). TODO esto es una PROPUESTA TÉCNICA mía, sin revisión legal: las licencias permitidas son las permisivas habituales; lo demás pasa solo como excepción PROVISIONAL (con plazo) hasta que una persona con criterio la acepte o decida quitar la dependencia. En desarrollo se admite además MPL-2.0 porque esas herramientas no se distribuyen. Los umbrales de gravedad (alta en producción, crítica en desarrollo) también son una propuesta.",
+  "allowedLicenses": {
+    "prod": [
+      "MIT",
+      "ISC",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "0BSD",
+      "MIT-0",
+      "CC0-1.0",
+      "BlueOak-1.0.0"
+    ],
+    "dev": ["MPL-2.0"]
+  },
+  "licenseExceptions": [
+    {
+      "package": "@fontsource-variable/figtree",
+      "license": "OFL-1.1",
+      "scope": "prod",
+      "status": "provisional",
+      "reason": "Tipografía autoalojada que SÍ se sirve al navegador (layout.tsx). OFL-1.1 permite redistribuirla con el software si cada copia lleva el aviso y la licencia; no se ha comprobado cómo lo cumple el sitio (p. ej. una página de licencias o los metadatos de la fuente).",
+      "reviewBy": "2027-01-22"
+    },
+    {
+      "package": "@fontsource-variable/fraunces",
+      "license": "OFL-1.1",
+      "scope": "prod",
+      "status": "provisional",
+      "reason": "Tipografía autoalojada que SÍ se sirve al navegador (layout.tsx). OFL-1.1 permite redistribuirla con el software si cada copia lleva el aviso y la licencia; no se ha comprobado cómo lo cumple el sitio (p. ej. una página de licencias o los metadatos de la fuente).",
+      "reviewBy": "2027-01-22"
+    },
+    {
+      "package": "@img/sharp-libvips-linux-x64",
+      "license": "LGPL-3.0-or-later",
+      "scope": "prod",
+      "status": "provisional",
+      "reason": "Biblioteca nativa opcional de `sharp`, que trae `next` para optimizar imágenes; el proyecto no usa `next/image` (sin usos en src/) y la biblioteca no aparece en ningún fichero de cliente. LGPL-3.0 condiciona la redistribución (aviso y posibilidad de reemplazarla): si el despliegue entrega un binario o una imagen a terceros el análisis cambia. No se ha decidido aceptarla ni excluirla.",
+      "reviewBy": "2027-01-22"
+    },
+    {
+      "package": "@img/sharp-libvips-linuxmusl-x64",
+      "license": "LGPL-3.0-or-later",
+      "scope": "prod",
+      "status": "provisional",
+      "reason": "Variante musl de la biblioteca nativa opcional de `sharp` (ver @img/sharp-libvips-linux-x64): el proyecto no usa `next/image` y no aparece en ningún fichero de cliente. No se ha decidido aceptarla ni excluirla.",
+      "reviewBy": "2027-01-22"
+    },
+    {
+      "package": "caniuse-lite",
+      "license": "CC-BY-4.0",
+      "scope": "prod",
+      "status": "provisional",
+      "reason": "Datos de compatibilidad de navegadores que usan browserslist y Next en tiempo de compilación; no aparecen en ningún fichero de cliente. CC-BY-4.0 exige atribución si se redistribuyen los datos; no se ha decidido si hace falta citarla.",
+      "reviewBy": "2027-01-22"
+    }
+  ],
+  "audit": {
+    "failOnProd": "high",
+    "failOnDev": "critical",
+    "exceptions": []
+  }
+}

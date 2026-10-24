@@ -1,0 +1,34 @@
+# Auditoría semanal de las dependencias (T-20). ESTADO: IMPLEMENTED, no VERIFIED: no se ha podido ejecutar fuera del
+# entorno de desarrollo (no hay remoto). El mismo comando (`pnpm check:audit`) sí se ejecuta en local (docs/testing.md).
+#
+# Va APARTE de ci.yml a propósito: la base de avisos de seguridad cambia aunque el código no cambie, y un aviso nuevo
+# sobre algo que no tiene relación con un cambio no debe bloquearlo (PROMPT-MAESTRO §18). Las licencias, que sí son
+# deterministas, se comprueban en cada cambio (job `check` de ci.yml). La política (umbrales y excepciones con motivo y
+# plazo) está en `data/dependency-policy.json`.
+#
+# Limitaciones: GitHub solo ejecuta los flujos programados desde la rama por defecto y los desactiva tras 60 días sin
+# actividad en el repositorio; un flujo desactivado no avisa de nada. `workflow_dispatch` permite lanzarlo a mano.
+name: Auditoría de dependencias
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Avisos de seguridad de las dependencias (producción y desarrollo)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:audit

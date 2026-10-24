@@ -47,6 +47,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm format
       - run: pnpm test
+      - run: pnpm check:licenses
 
   pipelines:
     name: Pipelines de datos (pytest, sin red)

@@ -120,6 +120,14 @@ describe('ci.yml', () => {
     expect(jobs['e2e-content']).toContain('postgres --version');
   });
 
+  it('el job `check` comprueba las licencias de las dependencias (determinista, sin red)', () => {
+    expect(jobs.check).toMatch(/^ {6}- run: pnpm check:licenses\s*$/m);
+  });
+
+  it('la auditoría de avisos NO está en este flujo: cambia con la base de avisos aunque el código no cambie (audit.yml)', () => {
+    expect(workflow).not.toMatch(/check:audit/);
+  });
+
   it('declara que `test:e2e:db` no está en el flujo (necesita datos que el CI no genera)', () => {
     expect(workflow).toMatch(/test:e2e:db/);
     expect(workflow).not.toMatch(/run:\s*pnpm test:e2e:db/);
