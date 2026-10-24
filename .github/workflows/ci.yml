@@ -7,6 +7,9 @@
 #    ≈ 5 min). Sin él, las pruebas E2E que necesitan el mapa dibujado se OMITEN diciéndolo. Medido en local ocultando el
 #    fichero, 2026-10-24: 138 pasan, 57 omitidas (todas por esa causa), 0 fallan. `pnpm check:e2e-skips` limita las
 #    omitidas a ese número: otra omisión nueva ya no pasa desapercibida. El mapa real solo se verifica en local (F3-14).
+#    ACTUALIZACIÓN 2026-10-24: el fichero ahora SÍ está versionado (staging de Vercel, docs/deploy.md §4), así que este CI
+#    lo encontrará en el checkout y EJECUTARÁ esas pruebas (el límite de omitidas sigue siendo un máximo, no un mínimo).
+#    Esas pruebas con WebGL en el runner de GitHub no se han ejecutado nunca: un fallo ahí es información, no una regresión.
 #  · `pnpm test:e2e:db` NO está en este flujo: necesita artefactos de datos gitignorados (`pnpm data:build` y
 #    `pnpm data:ingest`) que el CI no genera, y en CI «faltan datos» es un FALLO (un verde que no ejecutó nada es peor
 #    que un rojo), así que añadirlo sin generarlos lo dejaría siempre en rojo. Se ejecuta en local (docs/testing.md).

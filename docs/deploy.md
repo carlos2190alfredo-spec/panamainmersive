@@ -5,7 +5,8 @@ Estado (2026-10-24): **STAGING DESPLEGADO EN VERCEL; protección configurada per
 ## 1. Qué se decidió y qué no
 
 - **Decidido (2026-10-24, por la persona propietaria)**: primero un **staging privado en Vercel**; **no** producción pública. La razón es que producción pública está bloqueada por motivos que no son de configuración (§5).
-- **Sin decidir**: dominio, base de datos remota, dónde alojar el mapa base, quién recibe los avisos de caducidad (T-19).
+- **Decidido (2026-10-24, por la persona propietaria)**: el staging **debe mostrar el mapa**; el mapa base se versiona en el repositorio privado (§4).
+- **Sin decidir**: dominio, base de datos remota, dónde alojar el mapa base **para producción pública** (L-01), quién recibe los avisos de caducidad (T-19).
 
 ## 2. Ensayo local (medido el 2026-10-24, E-90)
 
@@ -44,7 +45,11 @@ Se clonó el paquete del repositorio (`git bundle`, HEAD `c542635`) en un direct
 
 ## 4. El mapa en staging
 
-El mapa base **no viaja con el código**: es un PMTiles de 36 MB en `.gitignore` y sus derechos son **provisionales** (derivado de Overture/OpenStreetMap, ODbL). Sin él el staging muestra el aviso de §2. Para verlo hay que alojarlo en un almacén con **HTTP Range** (y CORS si es de otro origen) y fijar `NEXT_PUBLIC_TILES_BASE_URL`; solo **detrás de la protección**. Range y CORS cruzados **no se han probado** (`docs/testing.md`). No se puede subir con las herramientas de Vercel de esta sesión: reciben los ficheros dentro de la propia llamada (en línea o en base64, `upload_file` incluido), y un fichero de 36 MB no cabe de forma práctica.
+**Estado desde 2026-10-24 (rama `fix/staging-basemap`)**: el mapa base **viaja con el código**. `public/data/panama-basemap.pmtiles` (36,1 MB) y su manifiesto están **versionados** en el repositorio privado, de modo que cada despliegue de Vercel (por git, detrás de la protección) lo sirve como fichero estático del mismo origen (`/data/panama-basemap.pmtiles`, con Range: la CSP no cambia y no hace falta `NEXT_PUBLIC_TILES_BASE_URL`). Es la única vía con las herramientas de que se dispone: Vercel no permite subir un fichero de ese tamaño por la API de esta sesión y un almacén aparte (Blob) sería **público** o un servicio nuevo.
+
+Sus derechos siguen **provisionales** (derivado de Overture/OpenStreetMap, ODbL; L-01). Versionarlo en un repositorio **privado** y servirlo solo tras la protección es coherente con eso, pero **no resuelve L-01**: antes de cualquier producción pública hay que decidir (y, si procede, sacarlo del historial). Con `SITE_ENV=production` el código sigue bloqueando el mapa.
+
+Cómo se regenera: `pnpm data:build` (§6 de `docs/setup.md`) y se vuelve a versionar el resultado. El de hoy se construyó con tippecanoe 2.79.0 y Overture `2026-09-23.1`; el manifiesto registra el `sha256`. Antes de esta decisión, sin el fichero, `/es/explorar` mostraba el aviso «Los datos del mapa base no están disponibles» y la petición a `/data/panama-basemap.pmtiles` daba 404 (observado en el despliegue real).
 
 ## 5. Qué bloquea la producción pública (no es configuración)
 
@@ -81,9 +86,9 @@ Un despliegue real en Vercel; la protección de despliegues; las versiones de No
 - **El comportamiento de la protección**: que una petición **sin sesión** no vea el sitio. Desde este entorno no se puede comprobar (la política de red del entorno bloquea `vercel.app`: el 403 que se obtuvo lo da el proxy al abrir la conexión, no Vercel). Lo que se comprobó es la **configuración**, no el comportamiento. **Comprobación manual**: abrir `https://panamainmersive.vercel.app` en una ventana privada; debe pedir iniciar sesión en Vercel.
 - **El primer CI en GitHub** (`ci.yml`, `audit.yml`): no tengo acceso para leer los resultados (el token de `gh` es inválido). Hay que mirar la pestaña Actions.
 - **`/es/explorar` desplegada**: se pidió pero la respuesta era demasiado grande para leerla; solo está observada en local (E-90).
-- **El mapa**: no está en el despliegue (decisión: §4). Sin él, `/es/explorar` mostraría el aviso de §2.
+- **El mapa**: en este primer despliegue no estaba (404 observado en `/es/explorar`); se corrige en la rama `fix/staging-basemap` (§4).
 
 **Sin hacer, por decisión**
 
 - **Base de datos (Supabase, organización NCI AUTOMATION)**: autorizada su organización, pero la creación quedó **pendiente de la confirmación de coste** que el servidor pidió a la persona propietaria y no se respondió. No se ha creado nada (la organización sigue con sus 4 proyectos de negocio, que no se tocan). Staging no la necesita para lo que muestra hoy.
-- **El mapa en staging**: sin él por ahora. Lo que mejor funciona: los derechos siguen `provisional`, el PMTiles no puede viajar con el código, y las herramientas de esta sesión no pueden subirlo; alojarlo bien (almacén con Range y CORS) tiene sentido cuando se resuelva L-01. Mientras tanto el mapa se ve en local con el paquete de visualización.
+- **El mapa en staging** (decisión original: sin él hasta resolver L-01). **Revocada por la persona propietaria el 2026-10-24** («el mapa no funciona, haz que funcione»): ver §4.

@@ -1090,3 +1090,31 @@ Alcance: con el repositorio ya creado por la persona propietaria, subir el histo
 ### Pendiente
 
 T-21 (verificar protección y CI, mapa y base de datos), F2-10 y lo de la 5f.
+
+## Entrega 5i — El mapa funciona en el staging (2026-10-24)
+
+La persona propietaria informó de que «el mapa interactivo no funciona» en `https://panamainmersive.vercel.app/es/explorar`.
+
+### Causa (observada, no supuesta)
+
+El despliegue real pedía `/data/panama-basemap.pmtiles` y recibía **404**: el mapa base estaba en `.gitignore` (decisión de la entrega 5h, «staging sin mapa por ahora»), así que el despliegue por git nunca lo llevaba. Con los datos ausentes la página caía bien al aviso «Los datos del mapa base no están disponibles» (tras unos segundos mostraba «Cargando el mapa…»). No era un defecto del código del mapa.
+
+### Qué se hizo
+
+- `pnpm data:build` en esta máquina (Python 3.12 + tippecanoe 2.79.0 + Overture `2026-09-23.1`): `public/data/panama-basemap.pmtiles` de 36,1 MB, `sha256` `77f98546…`; la puerta de verificación del pipeline pasó (`problems: []`, 0 entidades perdidas por capa).
+- El PMTiles y su manifiesto **se versionan** (se quitaron de `.gitignore`): es la única vía de que el staging de Vercel, que despliega por git detrás de la protección, sirva el fichero del mismo origen (con Range; la CSP no cambia). Decisión y salvedades de derechos (L-01 no se resuelve): `docs/deploy.md` §4.
+
+### Pruebas que se corrieron
+
+- Build `SITE_ENV=staging` en local: `/data/panama-basemap.pmtiles` → **206**; `/es/explorar` dibuja el mapa y «Ver en el mapa → Coiba» vuela a la isla y lista sus áreas protegidas (comprobado en un navegador real).
+- `SITE_ENV=development pnpm build && pnpm check:bundle`: **OK** (mapa diferido 460,7 KB gzip, presupuesto 500 KB).
+- `CI=true pnpm test:e2e` con el mapa presente (Chromium 156, macOS): **187 pasan, 0 omitidas, 8 fallan** — las 8 por **tiempo** (axe en `/explorar` × 5 idiomas con WebGL por software = 11–17 s frente a un límite de 30 s, y dos sondeos de 1,2 s y 5 s), con 6 trabajadores en paralelo. **Repetidas solas con `--workers=1`: 12/12 pasan.** No es una regresión del mapa, pero sí un riesgo para el CI de GitHub (§ abajo).
+
+### Lo que NO está verificado
+
+- **El CI de GitHub**: ahora encontrará el fichero y ejecutará las pruebas del mapa, cosa que nunca ha hecho (`ci.yml` sigue siendo IMPLEMENTED). Si en un runner lento las pruebas de axe de `/explorar` rozan los 30 s, fallarán por tiempo: habría que subir su límite, no tocar el mapa.
+- **Los derechos del mapa** (L-01) siguen `provisional`; el fichero está en un repositorio privado y solo se sirve tras la protección de Vercel. Antes de una producción pública hay que decidirlos.
+
+### Pendiente
+
+Mirar la pestaña Actions tras abrir el PR; T-21 (protección: probar con una ventana privada).
