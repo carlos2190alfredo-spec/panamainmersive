@@ -6,7 +6,9 @@ configuraciones de Playwright, `ci.yml`, `package.json` y la propia herramienta 
 Uso:  python3 scripts/mutation/ci.py [ID …]
 Etiquetas: K = funciones de `bundle-scan.ts` · G = pegamento de `check-bundle.ts` · R = `e2e-report.ts` ·
 S = `check-e2e-skips.ts` · N = `e2e-run.ts` · C = `pg-cluster.ts` (unitarias) · Q = `pg-cluster.ts` (señales, integración) ·
-W = configuraciones de Playwright · Y = `ci.yml` · P = `package.json` · L = `lib.py` (contra pytest).
+W = configuraciones de Playwright · Y = `ci.yml` · P = `package.json` · L = `lib.py` (contra pytest) ·
+O = los guiones usan el ciclo de vida compartido · T = arranque del clúster interrumpido (señales, determinista) ·
+X = limpieza de `e2e-content` (contra la prueba de punta a punta de los guiones).
 
 Cada grupo tiene su ejecutor: TypeScript contra la suite unitaria COMPLETA (las pruebas del pegamento lanzan los scripts
 de verdad), los de señales contra su prueba de integración y `lib.py` contra pytest.
@@ -21,6 +23,9 @@ ER = "scripts/lib/e2e-report.ts"
 CS = "scripts/check-e2e-skips.ts"
 RN = "scripts/lib/e2e-run.ts"
 PC = "tests/integration/pg-cluster.ts"
+EC = "scripts/e2e-content.ts"
+ED = "scripts/e2e-db.ts"
+VT = "scripts/perf/vitals.ts"
 PW = "playwright.config.ts"
 PWC = "playwright.content.config.ts"
 PWD = "playwright.db.config.ts"
@@ -85,6 +90,19 @@ TS_MUTATIONS = [
     ("N12 stopGroup mata solo al líder, no al grupo", RN, "process.kill(-child.pid, signal);", "process.kill(child.pid, signal);"),
     ("N13 el build no se detiene al agotar el plazo", RN, "      stopGroup(child);\n    }, options.timeoutMs);", "    }, options.timeoutMs);"),
     ("N14 un puerto ocupado se da por libre", RN, "server.once('error', () => {\n      resolve(false);", "server.once('error', () => {\n      resolve(true);"),
+    ("N15 los manejadores se sueltan ANTES de esperar la limpieza", RN, "    await once();\n    untrack();", "    untrack();\n    await once();"),
+    ("N16 la limpieza puede ejecutarse dos veces (señal y finally)", RN, "(cleaning ??= Promise.resolve().then(cleanup))", "Promise.resolve().then(cleanup)"),
+    ("N17 la salida ignora que hubo una señal", RN, "  return requestedExit ?? code;", "  return code;"),
+    ("N18 una interrupción nunca se reconoce", RN, "  return requestedExit !== undefined;", "  return false;"),
+    ("N19 la señal no registra su código de salida", RN, "      requestedExit = code;\n", ""),
+    ("N20 el error derivado de una interrupción se imprime", RN, "      if (!wasInterrupted()) console.error(error);", "      console.error(error);"),
+    ("N21 un fallo propio del guion sale con 0", RN, "      process.exit(exitCodeFor(1));", "      process.exit(exitCodeFor(0));"),
+    ("N22 el código que devuelve `main` se ignora", RN, "      process.exit(exitCodeFor(code));", "      process.exit(exitCodeFor(0));"),
+    ("N23 `onTerminate` no reinicia el estado de interrupción", RN, "  requestedExit = undefined; // una ejecución nueva\n", "", "equivalente", "un guion registra `onTerminate` UNA vez por proceso, y el estado empieza sin definir: el reinicio solo importaría si se registrara dos veces en el mismo proceso tras una señal, que ningún guion hace (es una red de seguridad para quien lo use en pruebas)."),
+    # --- los guiones comparten el ciclo de vida (guarda textual: e2e-db y vitals no se pueden interrumpir en una prueba) ---
+    ("O1 e2e-content vuelve a su propia salida", EC, "exitWith(main);", "void main();"),
+    ("O2 e2e-db vuelve a su propia salida", ED, "exitWith(main);", "void main();"),
+    ("O3 perf:vitals vuelve a su propia salida", VT, "exitWith(main);", "void main();"),
     # --- pg-cluster.ts: barrido y selección de binarios (unitarias) -----------------------------------------------
     ("C1 el barrido ignora la edad mínima", PC, "      if (age < maxAge) continue;\n", ""),
     ("C2 el barrido mata a quien reutilizó el pid", PC, "const isOurs = line !== null && line.includes(dir);", "const isOurs = line !== null;"),
@@ -126,6 +144,8 @@ TS_MUTATIONS = [
     ("P4 el E2E con BD vuelve al CLI de tsx", PKG, '"test:e2e:db": "node --import tsx scripts/e2e-db.ts",', '"test:e2e:db": "tsx scripts/e2e-db.ts",'),
     ("P5 check sin el lint", PKG, '"check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test",', '"check": "pnpm typecheck && pnpm format && pnpm test",'),
     ("P6 el verificador de omisiones vuelve al CLI de tsx", PKG, '"check:e2e-skips": "node --import tsx scripts/check-e2e-skips.ts",', '"check:e2e-skips": "tsx scripts/check-e2e-skips.ts",'),
+    ("P7 perf:vitals vuelve al CLI de tsx", PKG, '"perf:vitals": "node --import tsx scripts/perf/vitals.ts"', '"perf:vitals": "tsx scripts/perf/vitals.ts"'),
+    ("P8 perf:db vuelve al CLI de tsx", PKG, '"perf:db": "node --import tsx scripts/perf/db-cost.ts"', '"perf:db": "tsx scripts/perf/db-cost.ts"'),
 ]
 
 # Señales de los clústeres: solo las cubre la prueba de integración (lanza un proceso real y le envía SIGINT/SIGTERM).
@@ -133,6 +153,24 @@ SIGNAL_MUTATIONS = [
     ("Q1 `stop` falla si el postmaster ya murió", PC, "      if (postmasterAlive()) run('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);", "      run('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);", "equivalente", "run/runAsync capturan la salida de pg_ctl y el `catch` posterior ya tolera el fallo si el postmaster no vive (`if (postmasterAlive()) throw error`): la comprobación previa solo evita lanzar un proceso, el comportamiento observable es el mismo"),
     ("Q2 `stopAsync` falla si el postmaster ya murió", PC, "      if (postmasterAlive()) await runAsync('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);", "      await runAsync('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);", "equivalente", "run/runAsync capturan la salida de pg_ctl y el `catch` posterior ya tolera el fallo si el postmaster no vive (`if (postmasterAlive()) throw error`): la comprobación previa solo evita lanzar un proceso, el comportamiento observable es el mismo"),
     ("Q3 el clúster no atiende las señales por defecto", PC, "if (options.handleSignals ?? true) {", "if (options.handleSignals ?? false) {"),
+]
+
+# Ctrl-C MIENTRAS ARRANCA el clúster: lo cubre su prueba determinista (un `initdb` falso que se queda esperando).
+STARTUP_MUTATIONS = [
+    ("T1 el arranque no retiene SIGINT (acción por defecto: muere y deja el directorio)", PC, "  process.on('SIGINT', holdInt);\n", ""),
+    ("T2 el arranque no retiene SIGTERM", PC, "  process.on('SIGTERM', holdTerm);\n", ""),
+    ("T3 un arranque fallido no para un postmaster a medias", PC, "      // Un arranque a medias puede haber dejado un postmaster vivo: se para ANTES de borrarle el directorio.\n      run('pg_ctl', ['-D', data, '-m', 'immediate', 'stop']);", "      // Un arranque a medias puede haber dejado un postmaster vivo: se para ANTES de borrarle el directorio."),
+    ("T4 un hijo muerto por SIGINT no se reconoce como interrupción", PC, "(e.signal === 'SIGINT' || e.status === 130", "(false"),
+    ("T5 un hijo muerto por SIGTERM no se reconoce como interrupción", PC, "e.signal === 'SIGTERM' || e.status === 143", "false"),
+    ("T6 no se cede el bucle antes de soltar la retención (se pierde el Ctrl-C)", PC, "  await new Promise<void>((resolve) => setTimeout(resolve, 20));\n", ""),
+    ("T7 tras ceder el bucle no se mira si hubo interrupción", PC, "  if (interrupted !== undefined) {\n    // La señal llegó con el arranque ya terminado", "  if (false) {\n    // La señal llegó con el arranque ya terminado"),
+    ("T8 una interrupción del arranque sale con 1", PC, "    if (byUser !== undefined) process.exit(byUser);", "    if (byUser !== undefined) process.exit(1);"),
+    ("T9 un arranque fallido no borra su directorio", PC, "    rmSync(dir, { recursive: true, force: true });\n    // El proceso hijo (initdb, pg_ctl) muere", "    // El proceso hijo (initdb, pg_ctl) muere"),
+]
+
+# Limpieza de `e2e-content` ante Ctrl-C: solo la cubre la prueba de punta a punta de los guiones (build real, señal real).
+SCRIPT_MUTATIONS = [
+    ("X1 e2e-content no borra la copia de la app al limpiar", EC, "      await Promise.all([cluster.stopAsync(), rm(APP, { recursive: true, force: true })]);", "      await cluster.stopAsync();"),
 ]
 
 # La herramienta de mutación contra su propia suite.
@@ -156,6 +194,8 @@ LIB_MUTATIONS = [
 GROUPS = [
     (TS_MUTATIONS, lambda: run_vitest("unit"), 900),
     (SIGNAL_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/cluster-signals.test.ts"]), 2),
+    (STARTUP_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/cluster-startup-signals.test.ts"]), 8),
+    (SCRIPT_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/e2e-scripts.test.ts"]), 10),
     (LIB_MUTATIONS, lambda: run_pytest(["pipelines/tests/test_mutation_lib.py"]), 20),
 ]
 
