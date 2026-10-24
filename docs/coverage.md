@@ -69,3 +69,5 @@ Un **marcador de ubicación** (punto de referencia derivado de OpenStreetMap, **
 ## Caducidad
 
 [Supuesto] La evidencia de cobertura caduca a los **90 días** o al cambiar la versión del proveedor/dataset, lo que ocurra primero (para Overture, cada release). Una cobertura caducada pasa a `UNKNOWN` en el resolver, nunca a `UNAVAILABLE`.
+
+**Consecuencia medida (entrega 5a):** la evidencia de las nueve fichas se observó el **2026-10-20** y caduca el **2027-01-18**. Desde ese día el Experience Resolver (ADR-0024) trata el terreno como «sin saber» (`expired`) y degrada a `MAP_2D`; una prueba con los datos reales lo fija. Hay que **reobservar** antes (T-19).

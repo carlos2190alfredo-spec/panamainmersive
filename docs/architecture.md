@@ -228,6 +228,8 @@ flowchart TD
 
 Representaciones: `PHOTOREALISTIC_3D, SATELLITE_TERRAIN, TOPOGRAPHIC_TERRAIN, STREET_EXPLORER, PANORAMA_STORY, PHOTO_EXPLORER, MAP_2D`. Calidad: `HIGH | STANDARD | LITE` (sin `ULTRA` hasta que haya diferencias medibles). Histéresis para evitar oscilaciones; ahorro de datos manual; **sin** APIs de memoria/temperatura/red no universales.
 
+**IMPLEMENTADO como dominio puro (entrega 5a, ADR-0024)** en `src/domains/experience/` (`resolveExperience`, `resolveQuality`, `advancePrevious`): exclusión con motivo observable de un conjunto cerrado, orden de preferencia por tipo de destino e intención, fallbacks por debajo de la elegida, calidad con histéresis y representación con histéresis **por estabilidad de la candidata**, y conservación de idioma, cámara y selección. **No está cableado a la interfaz** (F5-3), los umbrales y la tabla de preferencias son **propuestas sin validar** (F5-1) y las restricciones de combinación no están modeladas (F5-2). Con la cobertura y las políticas de hoy solo alcanza `TOPOGRAPHIC_TERRAIN`, `MAP_2D` o `TEXT_ONLY`.
+
 ## K. Layer Engine · L. Legend Engine
 
 Una capa = `{ id, nombre traducible, descripción, fuente, versión, geometrías admitidas, visibilidad, prioridad, escala mín/máx, picking, reglas de estilo declarativas }` referida a un dataset y a un `style_version`. **La leyenda se genera desde las mismas reglas de estilo y filtros** (nunca se escribe a mano), con tokens semánticos de color + patrón/símbolo + texto (no solo color). **IMPLEMENTADO en la Fase 3.c (ADR-0017)**: como registro en código del que salen el estilo y la leyenda (símbolo compartido), no como filas de BD (las tablas `layers`/`style_versions` quedan DEFERRED); ver `docs/gis.md` §13.

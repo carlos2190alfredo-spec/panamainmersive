@@ -83,7 +83,7 @@ const EXPECTED_TODAY: Readonly<Record<string, Representation>> = {
   'panama-city': 'MAP_2D', // ciudad: MAP_2D (la 3D no está disponible)
   'casco-antiguo': 'MAP_2D',
   'panama-canal': 'MAP_2D',
-  'el-valle-de-anton': 'TOPOGRAPHIC_TERRAIN', // localidad de montaña: terreno
+  'el-valle-de-anton': 'TOPOGRAPHIC_TERRAIN', // tipo `locality`: terreno (burdo: Santa Catalina es costera, F5-1)
   boquete: 'TOPOGRAPHIC_TERRAIN',
   'volcan-baru': 'TOPOGRAPHIC_TERRAIN',
   'santa-catalina': 'TOPOGRAPHIC_TERRAIN',
