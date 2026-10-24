@@ -13,7 +13,7 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 | 2 — Exploración de Panamá         | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                                          |
 | 3 — GIS                           | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                                                                                                                                                                                                                                                  | Entregas 3, 3b, 3c y 3d; cierre abajo                                                                |
 | 4 — Destinos                      | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto) el **idioma de las fuentes** (4d, WCAG 3.1.2) la **concurrencia** del modelo (4e) y su **coste con volumen** (4f: una lectura de personal que escalaba con las filas y un montaje cuadrático del exportador, corregidos); **sin ninguna afirmación verificada real** | Entregas 4a, 4b, 4c, 4d, 4e y 4f; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5 — Imágenes de calle e historias | **EN CURSO, solo componentes independientes**: **Experience Resolver** como dominio puro (entrega 5a, ADR-0024) y los **orquestadores de pruebas probados de punta a punta** (5b, T-14); lo demás **BLOQUEADO** por lo externo (sin credencial, acceso, derechos ni historias con contenido permitido: F5-4)                                                                                                                                                                                                                 |
+| 5 — Imágenes de calle e historias | **EN CURSO, solo componentes independientes**: **Experience Resolver** como dominio puro (entrega 5a, ADR-0024) los **orquestadores de pruebas probados de punta a punta** (5b, T-14) y las **acciones de terceros del CI fijadas por hash** (5c, F4-17b); lo demás **BLOQUEADO** por lo externo (sin credencial, acceso, derechos ni historias con contenido permitido: F5-4)                                                                                                                                               |
 | 6–10                              | PENDIENTE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Ver `docs/backlog.md`                                                                                |
 
 ## Entrega 1 — Foundation
@@ -828,3 +828,47 @@ T-19 (reobservar la cobertura antes del **2027-01-18**: aquí la decisión es si
 ### Siguiente acción concreta
 
 Con T-14 cerrado, lo independiente de las personas que merece la pena está **agotado**: T-16 es menor y necesita red para su parte útil. Queda una tarea con **fecha** (T-19, 2027-01-18) y todo lo demás espera contenido real, proveedores con credencial, un remoto o decisiones tuyas. Es la quinta entrega seguida en la que lo digo; la recomendación no cambia: una sesión corta para fijar los umbrales de verificación (F4-1) y verificar **un** resumen real con fuente primaria.
+
+## Entrega 5c — F4-17b: las acciones de terceros del CI, fijadas por hash de commit
+
+Alcance: R3-13 de la revisión independiente (F4-17). `actions/checkout@v4` y las otras cuatro acciones eran **etiquetas móviles**: quien controle o comprometa el repositorio de la acción cambia lo que corre en el CI sin tocar este repositorio. Estaba **DEFERRED** porque no había forma de consultar los hashes («uno supuesto sería peor que una etiqueta»). Con acceso de lectura git a los repositorios públicos ya se pueden **leer** en vez de suponerlos. Es una mejora de la cadena de suministro; **no añade ninguna función de producto**.
+
+### Qué funciona
+
+- **Las 16 referencias de `ci.yml` (5 acciones) van por hash de commit** con la versión exacta en el comentario (`# v4.4.0`). Los hashes se leyeron del repositorio de cada acción con `git ls-remote --tags` el 2026-10-24 (E-86). En una etiqueta **anotada** (`pnpm/action-setup`) se fija el commit pelado, no el objeto etiqueta.
+- **`pnpm check:action-pins`** (sin red; también lo ejecuta `pnpm test`): hash de 40 hexadecimales en minúscula, versión `vX.Y.Z`, una sola referencia por acción, nombres válidos, y **falla cerrado** ante lo que parece un `uses:` y no sabe leer (estilo de flujo, referencia dinámica).
+- **`pnpm check:action-pins --online`**: contrasta cada hash con la etiqueta de su comentario en el repositorio de la acción. Importa porque un hash puede ser de otro commit alcanzable desde el repositorio (también de un fork). Salida **0 / 1 / 2** y «no pude comprobarlo» (sin red, `git` que falla o se cuelga) **nunca** es un verde.
+- **`.github/dependabot.yml`** para `github-actions` (semanal): actualiza el hash y la versión a la vez.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm check:action-pins             # forma, sin red
+pnpm check:action-pins --online    # además, contra el repositorio de cada acción (necesita acceso git a GitHub)
+python3 scripts/mutation/ci.py A1 A2 … B11 Y13 … Y17    # las 35 mutaciones nuevas (ver docs/testing.md, «Entrega 5c»)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-24)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **56 ficheros / 1214** (antes 54 / 1123: **91 pruebas nuevas**) · `pnpm test:integration`: **24 / 396** (sin cambios; repetida al final) · **mutación: 35 nuevas, 35 detectadas** en la pasada final (3 eran supervivientes de mis propias pruebas y se cerraron), y **Y1–Y12 y P1–P8 repetidas** tras tocar `ci.yml` y `package.json`: todas detectadas · `check:action-pins --online` contra el upstream real: **5 de 5 coinciden**, y **falsado** con un hash ajeno y con una etiqueta inexistente (los dos salen con 1).
+
+### Lo que se encontró (honestamente)
+
+- **Un defecto mío antes de mutar**: el CLI daba **0** si un repositorio no tenía etiquetas (salida vacía), porque la confundía con «no se pudo leer». Lo vi razonando qué mutaciones sobrevivirían; prueba roja → corrección.
+- **Una prueba que medía el entorno, no el programa** (A18): comprobaba que `git` recibía `GIT_TERMINAL_PROMPT=0`, pero este entorno ya lo trae a `0`, así que pasaba con o sin el código. La mutación que quitaba esa línea sobrevivió; ahora las pruebas parten de `1`.
+- Otros dos supervivientes (A16, B9) eran huecos de mis pruebas, no de la lógica.
+
+### Qué no pudo verificarse
+
+- **Que `ci.yml` se ejecute** con estas referencias: nunca corrió (no hay remoto). Una versión de acción más nueva que la que la etiqueta resolvía cuando se escribió el flujo es un cambio de comportamiento posible (los hashes son los que `@v4`/`@v5` resuelven **hoy**).
+- **Dependabot**: solo se comprueba el texto de su configuración. **Sin remoto no hace nada, y fijar sin actualizar envejece en silencio**: las acciones quedarían congeladas, sin sus parches de seguridad, hasta que alguien las revise a mano.
+- **Lo que hacen esas versiones por dentro**: el hash garantiza que no cambian, no que sean inocuas, y no cubre sus dependencias transitivas ni las acciones que una acción compuesta use por dentro. Nadie ha leído ese código.
+- La comprobación `--online` contra el repositorio **real** se hizo **a mano** (E-86); ninguna prueba automática toca la red.
+
+### Decisiones que necesitan a una persona
+
+Ninguna nueva. Dependabot se activa al conectar un remoto (la decisión de conectarlo sigue siendo tuya: T-15).
+
+### Pendiente
+
+Sin cambios respecto a la entrega 5b salvo que **F4-17b queda hecha** (excepto Dependabot, que espera al remoto). Ver `docs/backlog.md`.
