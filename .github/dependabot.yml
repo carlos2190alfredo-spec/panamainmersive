@@ -1,0 +1,14 @@
+# Mantiene al día las acciones de GitHub fijadas por hash en `.github/workflows/` (F4-17b). Dependabot lee el comentario
+# `# vX.Y.Z` de cada `uses:` y actualiza a la vez el hash y la versión. Sin esto, fijar por hash deja las acciones
+# congeladas: más seguro frente a una etiqueta reasignada, pero sin los parches de seguridad de la propia acción.
+#
+# ESTADO: IMPLEMENTED, no VERIFIED. Solo tiene efecto en un repositorio de GitHub con Dependabot activado; este proyecto
+# aún no tiene remoto. Cada actualización llega como una solicitud de cambios: revisa el hash con
+# `pnpm check:action-pins --online` antes de aceptarla. Solo cubre las acciones: el resto de dependencias se actualiza a
+# mano (Next, TypeScript y typescript-eslint están fijados a propósito: ADR-0002).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -96,7 +96,8 @@ describe('ci.yml', () => {
 
   it.each(['e2e', 'e2e-content'])('%s: sube las trazas si falla', (id) => {
     const block = jobs[id] ?? '';
-    expect(block).toMatch(/uses:\s*actions\/upload-artifact@v4/);
+    // fijada por hash de commit (F4-17b); la forma de TODAS las acciones la vigila `action-pins.test.ts`
+    expect(block).toMatch(/uses:\s*actions\/upload-artifact@[0-9a-f]{40}\s+# v\d+\.\d+\.\d+/);
     expect(block).toMatch(/if:\s*failure\(\)/);
     expect(block).toMatch(/path:\s*test-results\//);
     expect(block).toMatch(/if-no-files-found:\s*ignore/);

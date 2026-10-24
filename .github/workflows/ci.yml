@@ -10,8 +10,11 @@
 #  · `pnpm test:e2e:db` NO está en este flujo: necesita artefactos de datos gitignorados (`pnpm data:build` y
 #    `pnpm data:ingest`) que el CI no genera, y en CI «faltan datos» es un FALLO (un verde que no ejecutó nada es peor
 #    que un rojo), así que añadirlo sin generarlos lo dejaría siempre en rojo. Se ejecuta en local (docs/testing.md).
-#  · Las acciones de terceros van por etiqueta mayor (`@v4`), no por hash de commit: DEFERRED (no se pueden consultar los
-#    hashes sin red hacia GitHub y uno supuesto sería peor que una etiqueta). Backlog F4-17.
+#  · Las acciones de terceros van FIJADAS por hash de commit (F4-17b), con su versión en el comentario: una etiqueta como
+#    `@v4` se puede reasignar. Los hashes se leyeron del repositorio de cada acción (`git ls-remote`, 2026-10-24: E-86) y
+#    `pnpm check:action-pins --online` lo repite. `pnpm test` vigila la forma (`tests/unit/scripts/action-pins.test.ts`).
+#    `.github/dependabot.yml` los actualiza, pero SOLO hará algo cuando exista un remoto con Dependabot activado: sin él los
+#    hashes envejecen sin aviso (y sin parches de seguridad de las acciones).
 name: CI
 
 on:
@@ -33,9 +36,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -50,8 +53,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.13'
           cache: pip
@@ -66,9 +69,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -89,9 +92,9 @@ jobs:
     timeout-minutes: 30
     needs: check
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -117,7 +120,7 @@ jobs:
           E2E_MAX_SKIPPED: '56'
       - name: Trazas de Playwright (solo si falla)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-test-results
           path: test-results/
@@ -130,9 +133,9 @@ jobs:
     timeout-minutes: 30
     needs: check
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -152,7 +155,7 @@ jobs:
           CI: 'true'
       - name: Trazas de Playwright (solo si falla)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-content-test-results
           path: test-results/

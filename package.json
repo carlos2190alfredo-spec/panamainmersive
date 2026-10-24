@@ -22,6 +22,7 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "check:e2e-skips": "node --import tsx scripts/check-e2e-skips.ts",
+    "check:action-pins": "node --import tsx scripts/check-action-pins.ts",
     "test:e2e:db": "node --import tsx scripts/e2e-db.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test",
     "db:migrate": "tsx scripts/db/migrate.ts",
