@@ -13,7 +13,7 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 | 2 — Exploración de Panamá         | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                                          |
 | 3 — GIS                           | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                                                                                                                                                                                                                                                  | Entregas 3, 3b, 3c y 3d; cierre abajo                                                                |
 | 4 — Destinos                      | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto) el **idioma de las fuentes** (4d, WCAG 3.1.2) la **concurrencia** del modelo (4e) y su **coste con volumen** (4f: una lectura de personal que escalaba con las filas y un montaje cuadrático del exportador, corregidos); **sin ninguna afirmación verificada real** | Entregas 4a, 4b, 4c, 4d, 4e y 4f; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5 — Imágenes de calle e historias | **EN CURSO, solo componentes independientes**: **Experience Resolver** como dominio puro (entrega 5a, ADR-0024); lo demás **BLOQUEADO** por lo externo (sin credencial, acceso, derechos ni historias con contenido permitido: F5-4)                                                                                                                                                                                                                                                                                         |
+| 5 — Imágenes de calle e historias | **EN CURSO, solo componentes independientes**: **Experience Resolver** como dominio puro (entrega 5a, ADR-0024) y los **orquestadores de pruebas probados de punta a punta** (5b, T-14); lo demás **BLOQUEADO** por lo externo (sin credencial, acceso, derechos ni historias con contenido permitido: F5-4)                                                                                                                                                                                                                 |
 | 6–10                              | PENDIENTE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Ver `docs/backlog.md`                                                                                |
 
 ## Entrega 1 — Foundation
@@ -776,3 +776,55 @@ F5-1 (validar umbrales), F5-2 (combinación), F5-3 (cablear), F5-4 (la fase en s
 ### Siguiente acción concreta
 
 Lo independiente de las personas **en las Fases 4 y 5** está agotado: lo que queda es contenido real, proveedores con credencial, decisiones o un remoto. Dos cosas con **fecha**: reobservar la cobertura antes del **2027-01-18** (T-19) y, antes de cualquier proveedor de calle, resolver F5-4. La recomendación sigue siendo la misma, y ya es la tercera vez que la escribo: una sesión corta para fijar los umbrales de verificación (F4-1) y verificar **un** resumen real con fuente primaria. Sin eso, cada entrega nueva es andamiaje sobre un producto sin un solo dato verificado.
+
+## Entrega 5b — T-14: los guiones de orquestación, de punta a punta
+
+Alcance: la deuda técnica T-14, que era lo único independiente de las personas con **riesgo real**: los orquestadores de pruebas (`e2e-content`, `e2e-db`, `perf:vitals`) levantan clústeres, servidores y navegadores, y si Ctrl-C deja restos o se pierde, todo lo que se pruebe encima es sospechoso. Cada pieza tenía pruebas; el **guion completo** solo se había comprobado a mano (una señal, en un momento concreto). Al automatizarlo **fallaron las tres pruebas de Ctrl-C**, cada una por un defecto distinto.
+
+### Qué funciona (VERIFIED en local, 2026-10-24)
+
+- **Ctrl-C ya no deja restos ni sale con 1.** En el arranque del clúster, en el build, con una señal y con la doble que reenvía `tsx`: salida 130/143 y cero restos (directorios del clúster, copia de la app, procesos vivos).
+- **`withTermination` y `exitWith`** (en `e2e-run.ts`): una sola implementación del ciclo de vida (limpieza única, esperada **antes** de soltar los manejadores; 130/143 sin imprimir como error lo que es consecuencia). Los usan `e2e-content`, `e2e-db` y `perf:vitals`.
+- **`startTestCluster` interrumpido durante el arranque**: retiene las señales, limpia, para un postmaster a medias y sale con 130/143; una señal que llega en un tramo síncrono sin matar a ningún hijo **ya no se pierde**.
+- **`perf:vitals`**: antes dejaba un `next-server` huérfano con Ctrl-C (y usaba el CLI `tsx`); ahora puerto libre, servidor propio verificado, `node --import tsx` y una sola limpieza para servidor y navegador. Verificado a mano antes y después, con una señal y con la doble.
+- **Las pruebas** (ver `docs/testing.md`, «Entrega 5b»): los guiones de punta a punta, el arranque interrumpido con un `initdb` falso (determinista), los helpers con un guion mínimo y una guarda textual de que los tres guiones usan el ciclo de vida compartido.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm test:integration tests/integration/e2e-scripts.test.ts tests/integration/cluster-startup-signals.test.ts
+pnpm exec vitest run --project unit tests/unit/scripts
+python3 scripts/mutation/ci.py                                  # las mutaciones (con las 24 nuevas)
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-24)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **54 ficheros / 1123** (antes 53 / 1108) · `pnpm test:integration`: **24 / 396** (antes 22 / 378; tres pasadas seguidas sin intermitencias) · `pnpm test:pipelines`: **119** · `pnpm test:e2e:content` y `pnpm test:e2e:db`: **28** y **7** (repetidos el 2026-10-24 sobre el código final) · `pnpm perf:vitals --runs 1`: completa en 29 s con las mismas cifras de transferencia que M-06 · **mutación: 24 nuevas, 23 detectadas y 1 equivalente (N23); una real sobrevivía (N15) y se cerró; pasada completa de `ci.py` sobre el código final: **129 mutaciones, 126 detectadas y 3 equivalentes justificadas (Q1, Q2, N23), 0 inválidas.**** Rojo→verde: las pruebas del arranque interrumpido fallan con el `pg-cluster.ts` anterior.
+
+### Lo que se encontró y cambió (honestamente)
+
+- **Tres defectos de la F4-17, que yo escribí y di por comprobados** («Ctrl-C 8/8» era una señal en un momento concreto): el arranque del clúster no tenía manejadores y dejaba el directorio; una señal durante el build salía con 1; y con la señal doble el `finally` soltaba los manejadores antes de esperar la limpieza, así que la segunda señal mataba el proceso dejando clúster y copia. **Y el mismo orden defectuoso lo repetí en `vitals.ts` una hora antes**; mi comprobación de una sola señal no lo habría visto.
+- **Mi primer arreglo del arranque perdía el Ctrl-C en otra ventana**: una señal que llegaba durante el tramo síncrono sin matar a ningún hijo quedaba pendiente y se descartaba al soltar la retención. Lo demostró una prueba determinista, no una carrera de tiempos. Con `tsx` cargado la señal llega ≈ 0,4 ms después de volver (no en la vuelta de `setImmediate`, como en Node puro): se cede el bucle 20 ms (E-84).
+- **Mi detector de huérfanos mentía**: daba «0 huérfanos» para la versión **antigua** (que sí dejaba uno) porque `next start` cambia su título de proceso a `next-server` (E-85). Lo descubrí **falsando el detector** contra la versión que dejaba restos.
+- **Un superviviente real de la mutación (N15) por culpa de mi fixture**: sus manejadores permanentes impedían que la segunda señal matara el proceso con o sin el defecto. Con `process.once` la prueba detecta el defecto.
+- **Dos errores míos al escribir las pruebas**, cazados al ejecutarlas: un fixture que terminaba con 0 antes de recibir la señal (sin nada que mantuviera vivo el bucle) y una limpieza no idempotente (el helper ahora la garantiza él mismo).
+
+### Qué no pudo verificarse
+
+- El **Ctrl-C de `e2e-db` y de `perf:vitals` de punta a punta** en una prueba automática: necesitan build, mapa e ingesta; comparten los helpers probados y la guarda textual, y se verificó **a mano**.
+- El **hueco de ≈ 1 ms** del `await freePort()` durante el arranque: no hay forma determinista de apuntar a él; lo cubre la espera final.
+- La prueba del `id` del `chown` **solo corre como `root`**; en un CI sin privilegios se omite (y lo dice).
+- **Nada de esto se ha ejecutado en CI** (no hay remoto).
+- Todo lo de antes: contenido real (la instantánea sigue **vacía**), `ci.yml` nunca ejecutado, lectores de pantalla reales, Chromium 141 local frente a 156 en CI.
+
+### Decisiones que necesitan a una persona (no puedo tomarlas yo)
+
+Las de la 4d, la de la 4f y las de la 5a. Ninguna nueva.
+
+### Pendiente
+
+T-19 (reobservar la cobertura antes del **2027-01-18**: aquí la decisión es si se automatiza un aviso), T-16 (IANA y `dir`; lo primero necesita red), F5-1…F5-4, y lo de antes: _pooler_ y disco de producción (F4-8), T-17, F4-18, T-15, F4-17b, F4-14, F4-16, F4-6, F4-2. Ver `docs/backlog.md`.
+
+### Siguiente acción concreta
+
+Con T-14 cerrado, lo independiente de las personas que merece la pena está **agotado**: T-16 es menor y necesita red para su parte útil. Queda una tarea con **fecha** (T-19, 2027-01-18) y todo lo demás espera contenido real, proveedores con credencial, un remoto o decisiones tuyas. Es la quinta entrega seguida en la que lo digo; la recomendación no cambia: una sesión corta para fijar los umbrales de verificación (F4-1) y verificar **un** resumen real con fuente primaria.
