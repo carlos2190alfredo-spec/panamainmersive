@@ -300,16 +300,26 @@ describe('parseAudit y mergeAdvisories (salida de `pnpm audit --json`)', () => {
   });
 
   it.each([
-    ['sin `advisories` (p. ej. un error de red en JSON)', { error: { code: 'ENOTFOUND' } }],
-    ['`advisories` no es un objeto', { advisories: [] }],
+    [
+      'sin `advisories` (p. ej. un error de red en JSON)',
+      { error: { code: 'ENOTFOUND' } },
+      /no trae `advisories`/,
+    ],
+    ['`advisories` no es un objeto', { advisories: [] }, /no trae `advisories`/],
     [
       'una gravedad desconocida',
       { advisories: { '1': { ...raw.advisories['1106913'], severity: 'catastrophic' } } },
+      /gravedad desconocida/,
     ],
-    ['un aviso sin paquete', { advisories: { '1': { id: 1, severity: 'high', title: 't' } } }],
-    ['no es un objeto', 'texto'],
-  ])('%s: se rechaza (no se pudo evaluar)', (_label, bad) => {
-    expect(() => parseAudit(bad, 'prod')).toThrow();
+    [
+      'un aviso sin paquete',
+      { advisories: { '1': { id: 1, severity: 'high', title: 't' } } },
+      /no indica el paquete/,
+    ],
+    ['no es un objeto', 'texto', /no trae `advisories`/],
+  ])('%s: se rechaza con su motivo (no se pudo evaluar)', (_label, bad, message) => {
+    // el motivo se comprueba: un `TypeError` genérico («Cannot convert undefined…») también «lanza» y no ayuda a nadie
+    expect(() => parseAudit(bad, 'prod')).toThrow(message);
   });
 
   it('mergeAdvisories: un aviso que está en producción NO se degrada a desarrollo', () => {
