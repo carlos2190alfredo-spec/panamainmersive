@@ -273,10 +273,12 @@ describe('verifyAgainstTags (contra la salida de `git ls-remote --tags`)', () =>
     expect(verifyAgainstTags(use({ version: null }), lightweight('v4.4.0', SHA_A))).toEqual({
       status: 'tag-not-found',
     });
-    // ni siquiera por una etiqueta que se llame como el texto «null»
-    expect(verifyAgainstTags(use({ version: null }), lightweight('null', SHA_A))).toEqual({
-      status: 'tag-not-found',
-    });
+    // ni siquiera por una etiqueta que se llame como el texto «null» (ligera, o anotada: su commit pelado es `null^{}`)
+    for (const output of [lightweight('null', SHA_A), `${SHA_A}\trefs/tags/null^{}\n`]) {
+      expect(verifyAgainstTags(use({ version: null }), output)).toEqual({
+        status: 'tag-not-found',
+      });
+    }
   });
 
   it('las discrepancias se describen con el hash fijado y el real', () => {

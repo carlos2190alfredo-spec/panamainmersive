@@ -84,7 +84,9 @@ const calls = (git: FakeGit): string[] =>
   existsSync(git.log) ? readFileSync(git.log, 'utf8').trim().split('\n') : [];
 
 function run(dir: string, args: string[], git?: FakeGit) {
-  const env: NodeJS.ProcessEnv = { ...process.env };
+  // `GIT_TERMINAL_PROMPT=1` a propósito: este entorno (y otros) ya lo trae a `0`, y entonces la prueba de que el guion lo
+  // fuerza a `0` pasaría sin medir nada (una mutación que quita esa línea sobrevivía).
+  const env: NodeJS.ProcessEnv = { ...process.env, GIT_TERMINAL_PROMPT: '1' };
   if (git) env.PATH = `${git.bin}:${process.env.PATH ?? ''}`;
   return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
     execFile(
@@ -214,6 +216,20 @@ describe('check-action-pins --online (git falso)', () => {
     ]);
   });
 
+  it('un repositorio ilegible usado por varias acciones se intenta UNA vez y se dice UNA vez', async () => {
+    const dir = workdir({
+      '.github/workflows/ci.yml': workflow(
+        `github/codeql-action/init@${SHA_C} # v3.1.0`,
+        `github/codeql-action/analyze@${SHA_C} # v3.1.0`,
+      ),
+    });
+    const git = fakeGit({}); // `git` falla (128) para cualquier repositorio
+    const result = await run(dir, ['--online'], git);
+    expect(result.code).toBe(2);
+    expect(calls(git)).toHaveLength(1);
+    expect(result.stderr.match(/FALLO/g)).toHaveLength(1);
+  });
+
   it('`git` que falla (sin red, repositorio inexistente): sale con 2 y nombra el repositorio, NUNCA con 0', async () => {
     const dir = workdir({ '.github/workflows/ci.yml': GOOD });
     const git = fakeGit({ 'actions/checkout': ALL['actions/checkout'] });
@@ -235,12 +251,15 @@ describe('check-action-pins --online (git falso)', () => {
 
 describe('lsRemoteTags', () => {
   function withPath<T>(git: FakeGit, body: () => T): T {
-    const before = process.env.PATH;
-    process.env.PATH = `${git.bin}:${before ?? ''}`;
+    const before = { path: process.env.PATH, prompt: process.env.GIT_TERMINAL_PROMPT };
+    process.env.PATH = `${git.bin}:${before.path ?? ''}`;
+    process.env.GIT_TERMINAL_PROMPT = '1'; // ver `run`: la prueba solo mide algo si parte de un valor distinto de 0
     try {
       return body();
     } finally {
-      process.env.PATH = before;
+      process.env.PATH = before.path;
+      if (before.prompt === undefined) delete process.env.GIT_TERMINAL_PROMPT;
+      else process.env.GIT_TERMINAL_PROMPT = before.prompt;
     }
   }
 

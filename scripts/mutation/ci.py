@@ -8,7 +8,8 @@ Etiquetas: K = funciones de `bundle-scan.ts` · G = pegamento de `check-bundle.t
 S = `check-e2e-skips.ts` · N = `e2e-run.ts` · C = `pg-cluster.ts` (unitarias) · Q = `pg-cluster.ts` (señales, integración) ·
 W = configuraciones de Playwright · Y = `ci.yml` · P = `package.json` · L = `lib.py` (contra pytest) ·
 O = los guiones usan el ciclo de vida compartido · T = arranque del clúster interrumpido (señales, determinista) ·
-X = limpieza de `e2e-content` (contra la prueba de punta a punta de los guiones).
+X = limpieza de `e2e-content` (contra la prueba de punta a punta de los guiones) ·
+A = `action-pins.ts` (acciones fijadas por hash) · B = `check-action-pins.ts` · Y13–Y17 = `ci.yml` y `dependabot.yml` (fijado).
 
 Cada grupo tiene su ejecutor: TypeScript contra la suite unitaria COMPLETA (las pruebas del pegamento lanzan los scripts
 de verdad), los de señales contra su prueba de integración y `lib.py` contra pytest.
@@ -26,6 +27,9 @@ PC = "tests/integration/pg-cluster.ts"
 EC = "scripts/e2e-content.ts"
 ED = "scripts/e2e-db.ts"
 VT = "scripts/perf/vitals.ts"
+AP = "scripts/lib/action-pins.ts"
+CA = "scripts/check-action-pins.ts"
+DEP = ".github/dependabot.yml"
 PW = "playwright.config.ts"
 PWC = "playwright.content.config.ts"
 PWD = "playwright.db.config.ts"
@@ -132,7 +136,7 @@ TS_MUTATIONS = [
     ("Y5 ci-ok no se ejecuta siempre", YML, "    if: ${{ always() }}\n", ""),
     ("Y6 ci-ok acepta un job omitido", YML, " || contains(needs.*.result, 'skipped') }}", " }}"),
     ("Y7 el presupuesto de omisiones no se ejecuta", YML, "        run: pnpm check:e2e-skips\n", "        run: echo omitido\n"),
-    ("Y8 las trazas de E2E se suben siempre (también en verde)", YML, "        if: failure()\n        uses: actions/upload-artifact@v4\n        with:\n          name: e2e-test-results\n", "        uses: actions/upload-artifact@v4\n        with:\n          name: e2e-test-results\n"),
+    ("Y8 las trazas de E2E se suben siempre (también en verde)", YML, "        if: failure()\n        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2\n        with:\n          name: e2e-test-results\n", "        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2\n        with:\n          name: e2e-test-results\n"),
     ("Y9 las trazas del job de contenido fallan si no hay ninguna", YML, "          name: e2e-content-test-results\n          path: test-results/\n          if-no-files-found: ignore\n", "          name: e2e-content-test-results\n          path: test-results/\n"),
     ("Y10 el job de contenido no imprime la versión de PostgreSQL", YML, "          /usr/lib/postgresql/16/bin/postgres --version\n      - run: pnpm test:e2e:content\n", "      - run: pnpm test:e2e:content\n"),
     ("Y11 el job de E2E no imprime la versión de Chromium/Playwright", YML, "          pnpm exec playwright --version\n      - run: pnpm build\n", "      - run: pnpm build\n"),
@@ -173,6 +177,50 @@ SCRIPT_MUTATIONS = [
     ("X1 e2e-content no borra la copia de la app al limpiar", EC, "      await Promise.all([cluster.stopAsync(), rm(APP, { recursive: true, force: true })]);", "      await cluster.stopAsync();"),
 ]
 
+# Acciones de terceros fijadas por hash (F4-17b): la lógica, su CLI y los ficheros reales (`ci.yml`, `dependabot.yml`).
+# Corren solo contra las pruebas que las vigilan (la suite completa no añade nada: nada más usa estos ficheros).
+PIN_MUTATIONS = [
+    # --- action-pins.ts: la FORMA ------------------------------------------------------------------------------------
+    ("A1 un hash en MAYÚSCULAS se acepta", AP, "const COMMIT_SHA = /^[0-9a-f]{40}$/;", "const COMMIT_SHA = /^[0-9a-fA-F]{40}$/;"),
+    ("A2 un hash abreviado se acepta", AP, "const COMMIT_SHA = /^[0-9a-f]{40}$/;", "const COMMIT_SHA = /^[0-9a-f]{7,40}$/;"),
+    ("A3 un hash de más de 40 caracteres se acepta", AP, "const COMMIT_SHA = /^[0-9a-f]{40}$/;", "const COMMIT_SHA = /^[0-9a-f]{40}/;"),
+    ("A4 no se exige la versión en el comentario", AP, "if (use.version === null || !VERSION_WORD.test(use.version)) {", "if (false) {"),
+    ("A5 una versión sin parche (`# v4`) se acepta", AP, "const VERSION_WORD = /^v\\d+\\.\\d+\\.\\d+$/;", "const VERSION_WORD = /^v\\d+/;"),
+    ("A6 un valor entre comillas no se lee (las comillas esquivarían la guarda)", AP, "(?:'([^']*)'|\"([^\"]*)\"|([^\\s'\"]+))", "(?:(')|(\")|([^\\s'\"]+))"),
+    ("A7 una acción local (`./…`) se trata como de terceros", AP, "    if (value.startsWith('./')) return; // acción local: es código de este repositorio\n", ""),
+    ("A8 la versión es TODO el comentario, no la primera palabra", AP, "const word = match[4]?.split(/\\s+/)[0];", "const word = match[4];"),
+    ("A9 un nombre con segmento `..` se acepta", AP, "ACTION_NAME.test(action) && !action.split('/').some((part) => part === '.' || part === '..')", "ACTION_NAME.test(action)"),
+    ("A10 la misma acción con otra versión anotada no es incoherente", AP, "pins.add(`${use.ref} # ${use.version ?? ''}`);", "pins.add(use.ref);"),
+    ("A11 la misma acción con hashes distintos no es incoherente", AP, "if (pins.size > 1) problems.push({ code: 'inconsistent', action, pins: [...pins] });", "if (pins.size > 99) problems.push({ code: 'inconsistent', action, pins: [...pins] });"),
+    ("A12 una referencia mal formada cuenta también para la incoherencia", AP, "    if (problems.length === before) wellFormed.push(use);", "    wellFormed.push(use);"),
+    # --- action-pins.ts: la verificación contra las etiquetas ------------------------------------------------------------
+    ("A13 se compara con el objeto etiqueta y no con su commit pelado", AP, "const actual = peeled ?? direct;", "const actual = direct ?? peeled;"),
+    ("A14 el nombre de la etiqueta se compara por prefijo", AP, "if (match[2] === use.version) direct = match[1];", "if (match[2]?.startsWith(use.version) === true) direct = match[1];"),
+    ("A15 una discrepancia de hash se da por buena", AP, "return actual === use.ref ? { status: 'ok' } : { status: 'sha-mismatch', actual };", "return { status: 'ok' };"),
+    ("A16 un uso sin versión se busca como la etiqueta «null»", AP, "  if (use.version === null) return { status: 'tag-not-found' };\n", ""),
+    ("A17 un nombre de repositorio raro llega a `git`", AP, "if (!REPO_NAME.test(repo)) throw", "if (false) throw"),
+    ("A18 `git` puede pedir credenciales por terminal (cuelga el CI)", AP, "      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },\n", ""),
+    ("A19 un `git` colgado no tiene plazo", AP, "      timeout: timeoutMs,\n", ""),
+    # --- check-action-pins.ts: el pegamento ----------------------------------------------------------------------------
+    ("B1 los problemas de forma no hacen fallar", CA, "  if (problems.length > 0) return 1;\n", ""),
+    ("B2 con problemas de forma se sale igualmente a la red", CA, "  if (problems.length > 0) return 1;\n", "  if (problems.length > 0 && !options.online) return 1;\n"),
+    ("B3 la comprobación en línea se ejecuta siempre", CA, "  return options.online ? verifyOnline(uses) : 0;", "  return verifyOnline(uses);"),
+    ("B4 «no se pudo leer» sale con 0", CA, "  if (unreadable.size > 0) return 2;\n", "  if (unreadable.size > 0) return 0;\n"),
+    ("B5 una discrepancia sale con 0", CA, "  if (violations > 0) return 1;\n", ""),
+    ("B6 sin ningún flujo se da por bueno", CA, "  if (names.length === 0) {", "  if (false) {"),
+    ("B7 un directorio inexistente no se detecta", CA, "  if (!existsSync(options.dir) || !statSync(options.dir).isDirectory()) {", "  if (false) {"),
+    ("B8 un argumento desconocido se ignora", CA, "      return `Argumento no reconocido: ${String(arg)}`;", "      continue;"),
+    ("B9 un repositorio ilegible se consulta de nuevo por cada acción", CA, "    if (tagsByRepo.has(repo) || unreadable.has(repo)) continue;", "    if (tagsByRepo.has(repo)) continue;"),
+    ("B10 un repositorio ilegible se verifica igualmente (salida vacía)", CA, "    if (unreadable.has(repo)) continue; // ya se dijo que no se pudo leer\n", ""),
+    ("B11 la salida vacía de un repositorio sin etiquetas se da por buena", CA, "    const check = verifyAgainstTags(use, tagsByRepo.get(repo) ?? '');\n    if (check.status !== 'ok') {", "    const check = verifyAgainstTags(use, tagsByRepo.get(repo) ?? '');\n    if (check.status !== 'ok' && tagsByRepo.get(repo) !== '') {"),
+    # --- ci.yml y dependabot.yml (fijado) ---------------------------------------------------------------------------------
+    ("Y13 `setup-python` vuelve a una etiqueta móvil", YML, "      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0\n", "      - uses: actions/setup-python@v5\n"),
+    ("Y14 `setup-python` pierde la versión del comentario", YML, "      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0\n", "      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065\n"),
+    ("Y15 `upload-artifact` del job de contenido vuelve a una etiqueta móvil", YML, "        if: failure()\n        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2\n        with:\n          name: e2e-content-test-results\n", "        if: failure()\n        uses: actions/upload-artifact@v4\n        with:\n          name: e2e-content-test-results\n"),
+    ("Y16 Dependabot no vigila las acciones de GitHub", DEP, "  - package-ecosystem: github-actions\n", "  - package-ecosystem: npm\n"),
+    ("Y17 Dependabot sin periodicidad", DEP, "      interval: weekly\n", ""),
+]
+
 # La herramienta de mutación contra su propia suite.
 LIB_MUTATIONS = [
     ("L1 un ID inexistente se acepta", LIB, "    if unknown:\n", "    if False:\n"),
@@ -196,6 +244,7 @@ GROUPS = [
     (SIGNAL_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/cluster-signals.test.ts"]), 2),
     (STARTUP_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/cluster-startup-signals.test.ts"]), 8),
     (SCRIPT_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/e2e-scripts.test.ts"]), 10),
+    (PIN_MUTATIONS, lambda: run_vitest("unit", ["tests/unit/scripts/action-pins.test.ts", "tests/unit/scripts/check-action-pins.test.ts", "tests/unit/scripts/ci-workflow.test.ts"]), 100),
     (LIB_MUTATIONS, lambda: run_pytest(["pipelines/tests/test_mutation_lib.py"]), 20),
 ]
 
