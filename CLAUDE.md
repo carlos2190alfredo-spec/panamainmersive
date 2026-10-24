@@ -11,7 +11,7 @@ pnpm check                                                 # = typecheck + lint 
 pnpm test:integration                                      # PostgreSQL+PostGIS temporal (necesita binarios)
 SITE_ENV=development pnpm build && pnpm check:bundle       # build + secretos en bundle + presupuesto JS (+ mapa diferido)
 pnpm test:e2e                                              # Playwright sobre el build de producción (incluye el mapa con WebGL real)
-CI=true pnpm test:e2e && pnpm check:e2e-skips --max-skipped 56   # como en CI: informe JSON en test-results/ + presupuesto de omitidas (56 sin el mapa base; con él, 0)
+CI=true pnpm test:e2e && pnpm check:e2e-skips --max-skipped 57   # como en CI: informe JSON en test-results/ + presupuesto de omitidas (57 sin el mapa base; con él, 0)
 pnpm check:action-pins [--online]                          # acciones de ci.yml fijadas por hash (forma sin red; `--online` contra el repositorio de cada acción: E-86; salida 0/1/2)
 pnpm check:licenses                                        # licencias de las dependencias contra data/dependency-policy.json (sin red; va en el job `check`; salida 0/1/2)
 pnpm check:audit                                           # avisos de `pnpm audit` por ámbito (con red; va en audit.yml semanal, NO en ci.yml; sin red sale 2)

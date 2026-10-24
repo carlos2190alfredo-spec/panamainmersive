@@ -349,7 +349,7 @@
     "languagesBody": "Spanish, English, Portuguese, French and German. The translations are pending human review.",
     "limitationsHeading": "Known limitations",
     "limitations": {
-      "map": "The interactive map is not yet integrated in this version.",
+      "map": "The map is a graphic canvas: the place names drawn on it are not read by screen readers. It can be operated with the keyboard, and the destination list is its text alternative.",
       "testing": "Automated tests do not replace an evaluation with users, which has not been carried out yet.",
       "screenReaders": "It has not been tested with real screen readers."
     },

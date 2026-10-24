@@ -349,7 +349,7 @@
     "languagesBody": "Espagnol, anglais, portugais, français et allemand. Les traductions attendent une relecture humaine.",
     "limitationsHeading": "Limites connues",
     "limitations": {
-      "map": "La carte interactive n’est pas encore intégrée dans cette version.",
+      "map": "La carte est un canevas graphique : les noms de lieux qui y sont dessinés ne sont pas lus par les lecteurs d’écran. Elle peut être utilisée au clavier, et la liste des destinations en est l’alternative textuelle.",
       "testing": "Les tests automatiques ne remplacent pas une évaluation avec des utilisateurs, qui n’a pas encore été réalisée.",
       "screenReaders": "Elle n’a pas été testée avec de vrais lecteurs d’écran."
     },

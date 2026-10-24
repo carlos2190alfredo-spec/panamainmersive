@@ -349,7 +349,7 @@
     "languagesBody": "Espanhol, inglês, português, francês e alemão. As traduções aguardam revisão humana.",
     "limitationsHeading": "Limitações conhecidas",
     "limitations": {
-      "map": "O mapa interativo ainda não está integrado nesta versão.",
+      "map": "O mapa é uma tela gráfica: os nomes de lugares desenhados nele não são lidos por leitores de tela. Pode ser operado com o teclado, e a lista de destinos é a sua alternativa em texto.",
       "testing": "Os testes automáticos não substituem uma avaliação com pessoas usuárias, que ainda não foi realizada.",
       "screenReaders": "Não foi testado com leitores de tela reais."
     },

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { TEXT_SPACING_CSS, applyCss, clippedText, hiddenFocus } from './a11y-probes';
 import { LOCALES, PAGE_NAMES, PATHS } from './helpers';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -110,6 +111,79 @@ test.describe('reflow y textos largos (320 px, sin desplazamiento horizontal de 
         expect(overflow, `${locale} ${name}`).toBeLessThanOrEqual(0);
       }
     });
+  }
+});
+
+test.describe('espaciado de texto (WCAG 1.4.12)', () => {
+  test('control: el CSS se aplica y el detector ve un recorte real', async ({ page }) => {
+    await page.goto(PATHS.home.es);
+    await applyCss(page, TEXT_SPACING_CSS);
+    const spacing = await page.evaluate(
+      () => getComputedStyle(document.querySelector('p') as Element).letterSpacing,
+    );
+    expect(spacing, 'el espaciado inyectado no se aplicó: la prueba no mediría nada').not.toBe(
+      'normal',
+    );
+    await page.evaluate(() => {
+      const box = document.createElement('div');
+      box.style.cssText = 'overflow:hidden;height:10px;width:100px';
+      box.textContent = 'Texto largo que no cabe en la caja y queda recortado';
+      document.body.append(box);
+    });
+    expect((await clippedText(page)).length).toBeGreaterThan(0);
+  });
+
+  for (const locale of LOCALES) {
+    test(`${locale}: ninguna página recorta texto ni desborda con el espaciado exigido`, async ({
+      page,
+    }) => {
+      for (const name of PAGE_NAMES) {
+        await page.goto(PATHS[name][locale]);
+        await page.waitForLoadState('networkidle');
+        await applyCss(page, TEXT_SPACING_CSS);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `${locale} ${name}: desbordamiento horizontal`).toBeLessThanOrEqual(0);
+        expect(await clippedText(page), `${locale} ${name}: texto recortado`).toEqual([]);
+      }
+    });
+  }
+});
+
+test.describe('foco no oculto (WCAG 2.4.11)', () => {
+  test('control: el detector ve un foco tapado por una capa', async ({ page }) => {
+    await page.goto(PATHS.destinations.es);
+    await page.evaluate(() => {
+      const cover = document.createElement('div');
+      cover.style.cssText = 'position:fixed;inset:0;z-index:2147483647';
+      document.body.append(cover);
+    });
+    const { checked, hidden } = await hiddenFocus(page, 3);
+    expect(checked).toBeGreaterThan(0);
+    expect(hidden.length, 'una capa a pantalla completa tiene que tapar el foco').toBeGreaterThan(
+      0,
+    );
+  });
+
+  for (const locale of ['es', 'de'] as const) {
+    for (const name of [
+      'destinations',
+      'destination',
+      'sources',
+      'accessibility',
+      'explore',
+    ] as const) {
+      test(`${locale} ${name}: con Tab, ningún elemento enfocado queda entero bajo la cabecera fija`, async ({
+        page,
+      }) => {
+        await page.goto(PATHS[name][locale]);
+        await page.waitForLoadState('networkidle');
+        const { checked, hidden } = await hiddenFocus(page, 75);
+        expect(checked, 'casi nada se comprobó: la prueba no mediría nada').toBeGreaterThan(10);
+        expect(hidden).toEqual([]);
+      });
+    }
   }
 });
 

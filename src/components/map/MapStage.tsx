@@ -575,6 +575,9 @@ export function MapStage({
         ref={containerRef}
         className={styles.canvas}
         aria-busy={status === 'loading'}
+        // Mientras el aviso (carga, error…) tapa el mapa, sus controles —ya creados— no deben recibir el foco: un
+        // teclado aterrizaría en botones invisibles (WCAG 2.4.11). `inert` los saca del orden de tabulación.
+        inert={status !== 'ready'}
         data-testid="map-canvas"
       />
 

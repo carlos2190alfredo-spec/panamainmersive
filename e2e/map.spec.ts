@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { fromMapView, zoomFromAltitude } from '../src/domains/geography/camera';
+import { hiddenFocus } from './a11y-probes';
 import { LOCALES, PATHS, watchPage } from './helpers';
 import {
   MAP_DATA_PRESENT,
@@ -70,6 +71,32 @@ test.describe('mapa: carga y dibujo', () => {
     await openMap(page, EXPLORE);
     await page.waitForLoadState('networkidle');
     expect(requests.hosts()).toEqual([new URL(page.url()).host]);
+  });
+});
+
+test.describe('mapa: accesibilidad mientras carga', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
+
+  test('con el mapa aún cargando, sus controles tapados por el aviso NO reciben el foco (WCAG 2.4.11)', async ({
+    page,
+  }) => {
+    // El mapa se crea en cuanto se lee la cabecera del archivo (primer tramo, 16 KiB) y pasa a «ready» solo cuando
+    // sus teselas están dibujadas. Se retienen los tramos siguientes para quedarse en «loading» con los controles ya
+    // creados: en una red lenta ese intervalo dura segundos, y un equipo cargado lo reproducía de forma intermitente.
+    await page.route('**/panama-basemap.pmtiles', async (route) => {
+      const range = route.request().headers().range ?? '';
+      const start = Number(/bytes=(\d+)-/.exec(range)?.[1] ?? 0);
+      if (start >= 16384) await new Promise((resolve) => setTimeout(resolve, 8000));
+      await route.continue();
+    });
+    await page.goto(EXPLORE);
+    await expect(page.locator('.maplibregl-canvas')).toBeAttached({ timeout: 20_000 });
+    await expect(page.locator('[data-map-status="loading"]')).toBeAttached();
+    const { checked, hidden } = await hiddenFocus(page, 75);
+    expect(checked, 'casi nada se comprobó: la prueba no mediría nada').toBeGreaterThan(10);
+    // el mapa seguía cargando durante toda la comprobación (si no, esto no probaría el estado «loading»)
+    await expect(page.locator('[data-map-status="loading"]')).toBeAttached();
+    expect(hidden).toEqual([]);
   });
 });
 

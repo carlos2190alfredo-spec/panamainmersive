@@ -5,7 +5,7 @@
 # LIMITACIONES CONOCIDAS (honestas, no ocultas en el nombre de un job verde):
 #  · Este CI NO genera el mapa base (`public/data/panama-basemap.pmtiles`: Python + tippecanoe + red hacia Overture,
 #    ≈ 5 min). Sin él, las pruebas E2E que necesitan el mapa dibujado se OMITEN diciéndolo. Medido en local ocultando el
-#    fichero, 2026-10-23: 104 pasan, 56 omitidas (todas por esa causa), 0 fallan. `pnpm check:e2e-skips` limita las
+#    fichero, 2026-10-24: 138 pasan, 57 omitidas (todas por esa causa), 0 fallan. `pnpm check:e2e-skips` limita las
 #    omitidas a ese número: otra omisión nueva ya no pasa desapercibida. El mapa real solo se verifica en local (F3-14).
 #  · `pnpm test:e2e:db` NO está en este flujo: necesita artefactos de datos gitignorados (`pnpm data:build` y
 #    `pnpm data:ingest`) que el CI no genera, y en CI «faltan datos» es un FALLO (un verde que no ejecutó nada es peor
@@ -114,11 +114,11 @@ jobs:
         env:
           CI: 'true'
           SITE_ENV: development
-      # 56 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO: si algún día el CI genera el mapa, bájalo.
+      # 57 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO: si algún día el CI genera el mapa, bájalo.
       - name: Presupuesto de pruebas omitidas
         run: pnpm check:e2e-skips
         env:
-          E2E_MAX_SKIPPED: '56'
+          E2E_MAX_SKIPPED: '57'
       - name: Trazas de Playwright (solo si falla)
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -349,7 +349,7 @@
     "languagesBody": "Spanisch, Englisch, Portugiesisch, Französisch und Deutsch. Die Übersetzungen warten auf eine menschliche Prüfung.",
     "limitationsHeading": "Bekannte Einschränkungen",
     "limitations": {
-      "map": "Die interaktive Karte ist in dieser Version noch nicht eingebunden.",
+      "map": "Die Karte ist eine Grafikfläche: Die darin gezeichneten Ortsnamen werden von Screenreadern nicht vorgelesen. Sie lässt sich per Tastatur bedienen; die Zielliste ist ihre Textalternative.",
       "testing": "Automatische Tests ersetzen keine Bewertung mit Nutzerinnen und Nutzern, die noch nicht stattgefunden hat.",
       "screenReaders": "Mit echten Screenreadern wurde noch nicht getestet."
     },
