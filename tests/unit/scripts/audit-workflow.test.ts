@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
  * Guardas TEXTUALES de `.github/workflows/audit.yml` (T-20). No lo ejecutan (ESTADO: IMPLEMENTED, no VERIFIED: no hay
  * remoto). La auditoría de avisos va APARTE de `ci.yml` a propósito: la base de avisos cambia aunque el código no
  * cambie, y un aviso nuevo sobre algo no relacionado no debe bloquear un cambio (PROMPT-MAESTRO §18). Por eso se
- * programa, y por eso no debe engancharse nunca a `push` ni a `pull_request`.
+ * programa, y por eso no debe engancharse nunca a `push` ni a `pull_request`. El mismo calendario vigila que la
+ * evidencia de cobertura no esté a punto de caducar (T-19): también cambia con la FECHA, no con el código.
  */
 const workflow = readFileSync(join(process.cwd(), '.github/workflows/audit.yml'), 'utf8');
 
@@ -22,6 +23,29 @@ function triggers(source: string): string {
   }
   return body.join('\n');
 }
+
+/** Cuerpos de los jobs (`  nombre:` a dos espacios bajo `jobs:`). */
+function jobBlocks(source: string): Record<string, string> {
+  const start = source.indexOf('\njobs:\n');
+  expect(start, 'el flujo tiene `jobs:`').toBeGreaterThan(-1);
+  const blocks: Record<string, string[]> = {};
+  let current: string | null = null;
+  for (const line of source
+    .slice(start + 1)
+    .split('\n')
+    .slice(1)) {
+    const header = /^ {2}([a-z0-9-]+):\s*$/.exec(line);
+    if (header?.[1] !== undefined) {
+      current = header[1];
+      blocks[current] = [];
+    } else if (current !== null) {
+      blocks[current]?.push(line);
+    }
+  }
+  return Object.fromEntries(Object.entries(blocks).map(([id, body]) => [id, body.join('\n')]));
+}
+
+const jobs = jobBlocks(workflow);
 
 describe('audit.yml', () => {
   it('se ejecuta por calendario y a mano', () => {
@@ -41,15 +65,28 @@ describe('audit.yml', () => {
     expect(workflow).toMatch(/^permissions:\n {2}contents: read\s*$/m);
   });
 
-  it('tiene `timeout-minutes` razonable (1–60)', () => {
-    const minutes = Number(/^ {4}timeout-minutes:\s*(\d+)\s*$/m.exec(workflow)?.[1]);
+  it('declara exactamente estos jobs: la auditoría y la vigencia de la cobertura', () => {
+    expect(Object.keys(jobs).sort()).toEqual(['audit', 'coverage']);
+  });
+
+  it.each(['audit', 'coverage'])('%s: tiene `timeout-minutes` razonable (1–60)', (id) => {
+    const minutes = Number(/^ {4}timeout-minutes:\s*(\d+)\s*$/m.exec(jobs[id] ?? '')?.[1]);
     expect(minutes).toBeGreaterThanOrEqual(1);
     expect(minutes).toBeLessThanOrEqual(60);
   });
 
-  it('instala con el lockfile congelado y ejecuta la auditoría', () => {
-    expect(workflow).toMatch(/run:\s*pnpm install --frozen-lockfile/);
-    expect(workflow).toMatch(/run:\s*pnpm check:audit\s*$/m);
+  it.each([
+    ['audit', 'pnpm check:audit'],
+    ['coverage', 'pnpm check:coverage'],
+  ])('%s: instala con el lockfile congelado y ejecuta `%s`', (id, command) => {
+    const block = jobs[id] ?? '';
+    expect(block).toMatch(/run:\s*pnpm install --frozen-lockfile/);
+    expect(block).toMatch(new RegExp(`^ {6}- run: ${command}\\s*$`, 'm'));
+  });
+
+  it('cada job ejecuta SOLO lo suyo (la auditoría no mira la cobertura ni al revés)', () => {
+    expect(jobs.audit).not.toContain('check:coverage');
+    expect(jobs.coverage).not.toContain('check:audit');
   });
 
   it('no usa `continue-on-error` (un fallo de la auditoría tiene que verse en rojo)', () => {

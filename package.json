@@ -23,6 +23,7 @@
     "test:e2e": "playwright test",
     "check:e2e-skips": "node --import tsx scripts/check-e2e-skips.ts",
     "check:action-pins": "node --import tsx scripts/check-action-pins.ts",
+    "check:coverage": "node --import tsx scripts/check-coverage.ts",
     "check:licenses": "node --import tsx scripts/check-deps.ts --licenses",
     "check:audit": "node --import tsx scripts/check-deps.ts --audit",
     "test:e2e:db": "node --import tsx scripts/e2e-db.ts",
