@@ -1052,3 +1052,41 @@ Todo lo que ocurre en Vercel: el proyecto, las versiones de Node y pnpm que usar
 ### Pendiente
 
 T-21 (desplegar el staging cuando exista el repositorio) y F2-10. Lo demás, como en la 5f.
+
+## Entrega 5h — repositorio y primer despliegue de staging (T-21)
+
+Alcance: con el repositorio ya creado por la persona propietaria, subir el historial, enlazar Vercel y desplegar el **staging privado** elegido. Tres instrucciones recibidas: el repositorio existe; «haz lo que creas que funcione mejor» para el mapa; «usa la organización NCI» para la base de datos.
+
+### Qué funciona
+
+- **Repositorio** — **VERIFIED**: `carlos2190alfredo-spec/panamainmersive` (privado) con los 54 commits; el HEAD del remoto coincide con el local. Antes de subir se barrió el historial en busca de secretos (con control positivo): solo credenciales falsas de pruebas.
+- **Proyecto de Vercel enlazado** — **VERIFIED** por lectura de su configuración: Next.js, Node 22.x, `SITE_ENV=staging`, instalación con lockfile congelado. Cada `push` a `main` despliega.
+- **Primer despliegue** — **VERIFIED** (E-91): `READY`; salud con `siteEnv: staging`, `noindex`, `robots.txt` con `Disallow: /`, ficha honesta.
+
+### Qué no pudo verificarse
+
+- **La protección de despliegues, en comportamiento** — **no verificada**: lo único medido es su configuración (`all`). Mi comprobación sin sesión era inútil: el proxy de este entorno bloquea `vercel.app`.
+- **El primer CI** (`ci.yml`, `audit.yml`) — **sin leer**: no tengo acceso a los resultados de GitHub Actions.
+- **Supabase** — **no creada**: el servidor pidió una confirmación de coste a la persona y no hubo respuesta.
+
+### Decisiones tomadas por mí (pedidas: «lo que creas que funcione mejor»)
+
+- **Staging sin mapa por ahora.** El PMTiles tiene derechos provisionales (L-01), no puede ir en el repositorio ni subirse con las herramientas de esta sesión, y alojarlo bien (Range y CORS) tiene más sentido cuando L-01 se resuelva. El mapa se ve en local con el paquete de visualización.
+- **Proyecto de Vercel creado sin desplegar**, para fijar variables y protección antes del primer despliegue.
+- **No toqué los 4 proyectos de Supabase de la organización NCI** (de negocio). Cualquier proyecto nuevo irá aparte.
+
+### Lo que se encontró (honestamente)
+
+- **Una medición que casi se da por buena**: 403 sin sesión «parecía protegido»; era el proxy. Lo detecté porque `curl` no escribió ningún cuerpo.
+- **Otro barrido de secretos que no medía**: mezclé `grep -E` y `-P`, falló en silencio y dio «vacío». Repetido con un solo motor y un control positivo.
+- Retiré por error el clon vacío que la herramienta `add_repo` consideraba su destino; solo afecta al registro opcional de la raíz del repositorio en la sesión.
+
+### Decisiones que necesitan a una persona
+
+1. **Abrir `https://panamainmersive.vercel.app` en una ventana privada**: debe pedir iniciar sesión en Vercel. Si muestra la página, hay que avisarme: el staging sería público.
+2. **Mirar la pestaña Actions** del repositorio y pasarme lo que falle: es la primera ejecución real de `ci.yml`.
+3. **La base de datos**: aceptar (o no) el coste que pide Supabase para crear un proyecto en la organización NCI. Staging funciona sin ella.
+
+### Pendiente
+
+T-21 (verificar protección y CI, mapa y base de datos), F2-10 y lo de la 5f.

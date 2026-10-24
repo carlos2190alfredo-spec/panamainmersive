@@ -1,6 +1,6 @@
 # Despliegue
 
-Estado: **PREPARADO Y ENSAYADO EN LOCAL; no ejecutado.** No existe repositorio remoto y **no se ha creado nada** en Vercel, Supabase ni en ningún otro servicio. Este documento recoge lo medido en un ensayo local (E-90) y los pasos para cuando exista el repositorio.
+Estado (2026-10-24): **STAGING DESPLEGADO EN VERCEL; protección configurada pero su comportamiento NO verificado; producción pública bloqueada.** El repositorio existe (privado, GitHub) y el proyecto de Vercel está enlazado a él. **No se ha creado ninguna base de datos.** §7 recoge lo observado en el despliegue real (E-91); §2, el ensayo local previo (E-90).
 
 ## 1. Qué se decidió y qué no
 
@@ -61,6 +61,29 @@ El mapa base **no viaja con el código**: es un PMTiles de 36 MB en `.gitignore`
 
 Producción pública **hoy** serviría los nueve destinos y fichas honestas sin contenido, **sin mapa**, sin relieve y sin ficha ampliada de áreas.
 
-## 6. Lo que NO se ha probado
+## 6. Lo que NO se ha probado (actualizado en §7)
 
 Un despliegue real en Vercel; la protección de despliegues; las versiones de Node y pnpm que usará Vercel; una instalación en frío; los límites del plan; cualquier cosa contra una base de datos remota.
+
+## 7. Estado real tras el primer despliegue (2026-10-24, E-91)
+
+**Hecho**
+
+- Repositorio privado `carlos2190alfredo-spec/panamainmersive` con los 54 commits (HEAD del remoto igual al local, `25ab369`).
+- Proyecto de Vercel `panamainmersive` (equipo `carlos2190alfredo-specs-projects`) enlazado al repositorio: Next.js, **Node 22.x** (por defecto traía 24.x y el proyecto se probó con 22.22), instalación `pnpm install --frozen-lockfile`, compilación `pnpm build`.
+- Variables en los tres entornos: `SITE_ENV=staging` y `NEXT_PUBLIC_SITE_URL=https://panamainmersive.vercel.app` (resultó ser un alias de este proyecto; no hizo falta un segundo despliegue).
+- Protección de despliegues: la API aceptó `ssoProtection: all` (por defecto venía «todo excepto dominios personalizados»).
+- **Cada `push` a `main` despliega automáticamente** (el proyecto se creó sin desplegar para fijar variables y protección antes).
+- Primer despliegue `READY` del commit `25ab369`. Leído con un enlace temporal de Vercel: `/api/health` → `siteEnv: staging`; `robots.txt` → `Disallow: /`; la ficha de Ciudad de Panamá → 200, `noindex, nofollow` en cabecera y `<meta>`, canónico sobre `panamainmersive.vercel.app`, «Sin datos verificados todavía».
+
+**Sin verificar (no lo afirmo)**
+
+- **El comportamiento de la protección**: que una petición **sin sesión** no vea el sitio. Desde este entorno no se puede comprobar (la política de red del entorno bloquea `vercel.app`: el 403 que se obtuvo lo da el proxy al abrir la conexión, no Vercel). Lo que se comprobó es la **configuración**, no el comportamiento. **Comprobación manual**: abrir `https://panamainmersive.vercel.app` en una ventana privada; debe pedir iniciar sesión en Vercel.
+- **El primer CI en GitHub** (`ci.yml`, `audit.yml`): no tengo acceso para leer los resultados (el token de `gh` es inválido). Hay que mirar la pestaña Actions.
+- **`/es/explorar` desplegada**: se pidió pero la respuesta era demasiado grande para leerla; solo está observada en local (E-90).
+- **El mapa**: no está en el despliegue (decisión: §4). Sin él, `/es/explorar` mostraría el aviso de §2.
+
+**Sin hacer, por decisión**
+
+- **Base de datos (Supabase, organización NCI AUTOMATION)**: autorizada su organización, pero la creación quedó **pendiente de la confirmación de coste** que el servidor pidió a la persona propietaria y no se respondió. No se ha creado nada (la organización sigue con sus 4 proyectos de negocio, que no se tocan). Staging no la necesita para lo que muestra hoy.
+- **El mapa en staging**: sin él por ahora. Lo que mejor funciona: los derechos siguen `provisional`, el PMTiles no puede viajar con el código, y las herramientas de esta sesión no pueden subirlo; alojarlo bien (almacén con Range y CORS) tiene sentido cuando se resuelva L-01. Mientras tanto el mapa se ve en local con el paquete de visualización.
