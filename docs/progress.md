@@ -13,7 +13,7 @@ Vocabulario: **IMPLEMENTED** (existe) · **VERIFIED** (existe y se observó una 
 | 2 — Exploración de Panamá         | **VERIFIED** (mapa real en local); producción **bloqueada por derechos**                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Entrega 2: mapa con PMTiles propio, anclas por ID, derechos                                          |
 | 3 — GIS                           | **VERIFIED en local** (F3.a–e); producción **bloqueada** por derechos (L-01) y sin límites oficiales (L-03)                                                                                                                                                                                                                                                                                                                                                                                                                  | Entregas 3, 3b, 3c y 3d; cierre abajo                                                                |
 | 4 — Destinos                      | **EN CURSO**: modelo de contenido y ficha **VERIFIED en local** (F4.a–e, ADR-0019) y **endurecidos tras dos revisiones independientes** (ADR-0020) más una **tercera de orquestación y CI** (entrega 4c; el CI **sigue sin ejecutarse**: no hay remoto) el **idioma de las fuentes** (4d, WCAG 3.1.2) la **concurrencia** del modelo (4e) y su **coste con volumen** (4f: una lectura de personal que escalaba con las filas y un montaje cuadrático del exportador, corregidos); **sin ninguna afirmación verificada real** | Entregas 4a, 4b, 4c, 4d, 4e y 4f; contenido real bloqueado por L-01…L-03 y decisiones F4-1/F4-3/F4-5 |
-| 5 — Imágenes de calle e historias | **EN CURSO, solo componentes independientes**: **Experience Resolver** como dominio puro (entrega 5a, ADR-0024) los **orquestadores de pruebas probados de punta a punta** (5b, T-14) y las **acciones de terceros del CI fijadas por hash** (5c, F4-17b); lo demás **BLOQUEADO** por lo externo (sin credencial, acceso, derechos ni historias con contenido permitido: F5-4)                                                                                                                                               |
+| 5 — Imágenes de calle e historias | **EN CURSO, solo componentes independientes**: **Experience Resolver** como dominio puro (entrega 5a, ADR-0024), los **orquestadores de pruebas probados de punta a punta** (5b, T-14), las **acciones de terceros del CI fijadas por hash** (5c, F4-17b) y el **control de licencias y avisos de las dependencias** que `docs/security.md` declaraba sin tenerlo (5d, T-20); lo demás **BLOQUEADO** por lo externo (sin credencial, acceso, derechos ni historias con contenido permitido: F5-4)                            |
 | 6–10                              | PENDIENTE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Ver `docs/backlog.md`                                                                                |
 
 ## Entrega 1 — Foundation
@@ -872,3 +872,48 @@ Ninguna nueva. Dependabot se activa al conectar un remoto (la decisión de conec
 ### Pendiente
 
 Sin cambios respecto a la entrega 5b salvo que **F4-17b queda hecha** (excepto Dependabot, que espera al remoto). Ver `docs/backlog.md`.
+
+## Entrega 5d — T-20: licencias y avisos de las dependencias
+
+Alcance: el documento rector (§18) pide «comprobar dependencias y licencias sin bloquear el proyecto por alertas no relacionadas o no aplicables», y `docs/security.md` lo daba por hecho («`pnpm audit` y revisión de licencias en CI») **sin que existiera ningún comando ni ningún paso del flujo**. Lo encontré releyendo el documento rector contra el repositorio en vez de mirar mi propio backlog (que no lo recogía). No añade ninguna función de producto.
+
+### Qué funciona
+
+- **`data/dependency-policy.json`**: licencias permitidas por ámbito, excepciones con motivo y plazo, umbrales de gravedad. Todo es una **propuesta técnica mía sin revisión legal**.
+- **`pnpm check:licenses`** (sin red; va en el job `check` de `ci.yml`): expresiones SPDX; lo que no se sabe leer falla. Lo no permisivo solo pasa como **excepción provisional con plazo**: se dice en cada ejecución y, **vencido, bloquea** (2027-01-22) para forzar la decisión.
+- **`pnpm check:audit`** (con red; en **`audit.yml`**, semanal y aparte de `ci.yml`): umbrales por ámbito (alta en producción, crítica en desarrollo). Aparte a propósito: la base de avisos cambia aunque el código no cambie y un aviso nuevo sin relación no debe bloquear un cambio.
+- Salida **0 / 1 / 2**; «no pude comprobarlo» (sin red, `pnpm` que falla, lista vacía, política ilegible) **nunca** es 0.
+
+### Cómo ejecutarlo
+
+```bash
+pnpm check:licenses      # sin red
+pnpm check:audit         # con red
+python3 scripts/mutation/ci.py D1 … D28 E1 … E12 F1 … F6 Y18 Y19 J1 J2   # las 50 mutaciones nuevas
+```
+
+### Pruebas ejecutadas (observadas el 2026-10-24)
+
+`pnpm typecheck` · `pnpm lint` · `pnpm format`: sin errores · `pnpm test`: **59 ficheros / 1332** (antes 56 / 1214: **118 pruebas nuevas**) · `pnpm test:integration`: **24 / 396** (sin cambios; repetida al final) · **mutación: 50 nuevas, 50 detectadas** a la primera, y **Y1–Y12 y P1–P8 repetidas** (20 de 20) · **medido contra el árbol y el registro reales**: 454 versiones de paquete, **0 avisos**, 449 licencias permitidas y **5 provisionales**; falsado con las 5 sin excepción (sale 1), con `lodash@4.17.15` (sale 1) y con el registro muerto (`check:audit` sale 2).
+
+### Lo que se encontró (honestamente)
+
+- **Un control declarado y no implementado** en `docs/security.md`, que mis propias entregas no habían señalado.
+- **Trampa de `pnpm audit`**: el campo `dev` de sus acciones sale `false` incluso para una dependencia de desarrollo; el ámbito sale de ejecutar `--prod` y `--dev` por separado (E-87). Lo medí en vez de fiarme del nombre del campo.
+- **5 licencias de producción que piden una decisión que no es mía**: las dos tipografías (OFL-1.1, se sirven al navegador), las dos bibliotecas de `sharp-libvips` (LGPL-3.0-or-later; opcionales de `next`, que el proyecto no usa) y `caniuse-lite` (CC-BY-4.0). Ver T-20.
+- **Mis errores**: pruebas que creaban su directorio al recogerse y el `afterEach` borraba; tres errores de lint; y una **prueba «sin red» inválida** (`HTTPS_PROXY` a un puerto muerto no corta la red aquí) que dio «0 avisos» estando con red: la cazó que el resultado contradecía lo esperado.
+
+### Qué no pudo verificarse
+
+- Que **`audit.yml` y el paso de licencias se ejecuten en GitHub** (no hay remoto), y que el calendario siga activo (GitHub desactiva los flujos programados tras 60 días sin actividad).
+- Que `pnpm audit` detecte lo que **aún no tiene aviso publicado**: no protege de una dependencia comprometida reciente.
+- El plazo de 180 s con que se corta un `pnpm` colgado.
+- **Revisión legal**: ninguna. Las licencias permitidas, las excepciones y los umbrales son propuestas mías.
+
+### Decisiones que necesitan a una persona
+
+**Nueva (T-20)**: aceptar con nombre, evitar o prorrogar las 5 licencias provisionales **antes del 2027-01-22**; desde ese día `pnpm check:licenses` (y el job `check`) fallan.
+
+### Pendiente
+
+Lo de la entrega 5c más T-20. Ver `docs/backlog.md`.

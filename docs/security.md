@@ -48,11 +48,20 @@ Estado: modelo de amenazas inicial + controles de la Foundation. Etiquetas: `IMP
 
 ## Dependencias y licencias
 
-`pnpm audit` y revisión de licencias en CI **sin bloquear por alertas no aplicables** (se evalúan caso a caso y se documentan). `pnpm` bloquea por defecto los _scripts_ de instalación; solo se permiten los necesarios en `onlyBuiltDependencies`.
+**IMPLEMENTED (T-20), no VERIFIED en CI.** Hasta la entrega 5d este apartado afirmaba «`pnpm audit` y revisión de licencias en CI» y **no existía nada**: ni el comando ni ningún paso del flujo. Ahora la política vive en `data/dependency-policy.json` (licencias permitidas por ámbito, excepciones con motivo y plazo, umbrales de gravedad) y la ejecuta `scripts/check-deps.ts`:
+
+- **`pnpm check:licenses`** (determinista, sin red): cada paquete debe tener una licencia permitida (expresiones SPDX; lo que no se sabe leer o es `UNKNOWN` falla). Va en el job `check` de `ci.yml`. Lo que no es permisivo solo pasa como **excepción provisional con plazo** (`reviewBy`): se dice en cada ejecución y, vencido el plazo, **vuelve a bloquear** para que alguien decida. Una excepción **aceptada** exige el nombre de quien la aceptó.
+- **`pnpm check:audit`** (necesita red): avisos de `pnpm audit` por ámbito (`--prod` y `--dev`). Bloquea «alta» o peor en producción y «crítica» en desarrollo (propuestas mías); lo demás avisa. Va en **`audit.yml`, semanal y aparte de `ci.yml`**: la base de avisos cambia aunque el código no cambie, y un aviso nuevo sin relación no debe bloquear un cambio (PROMPT-MAESTRO §18). Un aviso «no aplicable» se exceptúa con motivo escrito y plazo.
+- «No pude comprobarlo» (sin red, `pnpm` que falla, lista vacía, política ilegible) sale con **2**, nunca como un verde.
+- `pnpm` bloquea por defecto los _scripts_ de instalación; `onlyBuiltDependencies` está **vacío** (comprobado).
+
+**Medido el 2026-10-24** (E-87): **0 avisos** y 454 versiones de paquete, de las que 449 son permisivas y **5 piden una decisión** que no es mía (todas provisionales hasta el 2027-01-22): las dos tipografías **OFL-1.1**, las dos bibliotecas **LGPL-3.0-or-later** de `sharp-libvips` (opcionales de `next`; el proyecto no usa `next/image`) y **CC-BY-4.0** de `caniuse-lite`. Las licencias permitidas, las excepciones y los umbrales son una **propuesta técnica sin revisión legal**.
+
+**Límites**: ni `audit.yml` ni el paso de licencias en `ci.yml` se han ejecutado en GitHub (no hay remoto); `pnpm audit` solo conoce avisos **publicados** (no detecta una dependencia comprometida que aún no tenga uno); no se revisa la licencia del **contenido** (datos, imágenes), solo la de los paquetes; y una licencia correcta no dice nada de la seguridad del código.
 
 ## Lo que NO está hecho
 
-Autenticación real, CSRF/sesiones, rate limiting efectivo, revisión legal de privacidad, pruebas de penetración. Todo se lista en `docs/backlog.md`.
+Autenticación real, CSRF/sesiones, rate limiting efectivo, revisión legal de privacidad **y de las licencias de las dependencias (T-20)**, pruebas de penetración. Todo se lista en `docs/backlog.md`.
 
 ## Hallazgos de la Foundation (con evidencia)
 
