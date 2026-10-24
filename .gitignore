@@ -13,8 +13,8 @@ __pycache__/
 *.pyc
 # datos generados (se reconstruyen con `pnpm data:build`; ver docs/gis.md)
 /data/build/
-/public/data/*.pmtiles
+# `public/data/panama-basemap.{pmtiles,manifest.json}` SÍ se versionan (2026-10-24): es el único modo de que el staging
+# privado de Vercel (despliegue por git, detrás de la protección) tenga mapa. Derechos provisionales (L-01): ver docs/deploy.md §4.
 .DS_Store
 next-env.d.ts
-/public/data/*.manifest.json
 /.e2e-content-app/

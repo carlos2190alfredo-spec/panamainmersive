@@ -1,0 +1,469 @@
+{
+  "artifact": "panama-basemap.pmtiles",
+  "attribution": "© OpenStreetMap contributors, Overture Maps Foundation",
+  "bbox": [
+    -83.2,
+    6.9,
+    -77.0,
+    9.8
+  ],
+  "bytes": 36088591,
+  "disclaimer": "Cartografía de referencia derivada de OpenStreetMap. No contiene límites oficiales ni geometrías de destinos.",
+  "layers": [
+    {
+      "emptyAfterClip": 65,
+      "id": "land",
+      "minzoom": 4,
+      "repaired": 0,
+      "rowsRead": 19785,
+      "rule": "base/land subtype=land (continente, islas, islotes)",
+      "selected": 2916,
+      "source": "base/land",
+      "subPixelDropped": 0,
+      "written": 2851
+    },
+    {
+      "emptyAfterClip": 0,
+      "id": "landcover",
+      "minzoom": 8,
+      "repaired": 0,
+      "rowsRead": 19785,
+      "rule": "base/land forest|wetland|sand|reef, área ≥ 0,5 km²",
+      "selected": 1407,
+      "source": "base/land",
+      "subPixelDropped": 0,
+      "written": 1407
+    },
+    {
+      "emptyAfterClip": 67,
+      "id": "landcover_detail",
+      "minzoom": 12,
+      "repaired": 0,
+      "rowsRead": 19785,
+      "rule": "ídem, área < 0,5 km²",
+      "selected": 5443,
+      "source": "base/land",
+      "subPixelDropped": 0,
+      "written": 5376
+    },
+    {
+      "emptyAfterClip": 1,
+      "id": "protected",
+      "minzoom": 4,
+      "repaired": 0,
+      "rowsRead": 20978,
+      "rule": "base/land_use subtype=protected (OSM, no oficial)",
+      "selected": 139,
+      "source": "base/land_use",
+      "subPixelDropped": 0,
+      "written": 138
+    },
+    {
+      "emptyAfterClip": 0,
+      "id": "boundaries",
+      "minzoom": 4,
+      "repaired": 0,
+      "rowsRead": 1403,
+      "rule": "contorno de country|region|county de Panamá, clase land",
+      "selected": 99,
+      "source": "divisions/division_area",
+      "subPixelDropped": 0,
+      "written": 99
+    },
+    {
+      "emptyAfterClip": 0,
+      "id": "ocean",
+      "minzoom": 4,
+      "repaired": 0,
+      "rowsRead": 29186,
+      "rule": "base/water subtype=ocean",
+      "selected": 50,
+      "source": "base/water",
+      "subPixelDropped": 1,
+      "written": 49
+    },
+    {
+      "emptyAfterClip": 0,
+      "id": "water",
+      "minzoom": 5,
+      "repaired": 0,
+      "rowsRead": 29186,
+      "rule": "base/water polígonos (lago, embalse, río, canal, agua, estanque), área ≥ 0,5 km²",
+      "selected": 169,
+      "source": "base/water",
+      "subPixelDropped": 0,
+      "written": 169
+    },
+    {
+      "emptyAfterClip": 4825,
+      "id": "water_detail",
+      "minzoom": 10,
+      "repaired": 0,
+      "rowsRead": 29186,
+      "rule": "ídem, área < 0,5 km²",
+      "selected": 7970,
+      "source": "base/water",
+      "subPixelDropped": 0,
+      "written": 3145
+    },
+    {
+      "emptyAfterClip": 93,
+      "id": "waterway",
+      "minzoom": 7,
+      "repaired": 0,
+      "rowsRead": 29186,
+      "rule": "base/water líneas: canal y río con nombre",
+      "selected": 3083,
+      "source": "base/water",
+      "subPixelDropped": 0,
+      "written": 2990
+    },
+    {
+      "emptyAfterClip": 688,
+      "id": "waterway_detail",
+      "minzoom": 10,
+      "repaired": 0,
+      "rowsRead": 29186,
+      "rule": "base/water líneas: río sin nombre y arroyo",
+      "selected": 20267,
+      "source": "base/water",
+      "subPixelDropped": 0,
+      "written": 19579
+    },
+    {
+      "emptyAfterClip": 0,
+      "id": "places",
+      "minzoom": 4,
+      "repaired": 0,
+      "rowsRead": 5448,
+      "rule": "divisions/division locality|region de Panamá",
+      "selected": 3085,
+      "source": "divisions/division",
+      "subPixelDropped": 0,
+      "written": 3085
+    }
+  ],
+  "license": "ODbL (datos derivados de OpenStreetMap vía Overture) — PROVISIONAL: no leída en la fuente primaria",
+  "release": "2026-09-23.1",
+  "schemaVersion": 1,
+  "sha256": "77f98546c8602ede98957ccd2cc5bc0986a23f3746c04cf7ab273f72ddaf15a2",
+  "sourceClass": "osm_derived",
+  "tippecanoe": {
+    "args": [
+      "--force",
+      "-Z4",
+      "-z14",
+      "-r1",
+      "--no-tile-size-limit",
+      "--no-feature-limit",
+      "--no-tile-stats",
+      "--read-parallel",
+      "--name=Panamá Immersive — basemap",
+      "--description=Basemap derivado de Overture Maps (OpenStreetMap). No contiene límites oficiales.",
+      "--attribution=© OpenStreetMap contributors, Overture Maps Foundation"
+    ],
+    "version": "tippecanoe v2.79.0"
+  },
+  "verification": {
+    "anchors": {
+      "bocas-del-toro": {
+        "placeDistanceM": 0.5,
+        "placeName": "Bocas del Toro",
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "ocean",
+          "places",
+          "protected",
+          "water_detail",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "landcover_detail",
+          "ocean",
+          "places"
+        ]
+      },
+      "boquete": {
+        "placeDistanceM": 0.3,
+        "placeName": "Bajo Boquete",
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "places",
+          "protected",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "land",
+          "landcover_detail",
+          "places",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ]
+      },
+      "casco-antiguo": {
+        "placeDistanceM": 0.5,
+        "placeName": "San Felipe",
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "ocean",
+          "places",
+          "protected",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "landcover_detail",
+          "ocean",
+          "places",
+          "water_detail",
+          "waterway_detail"
+        ]
+      },
+      "coiba": {
+        "z12": [
+          "land",
+          "landcover",
+          "protected",
+          "waterway_detail"
+        ],
+        "z14": [
+          "land",
+          "landcover",
+          "protected",
+          "waterway_detail"
+        ]
+      },
+      "el-valle-de-anton": {
+        "placeDistanceM": 0.4,
+        "placeName": "El Valle",
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "places",
+          "protected",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "places",
+          "water_detail",
+          "waterway"
+        ]
+      },
+      "panama-canal": {
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "ocean",
+          "places",
+          "protected",
+          "water",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "ocean",
+          "water",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ]
+      },
+      "panama-city": {
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "ocean",
+          "places",
+          "protected",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "landcover_detail",
+          "ocean",
+          "places",
+          "water_detail",
+          "waterway_detail"
+        ]
+      },
+      "santa-catalina": {
+        "placeDistanceM": 0.5,
+        "placeName": "Santa Catalina",
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "places",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "places",
+          "waterway",
+          "waterway_detail"
+        ]
+      },
+      "volcan-baru": {
+        "z12": [
+          "boundaries",
+          "land",
+          "landcover",
+          "landcover_detail",
+          "places",
+          "protected",
+          "water_detail",
+          "waterway",
+          "waterway_detail"
+        ],
+        "z14": [
+          "boundaries",
+          "land",
+          "landcover",
+          "protected",
+          "waterway",
+          "waterway_detail"
+        ]
+      }
+    },
+    "conservationZ14": {
+      "boundaries": {
+        "expected": 99,
+        "lost": 0,
+        "present": 99
+      },
+      "land": {
+        "expected": 2851,
+        "lost": 0,
+        "present": 2851
+      },
+      "landcover": {
+        "expected": 1407,
+        "lost": 0,
+        "present": 1407
+      },
+      "landcover_detail": {
+        "expected": 5376,
+        "lost": 0,
+        "present": 5376
+      },
+      "ocean": {
+        "expected": 49,
+        "lost": 0,
+        "present": 49
+      },
+      "protected": {
+        "expected": 138,
+        "lost": 0,
+        "present": 138
+      },
+      "water": {
+        "expected": 169,
+        "lost": 0,
+        "present": 169
+      },
+      "water_detail": {
+        "expected": 3145,
+        "lost": 0,
+        "present": 3145
+      },
+      "waterway": {
+        "expected": 2990,
+        "lost": 0,
+        "present": 2990
+      },
+      "waterway_detail": {
+        "expected": 19579,
+        "lost": 0,
+        "present": 19579
+      }
+    },
+    "header": {
+      "max_lat_e7": 98000000,
+      "max_lon_e7": -770000000,
+      "max_zoom": 14,
+      "min_lat_e7": 69000000,
+      "min_lon_e7": -832000000,
+      "min_zoom": 4
+    },
+    "placesConservation": {
+      "places z10": {
+        "expected": 3085,
+        "lost": 0,
+        "present": 3085
+      },
+      "places z12": {
+        "expected": 3085,
+        "lost": 0,
+        "present": 3085
+      },
+      "places z14": {
+        "expected": 3085,
+        "lost": 0,
+        "present": 3085
+      },
+      "places z5": {
+        "expected": 3085,
+        "lost": 0,
+        "present": 3085
+      },
+      "places z8": {
+        "expected": 3085,
+        "lost": 0,
+        "present": 3085
+      }
+    },
+    "tileBytesGzip": {
+      "count": 51269,
+      "max": 416503,
+      "median": 187,
+      "p99": 7820
+    },
+    "z7Tiles": {
+      "checked": 6,
+      "missing": 0
+    }
+  },
+  "zoom": {
+    "max": 14,
+    "min": 4
+  }
+}
