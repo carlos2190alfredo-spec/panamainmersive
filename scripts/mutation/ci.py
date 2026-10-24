@@ -10,6 +10,7 @@ W = configuraciones de Playwright · Y = `ci.yml` · P = `package.json` · L = `
 O = los guiones usan el ciclo de vida compartido · T = arranque del clúster interrumpido (señales, determinista) ·
 X = limpieza de `e2e-content` (contra la prueba de punta a punta de los guiones) ·
 A = `action-pins.ts` (acciones fijadas por hash) · B = `check-action-pins.ts` · Y13–Y17 = `ci.yml` y `dependabot.yml` (fijado).
+D = `dependency-policy.ts` (licencias y avisos) · E = `check-deps.ts` · F = `audit.yml` · J = `data/dependency-policy.json` · Y18–Y19 = `ci.yml` (licencias).
 
 Cada grupo tiene su ejecutor: TypeScript contra la suite unitaria COMPLETA (las pruebas del pegamento lanzan los scripts
 de verdad), los de señales contra su prueba de integración y `lib.py` contra pytest.
@@ -30,6 +31,10 @@ VT = "scripts/perf/vitals.ts"
 AP = "scripts/lib/action-pins.ts"
 CA = "scripts/check-action-pins.ts"
 DEP = ".github/dependabot.yml"
+DP = "scripts/lib/dependency-policy.ts"
+CD = "scripts/check-deps.ts"
+AUD = ".github/workflows/audit.yml"
+POL = "data/dependency-policy.json"
 PW = "playwright.config.ts"
 PWC = "playwright.content.config.ts"
 PWD = "playwright.db.config.ts"
@@ -221,6 +226,68 @@ PIN_MUTATIONS = [
     ("Y17 Dependabot sin periodicidad", DEP, "      interval: weekly\n", ""),
 ]
 
+# Licencias y avisos de las dependencias (T-20): la lógica, su CLI, el flujo semanal y la política real.
+DEPS_MUTATIONS = [
+    # --- dependency-policy.ts: la política y sus fechas ----------------------------------------------------------------
+    ("D1 una fecha imposible (2026-02-31) se acepta", DP, "parsed.toISOString().slice(0, 10) === value", "true"),
+    ("D2 un motivo de una palabra vale como excepción", DP, "z.string().min(20, 'el motivo debe explicarse (≥ 20 caracteres)')", "z.string().min(1, 'el motivo debe explicarse (≥ 20 caracteres)')"),
+    ("D3 un identificador de licencia puede ser una expresión con espacios", DP, ".regex(/^[A-Za-z0-9.+-]+$/, 'un identificador SPDX, no una expresión ni un comodín');", ".regex(/^[A-Za-z0-9.+ -]+$/, 'un identificador SPDX, no una expresión ni un comodín');"),
+    ("D4 las licencias repetidas distinguen mayúsculas", DP, "const lower = list.map((id) => id.toLowerCase());", "const lower = list;"),
+    # --- dependency-policy.ts: expresiones SPDX ------------------------------------------------------------------------
+    ("D5 `AND` se evalúa como `OR`", DP, "value = value && next;", "value = value || next;"),
+    ("D6 `OR` se evalúa como `AND`", DP, "value = value || next;", "value = value && next;"),
+    ("D7 lo que sobra tras la expresión se ignora", DP, "return position === tokens.length && value;", "return value;"),
+    ("D8 los identificadores distinguen mayúsculas", DP, "const base = allowed.has(id.toLowerCase());", "const base = allowed.has(id);"),
+    ("D9 `WITH` no se reconoce", DP, "if (peek() === 'WITH') {", "if (false) {"),
+    # --- dependency-policy.ts: licencias ---------------------------------------------------------------------------------
+    ("D10 en producción valen también las licencias de desarrollo", DP, "pkg.scope === 'prod' ? prodAllowed : devAllowed", "devAllowed"),
+    ("D11 en desarrollo no valen las licencias de producción", DP, "const devAllowed = new Set([\n    ...prodAllowed,\n    ...policy.allowedLicenses.dev.map((id) => id.toLowerCase()),\n  ]);", "const devAllowed = new Set([...policy.allowedLicenses.dev.map((id) => id.toLowerCase())]);"),
+    ("D12 el último día del plazo ya no vale", DP, "} else if (today <= exception.reviewBy) {", "} else if (today < exception.reviewBy) {"),
+    ("D13 una excepción provisional nunca vence", DP, "} else if (today <= exception.reviewBy) {", "} else if (true) {"),
+    ("D14 la excepción no mira la licencia (una versión nueva con otra licencia queda cubierta)", DP, "(e) => e.package === pkg.name && e.license === pkg.license && e.scope === pkg.scope,", "(e) => e.package === pkg.name && e.scope === pkg.scope,"),
+    ("D15 la excepción no mira el ámbito", DP, "(e) => e.package === pkg.name && e.license === pkg.license && e.scope === pkg.scope,", "(e) => e.package === pkg.name && e.license === pkg.license,"),
+    ("D16 una excepción aceptada se trata como provisional", DP, "if (exception.status === 'accepted') {", "if (false) {"),
+    ("D17 las excepciones de licencia sin paquete no se avisan", DP, "staleExceptions: policy.licenseExceptions.filter((e) => !used.has(e)),", "staleExceptions: [],"),
+    ("D18 una lista de licencias vacía se da por buena", DP, "  if (out.length === 0)\n    throw new Error('la lista de licencias está vacía: no hay nada que evaluar');\n", ""),
+    ("D19 el ámbito de producción/desarrollo está invertido", DP, "inProd.has(`${p.name}@${p.version}`) ? 'prod' : 'dev'", "inProd.has(`${p.name}@${p.version}`) ? 'dev' : 'prod'"),
+    # --- dependency-policy.ts: avisos ------------------------------------------------------------------------------------
+    ("D20 una gravedad desconocida se acepta", DP, "if (!SEVERITIES.includes(a.severity as Severity)) {", "if (false) {"),
+    ("D21 una salida sin `advisories` no se rechaza con su motivo", DP, "if (typeof advisories !== 'object' || advisories === null || Array.isArray(advisories)) {", "if (false) {"),
+    ("D22 un aviso de desarrollo pisa al de producción", DP, "  for (const a of dev) byId.set(`${a.id}\\0${a.module}`, a);\n  for (const a of prod) byId.set(`${a.id}\\0${a.module}`, a);", "  for (const a of prod) byId.set(`${a.id}\\0${a.module}`, a);\n  for (const a of dev) byId.set(`${a.id}\\0${a.module}`, a);"),
+    ("D23 desarrollo usa el umbral de producción", DP, "const threshold = advisory.scope === 'prod' ? policy.audit.failOnProd : policy.audit.failOnDev;", "const threshold = policy.audit.failOnProd;"),
+    ("D24 la gravedad igual al umbral solo avisa", DP, "if (rank(advisory.severity) < rank(threshold)) {", "if (rank(advisory.severity) <= rank(threshold)) {"),
+    ("D25 la excepción de un aviso no mira el paquete", DP, "(e) => e.package === advisory.module && (e.id === advisory.id || e.id === advisory.ghsa),", "(e) => e.id === advisory.id || e.id === advisory.ghsa,"),
+    ("D26 la excepción de un aviso no se reconoce por GHSA", DP, "(e.id === advisory.id || e.id === advisory.ghsa)", "(e.id === advisory.id)"),
+    ("D27 una excepción de aviso vencida sigue valiendo", DP, "if (today <= exception.until) excepted.push({ advisory, exception });", "if (true) excepted.push({ advisory, exception });"),
+    ("D28 las excepciones de aviso sin aviso no se avisan", DP, "staleExceptions: policy.audit.exceptions.filter((e) => !used.has(e)),", "staleExceptions: [],"),
+    # --- check-deps.ts: el pegamento ---------------------------------------------------------------------------------------
+    ("E1 las licencias que incumplen no hacen fallar", CD, "  return report.violations.length > 0 ? 1 : 0;\n}\n\nfunction runAudit", "  return 0;\n}\n\nfunction runAudit"),
+    ("E2 los avisos que incumplen no hacen fallar", CD, "  return report.violations.length > 0 ? 1 : 0;\n}\n\nfunction main", "  return 0;\n}\n\nfunction main"),
+    ("E3 un `pnpm` que no arranca no se dice", CD, "  if (result.error) throw new Error(`no se pudo ejecutar \\`${command}\\`: ${result.error.message}`);\n", ""),
+    ("E4 una política ilegible no impide evaluar", CD, "  } catch (error) {\n    console.error(`FALLO: ${error instanceof Error ? error.message : String(error)}`);\n    return 2;\n  }", "  } catch (error) {\n    console.error(`FALLO: ${error instanceof Error ? error.message : String(error)}`);\n    return 0;\n  }"),
+    ("E5 un incumplimiento no manda sobre un «no se pudo evaluar»", CD, "  if (violated) return 1;\n", ""),
+    ("E6 «no se pudo evaluar» sale con 0", CD, "  return notEvaluated ? 2 : 0;", "  return 0;"),
+    ("E7 un fallo al evaluar no se registra", CD, "      notEvaluated = true;\n", ""),
+    ("E8 la auditoría de desarrollo se cuenta como de producción", CD, "pnpmJson(['audit', '--dev', '--json']), 'dev')", "pnpmJson(['audit', '--dev', '--json']), 'prod')"),
+    ("E9 `--policy=FICHERO` no se reconoce", CD, "arg.startsWith('--policy=')", "false"),
+    ("E10 un argumento desconocido se ignora", CD, "      return `Argumento no reconocido: ${String(arg)}`;", "      continue;"),
+    ("E11 sin modo no se pide nada y sale bien", CD, "  if (!licenses && !audit) return 'Indica qué comprobar: --licenses y/o --audit';\n", ""),
+    ("E12 las licencias de producción se piden sin `--prod` (todo parece producción)", CD, "pnpmJson(['licenses', 'list', '--prod', '--json'])", "pnpmJson(['licenses', 'list', '--json'])"),
+    # --- audit.yml ---------------------------------------------------------------------------------------------------------
+    ("F1 la auditoría ya no tiene calendario", AUD, "  schedule:\n    - cron: '17 6 * * 1'\n", ""),
+    ("F2 la auditoría se engancha a cada push", AUD, "  workflow_dispatch:\n", "  workflow_dispatch:\n  push:\n"),
+    ("F3 la auditoría puede escribir en el repositorio", AUD, "  contents: read\n", "  contents: write\n"),
+    ("F4 la auditoría sin timeout", AUD, "    timeout-minutes: 10\n", ""),
+    ("F5 el flujo ejecuta otra cosa", AUD, "      - run: pnpm check:audit\n", "      - run: pnpm check:licenses\n"),
+    ("F6 un fallo de la auditoría no se ve", AUD, "    timeout-minutes: 10\n", "    timeout-minutes: 10\n    continue-on-error: true\n"),
+    # --- ci.yml (licencias) -------------------------------------------------------------------------------------------------
+    ("Y18 el job `check` no comprueba las licencias", YML, "      - run: pnpm check:licenses\n", ""),
+    ("Y19 la auditoría de avisos se engancha a cada cambio", YML, "      - run: pnpm check:licenses\n", "      - run: pnpm check:licenses\n      - run: pnpm check:audit\n"),
+    # --- data/dependency-policy.json (la política real) ----------------------------------------------------------------------
+    ("J1 la política real admite una licencia de copyleft fuerte", POL, '"dev": ["MPL-2.0"]', '"dev": ["MPL-2.0", "GPL-3.0-only"]'),
+    ("J2 una excepción real nombra un paquete que no existe", POL, '"package": "caniuse-lite",', '"package": "caniuse-lite-inexistente",'),
+]
+
 # La herramienta de mutación contra su propia suite.
 LIB_MUTATIONS = [
     ("L1 un ID inexistente se acepta", LIB, "    if unknown:\n", "    if False:\n"),
@@ -245,6 +312,7 @@ GROUPS = [
     (STARTUP_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/cluster-startup-signals.test.ts"]), 8),
     (SCRIPT_MUTATIONS, lambda: run_vitest("integration", ["tests/integration/e2e-scripts.test.ts"]), 10),
     (PIN_MUTATIONS, lambda: run_vitest("unit", ["tests/unit/scripts/action-pins.test.ts", "tests/unit/scripts/check-action-pins.test.ts", "tests/unit/scripts/ci-workflow.test.ts"]), 100),
+    (DEPS_MUTATIONS, lambda: run_vitest("unit", ["tests/unit/scripts/dependency-policy.test.ts", "tests/unit/scripts/check-deps.test.ts", "tests/unit/scripts/audit-workflow.test.ts", "tests/unit/scripts/ci-workflow.test.ts"]), 100),
     (LIB_MUTATIONS, lambda: run_pytest(["pipelines/tests/test_mutation_lib.py"]), 20),
 ]
 
