@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
  * romperse, y ninguna otra prueba los vigilaba:
  *  · `typecheck` y `lint` necesitan los tipos de rutas de Next (`next typegen`); en una copia limpia, sin ellos, ESLint
  *    falla con «unsafe any» por `next/root-params` (solo funcionaba donde quedaba un `.next` de otra ejecución);
- *  · los orquestadores E2E se lanzan con `node --import tsx`, NO con el CLI `tsx`: éste, ante Ctrl+C, mata al hijo con
+ *  · los orquestadores E2E (y `perf:vitals`, que también lanza un servidor, y `perf:db`, que lanza un clúster) se lanzan con `node --import tsx`, NO con el CLI `tsx`: éste, ante Ctrl+C, mata al hijo con
  *    SIGKILL si no responde en 30 ms, y los clústeres de PostgreSQL y servidores quedaban huérfanos;
  *  · un `pnpm <script>` del CI que no existe (o está mal escrito) solo falla cuando corre en GitHub.
  */
@@ -28,7 +28,7 @@ describe('package.json', () => {
     expect(scripts.typegen).toBe('next typegen');
   });
 
-  it.each(['test:e2e:db', 'test:e2e:content'])(
+  it.each(['test:e2e:db', 'test:e2e:content', 'perf:vitals', 'perf:db'])(
     '%s se lanza con `node --import tsx` (no con el CLI `tsx`, que mata al hijo 30 ms tras una señal)',
     (name) => {
       expect(scripts[name]).toMatch(/^node --import tsx scripts\//);

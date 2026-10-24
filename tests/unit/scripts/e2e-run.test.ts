@@ -298,7 +298,7 @@ describe('un guion completo: `withTermination` y `exitWith`', () => {
     for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   });
 
-  async function run(mode: 'ok' | 'fail' | 'derived', signals: [string, number][] = []) {
+  async function run(mode: 'ok' | 'fail' | 'code' | 'derived', signals: [string, number][] = []) {
     const dir = mkdtempSync(join(tmpdir(), 'pi-orchestrated-'));
     dirs.push(dir);
     const marks = join(dir, 'marks.txt');
@@ -333,6 +333,10 @@ describe('un guion completo: `withTermination` y `exitWith`', () => {
 
   it('sin señal: la limpieza se ejecuta igualmente y el código es el del guion', async () => {
     expect(await run('ok')).toMatchObject({ code: 0, marks: 'inicio\nlimpieza\n', stderr: '' });
+  });
+
+  it('el código que devuelve `main` (el de Playwright) es el de salida', async () => {
+    expect(await run('code')).toMatchObject({ code: 3, marks: 'inicio\nlimpieza\n' });
   });
 
   it('un fallo PROPIO se imprime y sale con 1 (la traducción a 130 solo vale con una señal)', async () => {

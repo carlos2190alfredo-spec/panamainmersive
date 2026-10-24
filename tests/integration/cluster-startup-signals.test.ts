@@ -147,6 +147,59 @@ describe('Ctrl-C durante el arranque del clúster temporal', () => {
     60_000,
   );
 
+  it('con SIGTERM sale con 143 y tampoco deja el directorio', async () => {
+    const marker = join(markerDir(), 'initdb.pid');
+    const tmp = sandbox();
+    const run = launch(tmp, { PI_PG_BIN_DIR: fake(join(tmp, 'bin'), 'initdb', waits(marker)) });
+    await until(() => existsSync(marker), 'el programa falso avisa', run.output);
+    process.kill(-(run.child.pid as number), 'SIGTERM');
+    const result = await run.exited;
+    expect(result.code, run.output()).toBe(143);
+    expect(clusterDirs(tmp)).toEqual([]);
+  }, 60_000);
+
+  it('una señal que llega en un tramo síncrono SIN matar a ningún hijo no se pierde (antes se ignoraba el Ctrl-C)', async () => {
+    // `initdb` y `pg_ctl` falsos terminan bien. La prueba manda SIGINT SOLO al proceso Node (no al grupo) mientras éste
+    // está bloqueado en `initdb`: la señal queda pendiente y ningún hijo muere. El arranque «acaba bien» con ella
+    // pendiente: debe verla, limpiar y salir con 130, no seguir como si nadie hubiera pulsado Ctrl-C.
+    const tmp = sandbox();
+    const marker = join(markerDir(), 'initdb.pid');
+    const bin = join(tmp, 'bin');
+    fake(bin, 'initdb', `echo "$$" > "${marker}"\nsleep 0.5\nexit 0`);
+    fake(bin, 'pg_ctl', 'exit 0');
+    const run = launch(tmp, { PI_PG_BIN_DIR: bin });
+    await until(() => existsSync(marker), 'el programa falso avisa', run.output);
+    process.kill(run.child.pid as number, 'SIGINT'); // solo a Node
+    const result = await Promise.race([
+      run.exited,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`la señal se perdió; salida:\n${run.output()}`)), 20_000),
+      ),
+    ]);
+    expect(result.code, run.output()).toBe(130);
+    expect(run.output()).not.toContain('listo'); // no llegó a dar el clúster por bueno
+    expect(clusterDirs(tmp)).toEqual([]);
+  }, 60_000);
+
+  it('un arranque fallido intenta parar un postmaster a medias ANTES de borrar el directorio', async () => {
+    // `pg_ctl start` falso falla (como un arranque a medias) y `pg_ctl stop` falso deja su marca: la limpieza debe
+    // llamarlo; si no, un postmaster medio levantado quedaría vivo con su directorio borrado.
+    const tmp = sandbox();
+    const stopMark = join(markerDir(), 'stop.called');
+    const bin = join(tmp, 'bin');
+    fake(bin, 'initdb', 'exit 0');
+    fake(
+      bin,
+      'pg_ctl',
+      `case " $* " in\n  *" stop "*) echo parado > "${stopMark}"; exit 0 ;;\n  *) echo "pg_ctl: no arranca" >&2; exit 1 ;;\nesac`,
+    );
+    const run = launch(tmp, { PI_PG_BIN_DIR: bin });
+    const result = await run.exited;
+    expect(result.code, run.output()).toBe(1);
+    expect(existsSync(stopMark)).toBe(true);
+    expect(clusterDirs(tmp)).toEqual([]);
+  }, 60_000);
+
   it('un `initdb` que FALLA por su cuenta limpia el directorio y propaga el error (no se confunde con una interrupción)', async () => {
     const tmp = sandbox();
     const run = launch(tmp, {

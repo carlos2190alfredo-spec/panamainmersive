@@ -224,11 +224,6 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
 
   // TODO lo que sigue a la creación del directorio va DENTRO del `try`: una señal que mate cualquier llamada síncrona
   // (incluidas las de `id` del `chown`) debe pasar por la limpieza, no dejar el directorio atrás.
-  // Si llegó una señal mientras se esperaba algo asíncrono, no se lanza el paso siguiente (un Ctrl-C no debe esperar a
-  // `initdb`): se aborta y el `catch` limpia y sale con 130/143.
-  const checkpoint = () => {
-    if (interrupted !== undefined) throw new Error('arranque interrumpido por una señal');
-  };
   let port: number;
   try {
     if (isRoot) {
@@ -237,7 +232,6 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       chownSync(dir, uid, gid);
     }
     port = await freePort();
-    checkpoint();
     run('initdb', [
       '-D',
       data,
@@ -250,7 +244,6 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       '--locale=C.UTF-8',
       '--no-sync',
     ]);
-    checkpoint();
     run('pg_ctl', [
       '-D',
       data,
@@ -334,6 +327,11 @@ export async function startTestCluster(options: StartOptions = {}): Promise<Test
       // mejor esfuerzo: ya se está saliendo
     }
   });
+  // Una señal que llegó durante el tramo síncrono SIN matar a ningún hijo sigue pendiente: hay que ceder el bucle de
+  // eventos para que la vean los manejadores de retención ANTES de soltarlos (si no, ese Ctrl-C se perdía). Con `tsx`
+  // cargado no llega en la vuelta de `setImmediate` sino unos 0,4 ms después (medido, también con la CPU saturada):
+  // 20 ms dejan un margen amplio y cuestan poco en un arranque que ya tarda segundos.
+  await new Promise<void>((resolve) => setTimeout(resolve, 20));
   release();
   if (interrupted !== undefined) {
     // La señal llegó con el arranque ya terminado (o en una espera asíncrona): se limpia y se sale como siempre.
