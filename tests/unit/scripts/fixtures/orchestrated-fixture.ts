@@ -26,7 +26,9 @@ exitWith(() =>
     setInterval(() => undefined, 1000);
     return new Promise<number>((_resolve, reject) => {
       for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-        process.on(signal, () => {
+        // `once`: un manejador permanente impediría que se restaurase la acción por defecto, y la segunda señal no podría
+        // matar el proceso con el orden defectuoso (los guiones reales no lo tienen).
+        process.once(signal, () => {
           setTimeout(() => {
             reject(new Error('fallo derivado de la señal'));
           }, 20);
