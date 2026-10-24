@@ -2,7 +2,8 @@
 Mutaciones de TypeScript de la ruta de producción del contenido (instantánea → estado → ficha/sitemap) contra la suite
 unitaria completa. Uso:  python3 scripts/mutation/ts.py [ID …]
 Etiquetas: S = estado derivado, L = cargador, O = SEO (destinationSeo), X = texto por idioma, M = sitemap,
-I = idioma de las fuentes (etiqueta, instantánea, ficha).
+I = idioma de las fuentes (etiqueta, instantánea, ficha), Q = calidad de la experiencia (histéresis),
+R = Experience Resolver (exclusiones, elección, histéresis, conservación de idioma/cámara/selección).
 """
 import sys
 from lib import main, run_vitest
@@ -10,6 +11,7 @@ from lib import main, run_vitest
 ST='src/domains/content/state.ts'; LD='src/lib/content-snapshot.ts'; DC='src/lib/destination-content.ts'
 TX='src/domains/content/text.ts'; SM='src/app/sitemap.ts'; CP='src/domains/content/completeness.ts'
 LT='src/domains/content/language-tag.ts'; SN='src/domains/content/snapshot.ts'; CS='src/components/content/ContentSections.tsx'
+EQ='src/domains/experience/quality.ts'; ER='src/domains/experience/resolver.ts'
 LTAG="LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$/;"
 MUTS=[
  ('S1 estado: exige identidades que la instantánea no lleva',ST,"passesGates(a, kind, { people: 'unavailable' })","passesGates(a, kind, { people: 'required' })"),
@@ -53,6 +55,57 @@ MUTS=[
  ('I16 ficha: el localizador sin lang',CS,"t.rich('locator', { locator: source.locator, doc: inSourceLanguage })","t.rich('locator', { locator: source.locator, doc: (chunks) => chunks })"),
  ('I17 ficha: el título sin enlace seguro sin lang',CS,"<span lang={language}>{source.title}</span>","<span>{source.title}</span>"),
  ('I18 ficha: el aviso «pestaña nueva» no vuelve al idioma de la interfaz',CS,"lang={language ? LOCALE_INFO[locale].htmlLang : undefined}","lang={undefined}"),
+ ('Q1 HIGH se supone sin medir el frame',EQ,"    atOrBelow(d.frameTimeP75Ms, T.highEnterFrameMs) &&\n    (d.tileErrorRate === null || d.tileErrorRate <= T.highEnterErrorRate)\n  )\n    return 'HIGH';","    (d.frameTimeP75Ms === null || d.frameTimeP75Ms <= T.highEnterFrameMs) &&\n    (d.tileErrorRate === null || d.tileErrorRate <= T.highEnterErrorRate)\n  )\n    return 'HIGH';"),
+ ('Q2 el ahorro de datos no baja a LITE (sin memoria)',EQ,"  if (d.saveData || d.glContextLosses > 0) return 'LITE';\n  if (\n","  if (d.glContextLosses > 0) return 'LITE';\n  if (\n"),
+ ('Q3 el ahorro de datos no baja a LITE (con memoria)',EQ,"  if (d.saveData || d.glContextLosses > 0) return 'LITE';\n  if (!previous)","  if (d.glContextLosses > 0) return 'LITE';\n  if (!previous)"),
+ ('Q4 la pérdida de contexto no baja a LITE (con memoria)',EQ,"  if (d.saveData || d.glContextLosses > 0) return 'LITE';\n  if (!previous)","  if (d.saveData) return 'LITE';\n  if (!previous)"),
+ ('Q5 umbral «a partir de» estricto',EQ,"return value !== null && value >= limit;","return value !== null && value > limit;"),
+ ('Q6 umbral «por debajo de» estricto',EQ,"return value !== null && value <= limit;","return value !== null && value < limit;"),
+ ('Q7 STANDARD sube a HIGH sin aguantar',EQ,"return canHigh && held ? 'HIGH' : 'STANDARD';","return canHigh ? 'HIGH' : 'STANDARD';"),
+ ('Q8 LITE sale a STANDARD sin aguantar',EQ,"return recovered && held ? 'STANDARD' : 'LITE';","return recovered ? 'STANDARD' : 'LITE';"),
+ ('Q9 LITE sale saltando hasta HIGH',EQ,"return recovered && held ? 'STANDARD' : 'LITE';","return recovered && held ? qualityFromScratch(d) : 'LITE';"),
+ ('Q10 salir de LITE con el umbral de entrada (sin banda)',EQ,"atOrBelow(d.frameTimeP75Ms, T.liteExitFrameMs) &&","atOrBelow(d.frameTimeP75Ms, T.liteEnterFrameMs) &&"),
+ ('Q11 salir de HIGH con el umbral de entrada (sin banda)',EQ,"atOrAbove(d.frameTimeP75Ms, T.highExitFrameMs) ||","atOrAbove(d.frameTimeP75Ms, T.highEnterFrameMs) ||"),
+ ('Q12 HIGH no baja por errores de teselas',EQ,"        atOrAbove(d.frameTimeP75Ms, T.highExitFrameMs) ||\n        atOrAbove(d.tileErrorRate, T.highExitErrorRate);","        atOrAbove(d.frameTimeP75Ms, T.highExitFrameMs);"),
+ ('Q13 desde HIGH no se baja a LITE de golpe',EQ,"    case 'HIGH': {\n      if (mustLite) return 'LITE';","    case 'HIGH': {"),
+ ('Q14 desde STANDARD no se baja a LITE',EQ,"    case 'STANDARD': {\n      if (mustLite) return 'LITE';","    case 'STANDARD': {"),
+ ('Q15 sin previa no se parte de la calidad desde cero',EQ,"if (!previous) return qualityFromScratch(d);","if (!previous) return 'STANDARD';"),
+ ('Q16 los errores de teselas no bajan a LITE (sin memoria)',EQ,"    atOrAbove(d.frameTimeP75Ms, T.liteEnterFrameMs) ||\n    atOrAbove(d.tileErrorRate, T.liteEnterErrorRate)\n  )\n    return 'LITE';","    atOrAbove(d.frameTimeP75Ms, T.liteEnterFrameMs)\n  )\n    return 'LITE';"),
+ ('Q17 los errores de teselas no bajan a LITE (con memoria)',EQ,"const mustLite =\n    atOrAbove(d.frameTimeP75Ms, T.liteEnterFrameMs) ||\n    atOrAbove(d.tileErrorRate, T.liteEnterErrorRate);","const mustLite = atOrAbove(d.frameTimeP75Ms, T.liteEnterFrameMs);"),
+ ('Q18 subir a HIGH ignora los errores de teselas (con memoria)',EQ,"(d.tileErrorRate === null || d.tileErrorRate <= T.highEnterErrorRate);\n      return canHigh","true;\n      return canHigh"),
+ ('Q19 salir de LITE ignora los errores de teselas',EQ,"(d.tileErrorRate === null || d.tileErrorRate <= T.liteExitErrorRate);","true;"),
+ ('R1 derechos del proveedor no se comprueban',ER,"const rights = rightsReason(evaluateAll(input.rights, p.id, ['display'], input.env));","const rights = null;"),
+ ('R2 cobertura del proveedor no se comprueba',ER,"const cov = coverageReason(input.coverage, p.capability, input.today);","const cov = null;"),
+ ('R3 proveedor caído no excluye',ER,"if (p.health === 'down') own.push","if (false) own.push"),
+ ('R4 cuota exactamente agotada (0) pasa',ER,"p.budgetRemaining !== null && p.budgetRemaining <= 0","p.budgetRemaining !== null && p.budgetRemaining < 0"),
+ ('R5 proveedor sin configurar no excluye',ER,"if (!p.configured) own.push","if (false) own.push"),
+ ('R6 cobertura caducada se dice «sin medir»',ER,"cause: row.status !== 'UNKNOWN' ? 'expired' : 'unknown',","cause: 'unknown',"),
+ ('R7 la caducidad de la cobertura no cuenta',ER,"const status = effectiveStatus(row, today);","const status = row.status;"),
+ ('R8 cobertura PARCIAL no vale',ER,"if (status === 'VERIFIED' || status === 'PARTIAL') return null;","if (status === 'VERIFIED') return null;"),
+ ('R9 el ahorro de datos no excluye lo pesado',ER,"if (needs.heavy && input.device.saveData) reasons.push","if (false) reasons.push"),
+ ('R10 sin WebGL no excluye',ER,"if (needs.webgl && !input.device.webgl) reasons.push","if (false) reasons.push"),
+ ('R11 el terreno no exige cobertura',ER,"rightsReason(terrain) ?? coverageReason(input.coverage, 'terrain', input.today)","rightsReason(terrain)"),
+ ('R12 cero historias cuenta como contenido',ER,"input.content.stories <= 0","input.content.stories < 0"),
+ ('R13 cero fotos con licencia cuentan como contenido',ER,"input.content.licensedMedia <= 0","input.content.licensedMedia < 0"),
+ ('R14 se elige el ÚLTIMO proveedor que pasa',ER,"        chosen = p;\n        break;","        chosen = p;"),
+ ('R15 solo se dice el último proveedor que falla',ER,"failures.push(...own);","failures.splice(0, failures.length, ...own);"),
+ ('R16 la intención no manda en el orden',ER,"[...INTENT_FIRST[intent], ...KIND_ORDER[kind], 'MAP_2D' as const]","[...KIND_ORDER[kind], 'MAP_2D' as const]"),
+ ('R17 MAP_2D ya no se añade al final del orden',ER,"...KIND_ORDER[kind], 'MAP_2D' as const]","...KIND_ORDER[kind]]","equivalente","toda entrada de KIND_ORDER ya termina en MAP_2D, así que añadirlo al final es una red de seguridad por si alguien añade un tipo sin él; no se puede observar con la tabla actual (el orden resultante es idéntico)."),
+ ('R18 la cámara no se conserva',ER,"    camera: input.camera,\n    selection:","    camera: null,\n    selection:"),
+ ('R19 el idioma no se conserva',ER,"    locale: input.locale,\n    camera: input.camera,","    locale: 'es' as const,\n    camera: input.camera,"),
+ ('R20 el área seleccionada no se conserva',ER,"areaId: input.areaId }","areaId: null }"),
+ ('R21 sin representación visual la calidad no es LITE',ER,"      quality: 'LITE',\n      why: 'text-only',","      quality: 'STANDARD',\n      why: 'text-only',"),
+ ('R22 sin histéresis: la mejora es inmediata',ER,"if (keep && !(prev.heldMs >= MIN_HOLD_MS && proven)) {","if (false) {"),
+ ('R23 la histéresis ignora la estabilidad de la mejor',ER,"!(prev.heldMs >= MIN_HOLD_MS && proven)","!(prev.heldMs >= MIN_HOLD_MS)"),
+ ('R24 la histéresis ignora cuánto lleva la actual',ER,"!(prev.heldMs >= MIN_HOLD_MS && proven)","!proven"),
+ ('R25 la histéresis se aplica aunque cambie la intención',ER,"    prev &&\n    prev.intent === input.intent &&\n    prev.destinationKey === input.destination.key &&\n    prev.representation !== best.representation","    prev &&\n    prev.destinationKey === input.destination.key &&\n    prev.representation !== best.representation"),
+ ('R26 la histéresis se aplica aunque cambie el destino',ER,"    prev &&\n    prev.intent === input.intent &&\n    prev.destinationKey === input.destination.key &&\n    prev.representation !== best.representation","    prev &&\n    prev.intent === input.intent &&\n    prev.representation !== best.representation"),
+ ('R27 los fallbacks incluyen lo mejor que la elegida',ER,"eligible.slice(eligible.indexOf(chosen) + 1)","eligible.filter((e) => e !== chosen)"),
+ ('R28 la calidad con memoria se aplica aunque cambie la representación',ER,"prev && prev.representation === chosen.representation\n      ?","prev\n      ?"),
+ ('R29 el motivo es siempre «preferida»',ER,"let why: ExperienceManifest['why'] = order[0] === best.representation ? 'preferred' : 'fallback';","let why: ExperienceManifest['why'] = 'preferred';"),
+ ('R30 advancePrevious: el tiempo en pantalla no se reinicia al cambiar de representación',ER,"heldMs: same && prev.representation === manifest.representation ? prev.heldMs + elapsedMs : 0,","heldMs: same ? prev.heldMs + elapsedMs : 0,"),
+ ('R31 advancePrevious: la estabilidad de cada candidata no se acumula',ER,"    eligibleForMs[r] =\n      same && prev.eligibleForMs[r] !== undefined ? (prev.eligibleForMs[r] ?? 0) + elapsedMs : 0;","    eligibleForMs[r] = 0;"),
+ ('R32 advancePrevious: el tiempo en una calidad no se reinicia al cambiarla',ER,"same && prev.representation === manifest.representation && prev.quality === manifest.quality","same && prev.representation === manifest.representation"),
 ]
 
 if __name__ == "__main__":
