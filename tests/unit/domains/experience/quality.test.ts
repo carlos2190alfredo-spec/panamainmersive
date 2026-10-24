@@ -110,6 +110,32 @@ describe('calidad con histéresis', () => {
     expect(q('HIGH', held, { frameTimeP75Ms: 20 })).toBe('HIGH');
   });
 
+  it('los errores de teselas también mandan con memoria: bajan a LITE desde STANDARD y desde HIGH', () => {
+    const bad = { frameTimeP75Ms: 10, tileErrorRate: T.liteEnterErrorRate };
+    expect(q('STANDARD', 0, bad)).toBe('LITE');
+    expect(q('HIGH', 0, bad)).toBe('LITE'); // salta, no pasa por STANDARD
+    // justo por debajo del umbral de entrada a LITE, no
+    expect(
+      q('STANDARD', 0, { frameTimeP75Ms: 10, tileErrorRate: T.liteEnterErrorRate - 0.001 }),
+    ).toBe('STANDARD');
+  });
+
+  it('subir a HIGH exige también pocos errores de teselas, no solo buen frame', () => {
+    const ok = { frameTimeP75Ms: 8, tileErrorRate: T.highEnterErrorRate };
+    expect(q('STANDARD', held, ok)).toBe('HIGH');
+    expect(q('STANDARD', held, { ...ok, tileErrorRate: T.highEnterErrorRate + 0.01 })).toBe(
+      'STANDARD',
+    );
+  });
+
+  it('salir de LITE exige también que los errores de teselas hayan bajado al umbral de SALIDA', () => {
+    const ok = { frameTimeP75Ms: 20, tileErrorRate: T.liteExitErrorRate };
+    expect(q('LITE', held, ok)).toBe('STANDARD');
+    expect(q('LITE', held, { ...ok, tileErrorRate: T.liteExitErrorRate + 0.01 })).toBe('LITE');
+    // sin haber medido errores (null) no lo impide
+    expect(q('LITE', held, { frameTimeP75Ms: 20, tileErrorRate: null })).toBe('STANDARD');
+  });
+
   it('una medida que oscila alrededor de un umbral no hace oscilar la calidad', () => {
     // 100 muestras alternando 14 ↔ 22 ms (cruzan el umbral de ENTRADA a HIGH pero no el de salida)
     let quality: Quality = 'STANDARD';

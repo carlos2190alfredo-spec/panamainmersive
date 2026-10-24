@@ -839,6 +839,26 @@ describe('histéresis de la representación', () => {
     expect(p4.qualityHeldMs).toBe(0);
   });
 
+  it('`advancePrevious` cuenta el tiempo en la calidad ACTUAL: al cambiar de calidad vuelve a cero', () => {
+    const base = everything({ device: { ...input().device, frameTimeP75Ms: 8 } });
+    const previous: PreviousExperience = {
+      ...settled('PHOTOREALISTIC_3D'),
+      quality: 'STANDARD',
+      heldMs: 40_000,
+      qualityHeldMs: MIN_HOLD_MS,
+      eligibleForMs: { PHOTOREALISTIC_3D: 60_000 },
+    };
+    const scenario: ExperienceInput = { ...base, previous };
+    const manifest = resolveExperience(scenario);
+    expect(manifest.quality).toBe('HIGH'); // subió (aguantó lo bastante)
+    const next = advancePrevious(manifest, scenario, 1000);
+    expect(next.heldMs).toBe(41_000); // la representación sigue siendo la misma
+    expect(next.qualityHeldMs).toBe(0); // pero la calidad es nueva: empieza a contar
+    // y si no cambia, sigue acumulando
+    const again = advancePrevious(manifest, { ...scenario, previous: next }, 1000);
+    expect(again.qualityHeldMs).toBe(1000);
+  });
+
   it('la calidad con histéresis solo se aplica si la representación no cambió', () => {
     const base = everything({ device: { ...input().device, frameTimeP75Ms: 8 } });
     expect(resolveExperience(base).quality).toBe('HIGH');
