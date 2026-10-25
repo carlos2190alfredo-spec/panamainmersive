@@ -1,0 +1,253 @@
+// @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { NextIntlClientProvider, createTranslator } from 'next-intl';
+import type * as NextIntl from 'next-intl';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it, vi } from 'vitest';
+import { SITE } from '@/config/site';
+import { DESTINATIONS, DESTINATION_KEYS, destinationSlug } from '@/domains/tourism/destinations';
+import { LOCALES, type Locale } from '@/i18n/locales';
+import { THEME_COLORS } from '@/lib/seo';
+import { MESSAGES } from '../components/messages-fixture';
+
+const state = vi.hoisted(() => ({ locale: 'es' }));
+
+vi.mock('@/i18n/navigation', async () => (await import('../components/nav-mock')).navigationMock);
+
+// En el servidor `NextIntlClientProvider` infiere el idioma de la petición; en este entorno (build de cliente) hay que
+// dárselo: el sustituto lo toma de `state.locale` cuando la página no lo pasa, como hace la aplicación real.
+vi.mock('next-intl', async (importOriginal) => {
+  const actual = await importOriginal<typeof NextIntl>();
+  const { createElement } = await import('react');
+  return {
+    ...actual,
+    NextIntlClientProvider: ({ locale, ...rest }: { locale?: string; [key: string]: unknown }) =>
+      createElement(actual.NextIntlClientProvider, {
+        ...rest,
+        locale: locale ?? state.locale,
+      } as never),
+  };
+});
+
+// `next-intl/server` necesita el contexto de una petición de Next: se sustituye por traductores sobre los mensajes reales.
+vi.mock('next-intl/server', async () => {
+  const { createTranslator: create } = await import('next-intl');
+  const { MESSAGES: all } = await import('../components/messages-fixture');
+  type Arg = string | { locale?: string; namespace?: string } | undefined;
+  return {
+    getTranslations: (arg?: Arg) => {
+      const namespace = typeof arg === 'string' ? arg : arg?.namespace;
+      const locale = (typeof arg === 'object' ? arg.locale : undefined) ?? state.locale;
+      return Promise.resolve(
+        create({ locale, messages: all[locale as Locale] as never, namespace } as never),
+      );
+    },
+    getMessages: () => Promise.resolve(all[state.locale as Locale]),
+  };
+});
+
+const { default: HomePage, viewport } = await import('@/app/[locale]/page');
+
+async function renderHome(locale: Locale): Promise<Document> {
+  state.locale = locale;
+  const element = await HomePage({ params: Promise.resolve({ locale }) });
+  const html = renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={MESSAGES[locale]}>
+      {element}
+    </NextIntlClientProvider>,
+  );
+  return new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+}
+
+const tr = (locale: Locale, namespace: string) =>
+  createTranslator({
+    locale,
+    messages: MESSAGES[locale] as never,
+    namespace,
+  } as never) as unknown as (key: string, values?: Record<string, unknown>) => string;
+const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8');
+/** Fuente sin comentarios: los comentarios pueden NOMBRAR lo que el código evita. */
+const code = (path: string): string =>
+  read(path)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+describe.each(LOCALES)('portada (%s)', (locale) => {
+  let doc: Document;
+  const home = tr(locale, 'Home');
+
+  it('se renderiza', async () => {
+    doc = await renderHome(locale);
+    // React 19 puede anteponer un <link rel="preload"> de la imagen prioritaria: lo que importa es UN solo contenedor.
+    expect(doc.querySelectorAll('body > :not(link)')).toHaveLength(1);
+  });
+
+  it('va envuelta en `data-immersive` (activa el ámbito oscuro de marca para TODA la página)', () => {
+    const root = doc.querySelector('body > :not(link)');
+    expect(root?.tagName).toBe('DIV');
+    expect(root?.hasAttribute('data-immersive')).toBe(true);
+    expect(doc.querySelectorAll('[data-immersive]')).toHaveLength(1);
+  });
+
+  it('el héroe lleva dos capas decorativas aria-hidden, vacías y antes del contenido', () => {
+    const hero = doc.querySelector('section[aria-labelledby="home-title"]');
+    const layers = [...(hero?.children ?? [])].slice(0, 2);
+    expect(layers.map((el) => el.tagName)).toEqual(['DIV', 'DIV']);
+    for (const layer of layers) {
+      expect(layer.getAttribute('aria-hidden')).toBe('true');
+      expect(layer.textContent).toBe('');
+      expect(layer.children).toHaveLength(0);
+    }
+    expect(hero?.children).toHaveLength(3); // decor, contours, contenido
+  });
+
+  it('un solo <h1> (el título de siempre) y un solo role=search', () => {
+    const h1s = doc.querySelectorAll('h1');
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]?.textContent).toBe(home('title'));
+    expect(h1s[0]?.id).toBe('home-title');
+    expect(doc.querySelector('section[aria-labelledby="home-title"]')).not.toBeNull();
+    expect(doc.querySelectorAll('[role="search"], search')).toHaveLength(1);
+  });
+
+  it('jerarquía de encabezados sin saltos: h1 › h2 › 3×h3 › h2 › h2', () => {
+    const levels = [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')].map((h) =>
+      Number(h.tagName.slice(1)),
+    );
+    expect(levels).toEqual([1, 2, 3, 3, 3, 2, 2]);
+  });
+
+  it('héroe: eyebrow, lema, título, lead, buscador y los dos botones, en ese orden', () => {
+    const copy = doc.querySelector('h1')?.parentElement;
+    const texts = [...(copy?.children ?? [])].map(
+      (el) => el.tagName + ':' + (el.getAttribute('role') ?? ''),
+    );
+    expect(texts[0]).toBe('P:');
+    expect(texts[1]).toBe('P:');
+    expect(copy?.children[0]?.textContent).toBe(home('eyebrow'));
+    expect(copy?.children[1]?.textContent).toBe(tr(locale, 'Brand')('tagline'));
+    expect(copy?.children[2]?.tagName).toBe('H1');
+    expect(copy?.children[3]?.textContent).toBe(home('lead'));
+    expect(copy?.children[4]?.getAttribute('role')).toBe('search');
+    expect(copy?.children).toHaveLength(6); // la entrada escalonada de page.module.css cuenta con seis hijos
+    const actions = [...(copy?.children[5]?.querySelectorAll('a') ?? [])];
+    expect(actions.map((a) => a.getAttribute('data-href'))).toEqual([
+      '"/explore"',
+      '"/destinations"',
+    ]);
+    expect(actions.map((a) => a.textContent)).toEqual([
+      home('ctaExplore'),
+      home('ctaDestinations'),
+    ]);
+    expect(actions[0]?.className).toMatch(/cta/);
+    expect(actions[1]?.className).toMatch(/onBrand/);
+  });
+
+  it('marca P: UNA imagen decorativa con prioridad, y el nombre como texto vivo (no es un encabezado)', () => {
+    const images = doc.querySelectorAll('img');
+    expect(images).toHaveLength(1);
+    const img = images[0];
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(img?.getAttribute('fetchpriority')).toBe('high');
+    expect(img?.getAttribute('src')).toBe('/brand/mark-p-320.webp');
+    expect(img?.getAttribute('srcset')).toMatch(
+      /mark-p-160\.webp 160w.*mark-p-320\.webp 320w.*mark-p-640\.webp 640w/,
+    );
+    expect(img?.getAttribute('width')).toBe('320');
+    expect(img?.getAttribute('height')).toBe('339');
+    const wordmark = img?.parentElement?.querySelector('p');
+    expect(wordmark?.textContent).toBe(`${SITE.wordmark.primary}${SITE.wordmark.secondary}`);
+    expect(wordmark?.closest('h1, h2, h3')).toBeNull();
+  });
+
+  it('tres entradas con los textos de siempre y enlaces REALES solo a Explorar y a Fuentes', () => {
+    const list = doc.querySelector('#principles-title')?.parentElement?.querySelector('ul');
+    const items = [...(list?.children ?? [])];
+    expect(items).toHaveLength(3);
+    const keys = ['map', 'provenance', 'languages'] as const;
+    items.forEach((li, i) => {
+      expect(li.querySelector('h3')?.textContent).toBe(home(`principles.${keys[i]}.title`));
+      expect(li.querySelector('p')?.textContent).toBe(home(`principles.${keys[i]}.body`));
+    });
+    expect(
+      [...(items[0]?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('data-href')),
+    ).toEqual(['"/explore"']);
+    expect(
+      [...(items[1]?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('data-href')),
+    ).toEqual(['"/sources"']);
+    expect(items[2]?.querySelectorAll('a')).toHaveLength(0);
+  });
+
+  it('nueve tarjetas de destino (rejilla compartida con /destinations), cada una con su ficha y su «Ver en el mapa»', () => {
+    const cards = [...doc.querySelectorAll('li[data-destination]')];
+    expect(cards.map((c) => c.getAttribute('data-destination'))).toEqual(DESTINATION_KEYS);
+    cards.forEach((card, i) => {
+      const d = DESTINATIONS[i];
+      const links = [...card.querySelectorAll('a')];
+      expect(links).toHaveLength(2);
+      expect(JSON.parse(links[0]?.getAttribute('data-href') ?? 'null')).toEqual({
+        pathname: '/destinations/[slug]',
+        params: { slug: d ? destinationSlug(d, locale) : '' },
+      });
+      expect(JSON.parse(links[1]?.getAttribute('data-href') ?? 'null')).toEqual({
+        pathname: '/explore',
+        query: { d: d?.key },
+      });
+    });
+    const destinations = tr(locale, 'Destinations');
+    expect(doc.querySelector('#destinations-title')?.textContent).toBe(destinations('indexTitle'));
+  });
+
+  it('aviso de estado honesto, tal cual', () => {
+    expect(doc.querySelector('#status-title')?.textContent).toBe(home('statusHeading'));
+    expect(doc.body.textContent).toContain(home('statusBody'));
+  });
+
+  it('nada inventado: sin valoraciones, clima, cuentas ni planificador; sin estilos en línea; pictogramas decorativos', () => {
+    const text = doc.body.textContent ?? '';
+    expect(text).not.toMatch(
+      /4[.,]8|1[.,]240|°C|Iniciar sesión|Sign in|Log in|Planifica|Plan your trip|Próximamente|Coming soon/i,
+    );
+    expect(doc.querySelector('[style]')).toBeNull();
+    expect(doc.querySelector('title, aside, [role="complementary"], dialog, [popover]')).toBeNull();
+    for (const svg of doc.querySelectorAll('svg'))
+      expect(svg.getAttribute('aria-hidden')).toBe('true');
+    for (const a of doc.querySelectorAll('a')) {
+      expect(a.getAttribute('href') ?? '', a.outerHTML).toMatch(/^\//);
+    }
+  });
+});
+
+describe('portada: contrato de la página', () => {
+  const source = code('src/app/[locale]/page.tsx');
+
+  it('es estática: no depende del día ni fuerza renderizado dinámico', () => {
+    expect(source).not.toMatch(
+      /lib\/today|getTodayIsoDate|coverage-evidence|StatusBadge|Date\.now|new Date/,
+    );
+    expect(source).not.toMatch(/export const (revalidate|dynamic|fetchCache)\b/);
+    expect(source).not.toMatch(/headers\(|cookies\(|connection\(/);
+  });
+
+  it('solo el espacio `Search` viaja al cliente (no se amplía CLIENT_NAMESPACES de la maquetación)', () => {
+    expect(source).toMatch(/<NextIntlClientProvider messages=\{\{ Search: messages\.Search \}\}>/);
+    expect(source.match(/<NextIntlClientProvider/g)).toHaveLength(1);
+    expect(source).not.toMatch(/'use client'/);
+  });
+
+  it('anticipa el ámbito oscuro en el navegador (barra del móvil y esquema de color)', () => {
+    expect(viewport).toEqual({ colorScheme: 'dark', themeColor: THEME_COLORS.dark });
+  });
+
+  it('el único JS de cliente de la portada es el buscador', () => {
+    const imports = [...source.matchAll(/from '(@\/components\/[A-Za-z]+)'/g)].map(
+      (m) => m[1] ?? '',
+    );
+    const clients = imports.filter((path) =>
+      /'use client'/.test(code(`src/components/${path.split('/').pop() ?? ''}.tsx`)),
+    );
+    expect(clients).toEqual(['@/components/DestinationSearch']);
+  });
+});

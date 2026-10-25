@@ -26,6 +26,9 @@
     },
     "notFound": {
       "title": "Seite nicht gefunden"
+    },
+    "og": {
+      "alt": "Logo von {siteName}: ein Buchstabe P mit einer Landschaft und einem Kompass."
     }
   },
   "Common": {
@@ -43,7 +46,12 @@
     "explore": "Entdecken",
     "destinations": "Reiseziele",
     "sources": "Quellen",
-    "accessibility": "Barrierefreiheit"
+    "accessibility": "Barrierefreiheit",
+    "menu": "Menü",
+    "cta": "Karte öffnen"
+  },
+  "Brand": {
+    "tagline": "Ein Land, unendlich viele Geschichten."
   },
   "Language": {
     "label": "Sprache",
@@ -74,6 +82,16 @@
     },
     "statusHeading": "Aktueller Stand",
     "statusBody": "Dies ist eine Entwicklungsversion. Die Seiten der Reiseziele sind in Arbeit und die Übersetzungen warten auf eine menschliche Prüfung."
+  },
+  "Search": {
+    "label": "Ein Reiseziel suchen",
+    "placeholder": "Unter den {count} Reisezielen suchen …",
+    "submit": "Suchen",
+    "scope": "Die Suche umfasst nur die neun ersten Reiseziele, über ihren Namen in einer der fünf Sprachen. Sehenswürdigkeiten, Unterkünfte und Aktivitäten sind nicht enthalten.",
+    "resultsLabel": "Suchergebnisse",
+    "results": "{count, plural, =0 {Kein Reiseziel passt zu „{query}“.} one {# Reiseziel passt zu „{query}“.} other {# Reiseziele passen zu „{query}“.}}",
+    "viewOnMap": "Auf der Karte zeigen",
+    "viewOnMapLabel": "Auf der Karte zeigen: {name}"
   },
   "Explore": {
     "title": "Panama erkunden",
@@ -223,6 +241,45 @@
       "layerOff": "Aktivieren Sie die Ebene „Schutzgebiete“, um Gebiete auszuwählen.",
       "waiting": "Warten, bis die Karte fertig gezeichnet ist.",
       "mapUnavailable": "Die Karte ist nicht verfügbar, daher gibt es keine Gebiete aufzulisten."
+    },
+    "filter": {
+      "heading": "Art des Reiseziels",
+      "all": "Alle",
+      "count": "{count, plural, one {# Reiseziel} other {# Reiseziele}}",
+      "announce": "{count, plural, =0 {Kein Reiseziel entspricht dem Filter.} one {# Reiseziel wird angezeigt.} other {# Reiseziele werden angezeigt.}}"
+    },
+    "search": {
+      "label": "Reiseziele suchen",
+      "placeholder": "Name des Reiseziels",
+      "count": "{count, plural, one {# Reiseziel passt zur Suche.} other {# Reiseziele passen zur Suche.}}",
+      "empty": "Kein Reiseziel passt zur Suche."
+    },
+    "carousel": {
+      "previous": "Vorherige Reiseziele",
+      "next": "Nächste Reiseziele",
+      "hide": "Reiseziele ausblenden",
+      "show": "Reiseziele einblenden"
+    },
+    "featured": {
+      "reframe": "Ansicht erneut auf das Reiseziel ausrichten"
+    },
+    "tools": {
+      "label": "Kartenwerkzeuge",
+      "threeD": "3D-Relief",
+      "layersOpen": "Ebenen und Legende"
+    },
+    "sheet": {
+      "open": "Karteninformationen öffnen",
+      "close": "Karteninformationen schließen"
+    },
+    "panel": {
+      "toggle": "Informationsbereich ein- oder ausblenden"
+    },
+    "hud": {
+      "railLabel": "Kartenfilter und Ebenen",
+      "searchRegionLabel": "Reiseziel-Suche",
+      "carouselLabel": "Reiseziel-Karussell",
+      "toolsLabel": "Kartensteuerung"
     }
   },
   "Destinations": {

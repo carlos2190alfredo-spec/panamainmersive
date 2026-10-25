@@ -88,8 +88,9 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
 
   // Coincidencias legítimas con el español (cada excepción se justifica; no se relaja el umbral).
   const IDENTICAL_TO_SPANISH_ALLOWED: Partial<Record<Locale, readonly string[]>> = {
-    // «destino/destinos» se escribe igual en portugués y en español; «Mostrando {shown} de {total}.» también.
-    pt: ['Explore.count', 'Map.inView.count'],
+    // «destino/destinos» se escribe igual en portugués y en español (también en el recuento de los
+    // chips del filtro por tipo, Map.filter.count); «Mostrando {shown} de {total}.» también.
+    pt: ['Explore.count', 'Map.inView.count', 'Map.filter.count'],
   };
 
   it.each(LOCALES.filter((l) => l !== DEFAULT_LOCALE))(
@@ -115,6 +116,38 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
       expect(String(f.format({ count: 1 }))).toMatch(/1/);
       expect(String(f.format({ count: 9 }))).toMatch(/9/);
       expect(f.format({ count: 1 })).not.toEqual(f.format({ count: 9 }));
+    }
+  });
+
+  // Plurales del buscador de la portada y de los filtros de Explorar: con 0, 1 y 9 el texto cambia
+  // de forma y, cuando lleva «{query}», lo interpola tal cual (la consulta es entrada de la persona).
+  const PLURALS_WITH_ZERO = ['Search.results', 'Map.filter.announce'] as const;
+  const PLURALS_WITHOUT_ZERO = ['Map.filter.count', 'Map.search.count'] as const;
+
+  it.each(LOCALES)('%s: los plurales de búsqueda y filtro responden con 0, 1 y 9', (locale) => {
+    const messages = flatten(load(locale));
+    const query = 'Boquete';
+    for (const path of PLURALS_WITH_ZERO) {
+      const text = messages.get(path);
+      expect(text, `${locale}:${path}`).toBeDefined();
+      const f = new IntlMessageFormat(text ?? '', locale);
+      const out = [0, 1, 9].map((count) => String(f.format({ count, query })));
+      expect(new Set(out).size, `${locale}:${path} distingue 0, 1 y 9`).toBe(3);
+      expect(out[1], `${locale}:${path}`).toMatch(/1/);
+      expect(out[2], `${locale}:${path}`).toMatch(/9/);
+      // el caso 0 se escribe con palabras («ningún…»), no con la cifra
+      expect(out[0], `${locale}:${path}`).not.toMatch(/\d/);
+      if (path === 'Search.results') {
+        for (const s of out) expect(s, `${locale}:${path}`).toContain(query);
+      }
+    }
+    for (const path of PLURALS_WITHOUT_ZERO) {
+      const text = messages.get(path);
+      expect(text, `${locale}:${path}`).toBeDefined();
+      const f = new IntlMessageFormat(text ?? '', locale);
+      expect(String(f.format({ count: 1 })), `${locale}:${path}`).toMatch(/1/);
+      expect(String(f.format({ count: 9 })), `${locale}:${path}`).toMatch(/9/);
+      expect(f.format({ count: 1 }), `${locale}:${path}`).not.toEqual(f.format({ count: 9 }));
     }
   });
 });

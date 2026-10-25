@@ -37,6 +37,15 @@ const nextConfig: NextConfig = {
         source: '/map-assets/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }],
       },
+      // Marcas de la interfaz (public/brand, ADR-0025). Sin esta regla `public/` sale con `max-age=0` y se revalida en
+      // cada visita. Una semana + revalidación en segundo plano; NO `immutable`: los nombres no llevan hash, así que
+      // sustituir un archivo sin cambiar su nombre dejaría la versión vieja durante un año.
+      {
+        source: '/brand/:file*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' },
+        ],
+      },
     ]);
   },
 };

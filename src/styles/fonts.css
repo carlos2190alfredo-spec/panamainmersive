@@ -1,0 +1,32 @@
+/*
+ * Tipografías de respaldo con métricas ajustadas (ADR-0025): mientras Montserrat y Playfair Display (autoalojadas, con
+ * `font-display: swap`) no han llegado, el navegador pinta con Arial / Times New Roman reescalados para ocupar casi lo
+ * mismo, de modo que al intercambiar la fuente no salta la maquetación (CLS) ni se rehace el salto de línea.
+ *
+ * Montserrat es ≈ 12 % más ancha que la fuente de sistema por defecto: sin `size-adjust` el cambio se vería.
+ *
+ * Los valores salen del algoritmo de next/font (node_modules/next/dist/server/font-utils.js, calculateSizeAdjustValues)
+ * aplicado a capsize-font-metrics.json en peso regular (con pesos altos el ajuste es aproximado):
+ *   size-adjust = (xWidthAvg / unitsPerEm) de la fuente web ÷ (xWidthAvg / unitsPerEm) de la de sistema
+ *   Montserrat       503/1000 ÷ 913/2048 = 112,83 %    ascent 968 · descent 251 (sobre 1000 unidades)
+ *   Playfair Display 452/1000 ÷ 832/2048 = 111,26 %    ascent 1082 · descent 251 (sobre 1000 unidades)
+ *   *-override = métrica de la fuente web ÷ (unitsPerEm × size-adjust)
+ * tests/unit/design/fonts.test.ts los recalcula y exige que las familias coincidan con las de tokens.css.
+ */
+@font-face {
+  font-family: 'Montserrat Fallback';
+  src: local('Arial');
+  size-adjust: 112.83%;
+  ascent-override: 85.79%;
+  descent-override: 22.25%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Playfair Display Fallback';
+  src: local('Times New Roman');
+  size-adjust: 111.26%;
+  ascent-override: 97.25%;
+  descent-override: 22.56%;
+  line-gap-override: 0%;
+}

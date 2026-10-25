@@ -1,26 +1,306 @@
+/*
+ * Portada inmersiva (ADR-0025). Todo el árbol va dentro de `data-immersive`, así que los tokens semánticos son los del
+ * ámbito oscuro de marca aunque el sistema esté en claro. Reglas de diseño que se vigilan (tests/unit/design/home-css.test.ts,
+ * e2e/home.spec.ts y e2e/a11y):
+ *  - el TEXTO va sobre una superficie SÓLIDA (la columna de texto, el rótulo, las tarjetas), NUNCA sobre el degradado ni sobre
+ *    vidrio translúcido; el único vidrio (--surface-glass, opacidad ≥ 0,85) es el marco de la imagen de la marca. Los adornos del héroe son dos capas `aria-hidden` SIN texto (.decor y .contours) detrás del contenido, sobre un color de fondo sólido
+ *    (axe no mide el contraste de un texto dentro de un ANTEPASADO con pseudo-elementos absolutos: por eso no son `::before`/`::after`);
+ *  - el desenfoque (`backdrop-filter`) solo como mejora progresiva (≥ 56rem, puntero fino, con soporte); en móvil, relleno sólido;
+ *  - movimiento solo con `prefers-reduced-motion: no-preference`, FINITO (≤ 1 s la entrada; el resto atado al scroll o al
+ *    cursor) y sin animar `opacity` en elementos con texto (axe mediría el contraste a mitad de animación);
+ *  - nada con altura fija y `overflow` recortado con texto dentro (WCAG 1.4.12); reflow a 320 px; objetivos ≥ 44 px.
+ */
+.wrap {
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+/* ---------- Héroe ---------- */
+
 .hero {
-  padding-block: var(--space-7) var(--space-6);
-  max-inline-size: 48rem;
+  position: relative;
+  isolation: isolate;
+  /* Color SÓLIDO de reserva: lo que ve axe bajo el vidrio, y lo que queda si no hay degradados (colores forzados). */
+  background-color: var(--color-brand-deep);
+  padding-block: var(--space-6) var(--space-7);
+}
+
+/*
+ * Adornos decorativos: dos capas SIN texto ni eventos detrás del contenido. El orden es explícito (adornos en z-index 0,
+ * contenido en z-index 1) y NO con z-index negativo: con un z-index negativo axe cree que la capa tapa el texto
+ * («background color could not be determined because it is overlapped by another element») y deja sin medir el
+ * contraste de todo el héroe (comprobado con axe-core 4.14 en una vista previa estática).
+ */
+.decor,
+.contours {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Degradado de marca: azul profundo → azul Panamá, y se funde con el papel de la página al terminar. */
+.decor {
+  background: linear-gradient(
+    170deg,
+    var(--color-brand-deep) 0%,
+    var(--color-brand-blue) 72%,
+    var(--color-paper) 100%
+  );
+}
+
+/*
+ * Mejora progresiva (color-mix: Chrome 111, Safari 16.2, Firefox 113): resplandor azul claro DETRÁS de la marca (fuera de la
+ * columna de texto) y curvas de nivel con máscara que las desvanece hacia los bordes. Los centros siguen a la columna de la
+ * marca: `min(79%, 50% + 20.8rem)` es su centro en pantallas estrechas (columnas 7fr/5fr) y en las anchas (contenedor de 72rem).
+ */
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .decor {
+    background:
+      radial-gradient(
+        22rem 16rem at 50% 8rem,
+        color-mix(in srgb, var(--color-brand-sky) 46%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(
+        170deg,
+        var(--color-brand-deep) 0%,
+        var(--color-brand-blue) 72%,
+        var(--color-paper) 100%
+      );
+  }
+
+  .contours {
+    background-image:
+      repeating-radial-gradient(
+        circle at 50% 8rem,
+        transparent 0 1.1rem,
+        color-mix(in srgb, var(--color-on-hero) 22%, transparent) 1.1rem calc(1.1rem + 1px)
+      ),
+      repeating-radial-gradient(
+        circle at 88% 90%,
+        transparent 0 1.6rem,
+        color-mix(in srgb, var(--color-brand-sky) 30%, transparent) 1.6rem calc(1.6rem + 1px)
+      );
+    mask-image: radial-gradient(
+      ellipse 60% 18rem at 50% 8rem,
+      currentcolor 0 40%,
+      transparent 100%
+    );
+  }
+
+  @media (min-width: 48rem) {
+    .decor {
+      background:
+        radial-gradient(
+          36rem 28rem at min(79%, calc(50% + 20.8rem)) 50%,
+          color-mix(in srgb, var(--color-brand-sky) 46%, transparent),
+          transparent 72%
+        ),
+        linear-gradient(
+          170deg,
+          var(--color-brand-deep) 0%,
+          var(--color-brand-blue) 72%,
+          var(--color-paper) 100%
+        );
+    }
+
+    .contours {
+      background-image:
+        repeating-radial-gradient(
+          circle at min(79%, calc(50% + 20.8rem)) 50%,
+          transparent 0 1.1rem,
+          color-mix(in srgb, var(--color-on-hero) 22%, transparent) 1.1rem calc(1.1rem + 1px)
+        ),
+        repeating-radial-gradient(
+          circle at 95% 100%,
+          transparent 0 1.6rem,
+          color-mix(in srgb, var(--color-brand-sky) 30%, transparent) 1.6rem calc(1.6rem + 1px)
+        );
+      mask-image: radial-gradient(
+        ellipse 42% 54% at min(79%, calc(50% + 20.8rem)) 50%,
+        currentcolor 0 45%,
+        transparent 100%
+      );
+    }
+  }
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: center;
+}
+
+@media (min-width: 48rem) {
+  .heroInner {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-6);
+  }
+}
+
+/* ---------- Superficies: la columna de texto (sólida) y el marco de la marca (vidrio) ---------- */
+
+/*
+ * Columna de texto: SÓLIDA (--color-glass-base, opaca). axe no puede medir el contraste de un texto cuya superficie es
+ * translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría. Sobre una superficie opaca sí lo mide
+ * (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo posible).
+ */
+.copy,
+.frame {
+  background: var(--color-glass-base);
+  border: var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-depth-3);
+}
+
+/* Marco de la marca: vidrio, solo como mejora progresiva (≥ 56rem, puntero fino, con soporte). */
+@media (min-width: 56rem) and (hover: hover) and (pointer: fine) {
+  @supports (backdrop-filter: blur(1px)) {
+    .frame {
+      background: var(--surface-glass);
+      backdrop-filter: blur(var(--glass-blur));
+    }
+  }
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding: var(--space-4);
+}
+
+@media (min-width: 40rem) {
+  .copy {
+    padding: var(--space-6);
+  }
 }
 
 .eyebrow {
+  hyphens: none;
+  align-self: flex-start;
   margin-block-end: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-pill);
   color: var(--color-accent-strong);
+  font-size: var(--text-s);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.tagline {
+  hyphens: none; /* rótulo en mayúsculas espaciadas: partir una palabra con guion lo hace ilegible */
+  margin-block-end: var(--space-3);
+  color: var(--color-ink-muted);
   font-size: var(--text-s);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+/* Un solo <h1>. Más pequeño que el global (--text-2xl): comparte la fila con la marca y el buscador. */
+.title {
+  font-size: clamp(1.9rem, 1.3rem + 2.6vw, 3.1rem);
+  margin-block-end: var(--space-4);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-block-start: var(--space-5);
 }
 
-.principles {
-  padding-block: var(--space-6);
+/* ---------- Marca en marco de vidrio ---------- */
+
+/* En una columna la marca va ARRIBA (compacta); el DOM lleva antes el texto, que es lo que lee un lector de pantalla. */
+.brand {
+  order: -1;
+}
+
+.frame {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.mark {
+  block-size: clamp(5.2rem, 22vw, 6.6rem);
+}
+
+/* El rótulo va sobre una píldora SÓLIDA (como la columna de texto): su contraste se mide, no se supone sobre el vidrio. */
+.wordmark {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-glass-base);
+  border-radius: var(--radius-s);
+}
+
+.wordmarkMain {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wordmarkSub {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+@media (min-width: 48rem) {
+  .brand {
+    order: 0;
+  }
+
+  .frame {
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    text-align: center;
+  }
+
+  .mark {
+    block-size: clamp(9rem, 20vw, 16rem);
+  }
+
+  /* Filetes rojos del tablero a los lados de «IMMERSIVE»: adorno puro (el rojo no es texto). */
+  .wordmarkSub {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .wordmarkSub::before,
+  .wordmarkSub::after {
+    content: '';
+    flex: 1;
+    block-size: 2px;
+    background: var(--color-cta);
+  }
+}
+
+/* ---------- Secciones ---------- */
+
+.section {
+  padding-block: var(--space-7);
 }
 
 .principleList {
@@ -33,10 +313,130 @@
 }
 
 .principle {
-  padding-block-start: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
   border-block-start: 3px solid var(--color-accent);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-depth-1);
 }
 
+.principle h3,
 .principle p {
-  margin-block-end: 0;
+  margin: 0;
+}
+
+.principleAction {
+  margin-block-start: auto;
+  padding-block-start: var(--space-2);
+}
+
+/* ---------- Movimiento (todo bajo `no-preference`; finito; sin `opacity` en texto) ---------- */
+
+@keyframes heroRise {
+  from {
+    translate: 0 1.25rem;
+    scale: 0.985;
+  }
+
+  to {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes frameSettle {
+  from {
+    translate: 0 1.5rem;
+    scale: 0.94;
+  }
+
+  to {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes sectionReveal {
+  from {
+    translate: 0 1.75rem;
+  }
+
+  to {
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Entrada del héroe: una vez, escalonada (la última termina en ≈ 0,95 s). */
+  .copy > * {
+    animation: heroRise 600ms var(--ease-out) both;
+  }
+
+  .copy > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .copy > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .copy > :nth-child(4) {
+    animation-delay: 150ms;
+  }
+
+  .copy > :nth-child(5) {
+    animation-delay: 200ms;
+  }
+
+  .copy > :nth-child(6) {
+    animation-delay: 250ms;
+  }
+
+  .frame {
+    animation: frameSettle 800ms var(--ease-out) 150ms both;
+  }
+
+  /* Inclinación en perspectiva SOLO al pasar el cursor o enfocar dentro del marco. */
+  @media (hover: hover) {
+    .frame {
+      transition: transform var(--motion-medium) var(--ease-out);
+    }
+
+    .frame:hover,
+    .frame:focus-within {
+      transform: perspective(900px) rotateX(2deg) rotateY(-3deg) translateY(-4px);
+    }
+  }
+
+  /* Revelado al desplazarse (atado al scroll, una vez): solo translate. */
+  @supports (animation-timeline: view()) {
+    .principle {
+      animation: sectionReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .decor,
+  .contours {
+    display: none;
+  }
+
+  .copy,
+  .frame,
+  .principle {
+    border-color: CanvasText;
+  }
+
+  .wordmarkSub::before,
+  .wordmarkSub::after {
+    background: CanvasText;
+  }
 }

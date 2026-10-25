@@ -26,6 +26,9 @@
     },
     "notFound": {
       "title": "Page not found"
+    },
+    "og": {
+      "alt": "{siteName} logo: a letter P with a landscape and a compass."
     }
   },
   "Common": {
@@ -43,7 +46,12 @@
     "explore": "Explore",
     "destinations": "Destinations",
     "sources": "Sources",
-    "accessibility": "Accessibility"
+    "accessibility": "Accessibility",
+    "menu": "Menu",
+    "cta": "Open the map"
+  },
+  "Brand": {
+    "tagline": "One country, infinite stories."
   },
   "Language": {
     "label": "Language",
@@ -74,6 +82,16 @@
     },
     "statusHeading": "Current status",
     "statusBody": "This is a development version. The destination pages are in preparation and the translations are pending human review."
+  },
+  "Search": {
+    "label": "Search for a destination",
+    "placeholder": "Search among the {count} destinations…",
+    "submit": "Search",
+    "scope": "Search covers only the nine initial destinations, by their name in any of the five languages. It does not include attractions, accommodation or activities.",
+    "resultsLabel": "Search results",
+    "results": "{count, plural, =0 {No destination matches “{query}”.} one {# destination matches “{query}”.} other {# destinations match “{query}”.}}",
+    "viewOnMap": "Show on map",
+    "viewOnMapLabel": "Show on map: {name}"
   },
   "Explore": {
     "title": "Explore Panama",
@@ -223,6 +241,45 @@
       "layerOff": "Turn on the “Protected areas” layer to choose areas.",
       "waiting": "Waiting for the map to finish drawing.",
       "mapUnavailable": "The map is not available, so there are no areas to list."
+    },
+    "filter": {
+      "heading": "Destination type",
+      "all": "All",
+      "count": "{count, plural, one {# destination} other {# destinations}}",
+      "announce": "{count, plural, =0 {No destination matches the filter.} one {Showing # destination.} other {Showing # destinations.}}"
+    },
+    "search": {
+      "label": "Search destinations",
+      "placeholder": "Destination name",
+      "count": "{count, plural, one {# destination matches the search.} other {# destinations match the search.}}",
+      "empty": "No destination matches the search."
+    },
+    "carousel": {
+      "previous": "Previous destinations",
+      "next": "Next destinations",
+      "hide": "Hide destinations",
+      "show": "Show destinations"
+    },
+    "featured": {
+      "reframe": "Reframe the destination"
+    },
+    "tools": {
+      "label": "Map tools",
+      "threeD": "3D terrain",
+      "layersOpen": "Layers and legend"
+    },
+    "sheet": {
+      "open": "Open map information",
+      "close": "Close map information"
+    },
+    "panel": {
+      "toggle": "Show or hide the information panel"
+    },
+    "hud": {
+      "railLabel": "Map filters and layers",
+      "searchRegionLabel": "Destination search",
+      "carouselLabel": "Destination carousel",
+      "toolsLabel": "Map controls"
     }
   },
   "Destinations": {

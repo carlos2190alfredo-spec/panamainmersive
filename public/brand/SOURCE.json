@@ -1,0 +1,93 @@
+{
+  "what": "Marcas gráficas de «Panamá Immersive» (la letra P con paisaje y brújula y la silueta del país) y las imágenes derivadas de ellas (imagen social Open Graph, icono de app de 512 px). El NOMBRE de la marca no está en ninguna imagen: es texto vivo (SITE.wordmark en src/config/site.ts).",
+  "origin": {
+    "kind": "Tablero de marca entregado por la persona propietaria del proyecto el 2026-10-24 (ADR-0025, docs/decisions/0025-identidad-de-marca-e-interfaz-inmersiva.md §1).",
+    "originalFile": "El tablero original NO está en el repositorio (los informes de exploración lo citan como `3.webp`). No se registró su sha256: el origen es la palabra de quien lo entregó y no se puede comprobar desde aquí.",
+    "nature": "Ilustraciones de aspecto generado, no fotografías. No son la imagen de ningún destino ni de ningún lugar concreto: no deben presentarse como la fotografía de un lugar."
+  },
+  "operations": {
+    "mark-p-{160,320,640}.webp y mark-map-{160,320,640}.webp": "Marca P y silueta del país extraídas del tablero con transparencia (canal alfa) y reescaladas a 160, 320 y 640 px de ancho; WebP con alfa. Se añadieron en el commit b1fd69a. El procedimiento exacto (herramienta, parámetros de recorte y de recodificación) NO se versionó: no hay script que lo reproduzca. Lo único comprobado aquí son las dimensiones, el modo RGBA y el sha256 de cada archivo.",
+    "og-1200x630.jpg": "Generada por pipelines/brand/make_og.py (Pillow 13.0.0, `python3 -I pipelines/brand/make_og.py`): compone mark-p-640 (izquierda, sobre Azul Profundo) y mark-map-640 (derecha, sobre Arena) en 1200×630, con una raya Rojo Panamá en la unión y una banda inferior con los colores de la paleta. Los colores se leen de src/styles/tokens.css. SIN texto horneado. JPEG progresivo, calidad 85, submuestreo 4:2:0, sin metadatos; ≤ 300 KB.",
+    "icon-512.png": "Generada por el mismo script: la P (mark-p-640) sobre un azulejo blanco opaco de esquinas redondeadas, con las proporciones medidas en src/app/icon.png (azulejo completo, radio 18,75 %, la P a 75,5 % del alto). PNG RGBA. No es `maskable` (las esquinas son transparentes).",
+    "src/app/icon.png y src/app/apple-icon.png": "Iconos de app entregados con el commit b1fd69a (192×192 RGBA y 180×180 RGB). Viven en src/app/ porque Next los sirve por convención de archivos. Mismo origen que las marcas; el procedimiento tampoco se versionó."
+  },
+  "rights": {
+    "ownerOfRecord": "La persona propietaria del proyecto decide su titularidad y su licencia.",
+    "status": "pendiente",
+    "unverified": "NO se ha verificado la titularidad, la licencia ni la posible existencia de derechos de terceros sobre estas ilustraciones (son de aspecto generado, y la titularidad de una obra generada es una cuestión abierta). Mientras tanto el sitio solo se sirve en staging privado (protegido por SSO y noindex). Debe resolverse ANTES de cualquier despliegue público (ADR-0025 §12, docs/deploy.md §5). Si cambia la respuesta, se actualiza este archivo."
+  },
+  "files": {
+    "mark-p-160.webp": {
+      "sha256": "ee22731c48e83fb4a8973a950e7bdcc4ae5042e0cac84908412f68e6856af2df",
+      "bytes": 17228,
+      "width": 160,
+      "height": 169,
+      "origin": "tablero"
+    },
+    "mark-p-320.webp": {
+      "sha256": "66ed8208d79fd24b6134c0c17abb51f3e1d07d6506292bda9ccee7fe93d5908e",
+      "bytes": 46498,
+      "width": 320,
+      "height": 339,
+      "origin": "tablero"
+    },
+    "mark-p-640.webp": {
+      "sha256": "2eeed7adf3d4a8c2e92eb649adda62a4d840fd21dd2b44526044008bf6d4d23b",
+      "bytes": 118918,
+      "width": 640,
+      "height": 678,
+      "origin": "tablero"
+    },
+    "mark-map-160.webp": {
+      "sha256": "9fde9fc2e53315a5b46103e9376fa59228ccd58eab544fb5b5cb0c3a11eb76d5",
+      "bytes": 9544,
+      "width": 160,
+      "height": 79,
+      "origin": "tablero"
+    },
+    "mark-map-320.webp": {
+      "sha256": "d3d7fa9a9cd572fdd5e50725cae6c477ee2dbbca5a453240400ac0d1d661c798",
+      "bytes": 25942,
+      "width": 320,
+      "height": 159,
+      "origin": "tablero"
+    },
+    "mark-map-640.webp": {
+      "sha256": "eaa844589856fe9f559299116541f8ceb53b4f2bdfb92b05b0b26eabbd113047",
+      "bytes": 67264,
+      "width": 640,
+      "height": 318,
+      "origin": "tablero"
+    },
+    "og-1200x630.jpg": {
+      "sha256": "b31ddc9c0cf936814a8ff4a85f9d15ae7e41556e43a83cf6a3b4b7328a2ec7d5",
+      "bytes": 101374,
+      "width": 1200,
+      "height": 630,
+      "origin": "derivado (pipelines/brand/make_og.py)"
+    },
+    "icon-512.png": {
+      "sha256": "9409e6e2fe8e1a1efb8abf34cbf862e9304bd67a8a5bf3380cfcc3a8f354a87d",
+      "bytes": 226246,
+      "width": 512,
+      "height": 512,
+      "origin": "derivado (pipelines/brand/make_og.py)"
+    }
+  },
+  "appIcons": {
+    "src/app/icon.png": {
+      "sha256": "4be8215c6eb7b3668735ce2b9aedb5b33d9b9076c34caa66047150f29f36b64e",
+      "bytes": 42106,
+      "width": 192,
+      "height": 192,
+      "origin": "tablero"
+    },
+    "src/app/apple-icon.png": {
+      "sha256": "98e6379d485825c7c48d3bc44110e13fd97ee7a445c82edaa74cb56dba8110b0",
+      "bytes": 31464,
+      "width": 180,
+      "height": 180,
+      "origin": "tablero"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+/*
+ * Pictogramas de destino (ADR-0025 §8-9): iconografía genérica por TIPO, no «foto del lugar». Los trazos y rellenos
+ * principales siguen el `color` del contenedor (currentColor); la parte de acento toma `--glyph-accent` si el
+ * consumidor lo declara y, si no, el mismo color. Sin colores propios: todo sale de los tokens del contenedor.
+ */
+.accent {
+  color: var(--glyph-accent, currentcolor);
+}

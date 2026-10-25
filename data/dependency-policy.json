@@ -18,19 +18,19 @@
   },
   "licenseExceptions": [
     {
-      "package": "@fontsource-variable/figtree",
+      "package": "@fontsource-variable/montserrat",
       "license": "OFL-1.1",
       "scope": "prod",
       "status": "provisional",
-      "reason": "Tipografía autoalojada que SÍ se sirve al navegador (layout.tsx). OFL-1.1 permite redistribuirla con el software si cada copia lleva el aviso y la licencia; no se ha comprobado cómo lo cumple el sitio (p. ej. una página de licencias o los metadatos de la fuente).",
+      "reason": "Tipografía de texto autoalojada que SÍ se sirve al navegador (layout.tsx, ADR-0025). OFL-1.1 permite redistribuirla con el software si cada copia lleva el aviso y la licencia; no se ha comprobado cómo lo cumple el sitio (p. ej. una página de licencias o los metadatos de la fuente). Su LICENSE no declara Nombre de Fuente Reservado en la cabecera.",
       "reviewBy": "2027-01-22"
     },
     {
-      "package": "@fontsource-variable/fraunces",
+      "package": "@fontsource-variable/playfair-display",
       "license": "OFL-1.1",
       "scope": "prod",
       "status": "provisional",
-      "reason": "Tipografía autoalojada que SÍ se sirve al navegador (layout.tsx). OFL-1.1 permite redistribuirla con el software si cada copia lleva el aviso y la licencia; no se ha comprobado cómo lo cumple el sitio (p. ej. una página de licencias o los metadatos de la fuente).",
+      "reason": "Tipografía de titulares autoalojada que SÍ se sirve al navegador (layout.tsx, ADR-0025). OFL-1.1 permite redistribuirla con el software si cada copia lleva el aviso y la licencia; no se ha comprobado cómo lo cumple el sitio. Su LICENSE declara además un Nombre de Fuente Reservado «Playfair Display»: no se afirma cumplimiento, queda para la decisión humana de T-20.",
       "reviewBy": "2027-01-22"
     },
     {

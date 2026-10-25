@@ -1,0 +1,191 @@
+/*
+ * Rejilla de destinos. Funciona en los tres ámbitos de tokens (claro, oscuro e inmersivo): solo semánticos.
+ * Reglas que se vigilan (e2e/a11y, tests/unit/design/home-css.test.ts):
+ *  - ninguna tarjeta con altura fija ni `overflow` recortado con texto dentro (WCAG 1.4.12): se redondea el adorno,
+ *    no la tarjeta;
+ *  - el texto va sobre superficie SÓLIDA (--color-surface), nunca sobre el degradado del adorno;
+ *  - movimiento solo con `prefers-reduced-motion: no-preference`, finito y sin tocar la opacidad del texto.
+ */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space-5);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-depth-1);
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-medium) var(--ease-out),
+    transform var(--motion-medium) var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-depth-2);
+}
+
+/* El enlace principal tiene su propio anillo (el estándar); la tarjeta entera añade el suyo para que se vea a qué pertenece. */
+.card:has(.link:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
+}
+
+/*
+ * Hueco para la foto real con su crédito (hoy sin foto: no hay ninguna con licencia verificada). El adorno (degradado de
+ * marca + curvas de nivel + resplandor) lleva SOLO el pictograma decorativo, nunca texto. Altura mínima, no fija.
+ */
+.media {
+  --glyph-accent: var(--color-sky);
+  display: grid;
+  place-items: center;
+  min-block-size: 7.5rem;
+  padding: var(--space-4);
+  color: var(--color-on-hero);
+  background-color: var(--color-hero-to);
+  background-image: var(--gradient-hero);
+  border-start-start-radius: calc(var(--radius-l) - 1px);
+  border-start-end-radius: calc(var(--radius-l) - 1px);
+}
+
+/* Mejora progresiva: curvas de nivel y resplandor (color-mix: Chrome 111, Safari 16.2, Firefox 113). */
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .media {
+    background-image:
+      radial-gradient(
+        circle at 82% 18%,
+        color-mix(in srgb, var(--color-sky) 38%, transparent),
+        transparent 55%
+      ),
+      repeating-radial-gradient(
+        ellipse 120% 90% at 20% 110%,
+        transparent 0 0.9rem,
+        color-mix(in srgb, var(--color-on-hero) 16%, transparent) 0.9rem calc(0.9rem + 1px)
+      ),
+      var(--gradient-hero);
+  }
+}
+
+.glyph {
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.link {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-ink);
+  text-decoration: none;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+
+/* Enlace estirado: el área clicable es toda la tarjeta; «Ver en el mapa» va por encima (z-index). */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-l);
+}
+
+.link:hover .name,
+.link:focus-visible .name {
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-l);
+  line-height: var(--leading-tight);
+  font-variant-numeric: lining-nums;
+}
+
+.kind {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.mapLink {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-accent-strong);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
+}
+
+.mapLink:hover {
+  background: var(--color-sunken);
+}
+
+/* El anillo global fija otro radio; aquí se conserva el del botón para que no «salte» al enfocar. */
+.mapLink:focus-visible {
+  border-radius: var(--radius-m);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .card:hover {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes cardReveal {
+  from {
+    translate: 0 1.75rem;
+    scale: 0.97;
+  }
+
+  to {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+/* Revelado al desplazarse: solo translate/scale (nunca opacidad sobre texto), una vez, atado al scroll. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .card {
+      animation: cardReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .card {
+    border-color: CanvasText;
+  }
+
+  .media {
+    background-image: none;
+  }
+}

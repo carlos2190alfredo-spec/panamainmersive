@@ -1,6 +1,12 @@
+/*
+ * Parametrizado con las variables de la cabecera (--header-bg, --header-fg, --header-control-line, --header-current:
+ * SiteHeader.module.css), que resuelven a tokens en los tres ámbitos (claro, oscuro, inmersivo). Los valores de reserva
+ * son los tokens de siempre: fuera de la cabecera el selector se ve igual. El panel lo hereda (es descendiente), así que
+ * nunca queda claro dentro de una cabecera oscura. La posición la decide la cabecera, no este archivo.
+ */
 .root {
   position: relative;
-  margin-inline-start: auto;
+  flex: none;
 }
 
 .summary {
@@ -9,13 +15,40 @@
   gap: var(--space-2);
   min-block-size: var(--target-min);
   padding-inline: var(--space-3);
-  border: 1px solid var(--color-line-strong);
+  border: 1px solid var(--header-control-line, var(--color-line-strong));
   border-radius: var(--radius-m);
-  background: var(--color-surface);
-  color: var(--color-ink);
+  background: var(--header-bg, var(--color-surface));
+  color: var(--header-fg, var(--color-ink));
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   list-style: none;
+}
+
+/*
+ * Pantallas estrechas (< 36rem): solo el globo, en un botón cuadrado del tamaño mínimo de objetivo. El nombre del idioma
+ * sigue en el árbol de accesibilidad (se oculta visualmente, no se quita) y el texto «Seleccionar idioma» ya está
+ * visualmente oculto: el nombre accesible no cambia («Seleccionar idioma: Español»).
+ */
+@media (max-width: 35.99rem) {
+  .summary {
+    justify-content: center;
+    inline-size: var(--target-min);
+    padding-inline: 0;
+    gap: 0;
+  }
+
+  .summary > [lang] {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 .summary::-webkit-details-marker {
@@ -40,8 +73,8 @@
   z-index: var(--z-popover);
   min-inline-size: 14rem;
   padding: var(--space-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-line-strong);
+  background: var(--header-bg, var(--color-surface));
+  border: 1px solid var(--header-control-line, var(--color-line-strong));
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-raised);
 }
@@ -58,7 +91,7 @@
   min-block-size: var(--target-min);
   padding-inline: var(--space-3);
   border-radius: var(--radius-s);
-  color: var(--color-ink);
+  color: var(--header-fg, var(--color-ink));
   text-decoration: none;
 }
 
@@ -68,7 +101,7 @@
 
 .option[aria-current='true'] {
   font-weight: 700;
-  color: var(--color-accent-strong);
+  color: var(--header-current, var(--color-accent-strong));
 }
 
 .option[aria-current='true']::after {

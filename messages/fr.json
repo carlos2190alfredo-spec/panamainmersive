@@ -26,6 +26,9 @@
     },
     "notFound": {
       "title": "Page introuvable"
+    },
+    "og": {
+      "alt": "Logo de {siteName}\u00a0: une lettre P avec un paysage et une boussole."
     }
   },
   "Common": {
@@ -43,7 +46,12 @@
     "explore": "Explorer",
     "destinations": "Destinations",
     "sources": "Sources",
-    "accessibility": "Accessibilité"
+    "accessibility": "Accessibilité",
+    "menu": "Menu",
+    "cta": "Ouvrir la carte"
+  },
+  "Brand": {
+    "tagline": "Un pays, des histoires infinies."
   },
   "Language": {
     "label": "Langue",
@@ -74,6 +82,16 @@
     },
     "statusHeading": "État actuel",
     "statusBody": "Ceci est une version de développement. Les fiches des destinations sont en préparation et les traductions attendent une relecture humaine."
+  },
+  "Search": {
+    "label": "Rechercher une destination",
+    "placeholder": "Cherchez parmi les {count} destinations…",
+    "submit": "Rechercher",
+    "scope": "La recherche porte uniquement sur les neuf destinations initiales, par leur nom dans l’une des cinq langues. Elle n’inclut ni attractions, ni hébergements, ni activités.",
+    "resultsLabel": "Résultats de la recherche",
+    "results": "{count, plural, =0 {Aucune destination ne correspond à «\u00a0{query}\u00a0».} one {# destination correspond à «\u00a0{query}\u00a0».} other {# destinations correspondent à «\u00a0{query}\u00a0».}}",
+    "viewOnMap": "Voir sur la carte",
+    "viewOnMapLabel": "Voir sur la carte\u00a0: {name}"
   },
   "Explore": {
     "title": "Explorer le Panama",
@@ -223,6 +241,45 @@
       "layerOff": "Activez la couche «\u00a0Aires protégées\u00a0» pour choisir des zones.",
       "waiting": "En attente de la fin du dessin de la carte.",
       "mapUnavailable": "La carte n’est pas disponible, il n’y a donc aucune zone à lister."
+    },
+    "filter": {
+      "heading": "Type de destination",
+      "all": "Tous",
+      "count": "{count, plural, one {# destination} other {# destinations}}",
+      "announce": "{count, plural, =0 {Aucune destination ne correspond au filtre.} one {# destination affichée.} other {# destinations affichées.}}"
+    },
+    "search": {
+      "label": "Rechercher des destinations",
+      "placeholder": "Nom de la destination",
+      "count": "{count, plural, one {# destination correspond à la recherche.} other {# destinations correspondent à la recherche.}}",
+      "empty": "Aucune destination ne correspond à la recherche."
+    },
+    "carousel": {
+      "previous": "Destinations précédentes",
+      "next": "Destinations suivantes",
+      "hide": "Masquer les destinations",
+      "show": "Afficher les destinations"
+    },
+    "featured": {
+      "reframe": "Recadrer la destination"
+    },
+    "tools": {
+      "label": "Outils de la carte",
+      "threeD": "Relief en 3D",
+      "layersOpen": "Couches et légende"
+    },
+    "sheet": {
+      "open": "Ouvrir les informations de la carte",
+      "close": "Fermer les informations de la carte"
+    },
+    "panel": {
+      "toggle": "Afficher ou masquer le panneau d’informations"
+    },
+    "hud": {
+      "railLabel": "Filtres et couches de la carte",
+      "searchRegionLabel": "Recherche de destinations",
+      "carouselLabel": "Carrousel de destinations",
+      "toolsLabel": "Commandes de la carte"
     }
   },
   "Destinations": {

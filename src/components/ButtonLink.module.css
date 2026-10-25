@@ -9,9 +9,15 @@
   font-weight: 700;
   text-align: center;
   text-decoration: none;
-  transition:
-    background-color var(--motion-fast) var(--ease-out),
-    border-color var(--motion-fast) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button {
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out);
+  }
 }
 
 .primary {
@@ -31,4 +37,44 @@
 
 .secondary:hover {
   background: var(--color-sunken);
+}
+
+/* Llamada a la acción: el rojo es SOLO relleno, con --color-on-cta (5,43:1; contrast.test.ts lo mide en los 3 ámbitos). */
+.cta {
+  background: var(--color-cta);
+  border-color: var(--color-cta);
+  color: var(--color-on-cta);
+}
+
+.cta:hover {
+  background: var(--color-cta-strong);
+  border-color: var(--color-cta-strong);
+}
+
+/*
+ * Sobre una banda oscura de marca: contorno y texto claros (--color-on-hero contra ambas paradas del degradado, ≥ 4,5:1);
+ * al pasar el puntero se invierte (relleno claro, texto del color de la banda). Siempre va sobre fondo oscuro, sea cual
+ * sea el tema, así que el foco usa el anillo claro de la banda (--color-hero-focus) y no el azul de --color-focus.
+ */
+.onBrand {
+  background: transparent;
+  border-color: var(--color-on-hero);
+  color: var(--color-on-hero);
+}
+
+.onBrand:hover {
+  background: var(--color-on-hero);
+  color: var(--color-hero-to);
+}
+
+.onBrand:focus-visible {
+  outline-color: var(--color-hero-focus);
+  box-shadow: 0 0 0 5px var(--color-hero-to);
+}
+
+@media (forced-colors: active) {
+  .onBrand:focus-visible {
+    outline-color: Highlight;
+    box-shadow: none;
+  }
 }
