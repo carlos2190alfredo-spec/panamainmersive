@@ -142,6 +142,30 @@ if (lazyKb > MAP_LAZY_BUDGET_KB) {
   );
   failed = true;
 }
+// 3b) Islas del HUD de Explorar (carga diferida tras hidratar) -----------------------------------------------------
+// Filtro por tipo, buscador, herramientas y recuento del carrusel viven en UN solo módulo (`HudIslands`) que se carga con
+// `next/dynamic` (`ssr: false`): su JS no está en el HTML de la página y, sin esta comprobación, nadie lo mediría. Se
+// reconocen por el marcador `data-hud-island` que llevan sus raíces. Su CSS sí va en el de la página (ya medido arriba).
+const HUD_LAZY_BUDGET_KB = budget('HUD_LAZY_BUDGET_KB', 12); // gzip. Medido 2026-10-26: ≈ 3,9 KB
+const hudFiles = walk(join(NEXT, 'static/chunks'), /\.js$/).filter((f) =>
+  readFileSync(f, 'utf8').includes('data-hud-island'),
+);
+const hudKb = hudFiles.reduce((sum, f) => sum + gzipBytes(f), 0) / 1024;
+console.log(
+  `\nIslas del HUD (carga diferida, solo en /explorar): ${hudKb.toFixed(1)} KB gzip en ${hudFiles.length} ficheros (presupuesto ${HUD_LAZY_BUDGET_KB} KB)`,
+);
+if (hudFiles.length === 0) {
+  console.error(
+    'FALLO: no se encontró el chunk de las islas del HUD (`data-hud-island`): ¿cambió la forma de emitirlas? Sin él, la comprobación no mediría nada.',
+  );
+  failed = true;
+}
+if (hudKb > HUD_LAZY_BUDGET_KB) {
+  console.error(
+    `FALLO: las islas del HUD pesan ${hudKb.toFixed(1)} KB > presupuesto ${HUD_LAZY_BUDGET_KB} KB`,
+  );
+  failed = true;
+}
 // 4) Regeneración de lo que depende del día --------------------------------------------------------------
 // La caducidad del contenido verificado se evalúa por día al regenerar: la ficha y el sitemap deben tener revalidate.
 const manifestPath = join(NEXT, 'prerender-manifest.json');

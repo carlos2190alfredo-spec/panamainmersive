@@ -30,6 +30,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test",
     "db:migrate": "tsx scripts/db/migrate.ts",
     "check:bundle": "tsx scripts/check-bundle.ts",
+    "map:css": "node --import tsx scripts/trim-maplibre-css.ts",
     "data:anchors": "python3 -I pipelines/anchors/derive_anchors.py",
     "data:build": "python3 -I pipelines/basemap/build_basemap.py",
     "test:pipelines": "python3 -I -m pytest pipelines/tests -q -p no:cacheprovider",

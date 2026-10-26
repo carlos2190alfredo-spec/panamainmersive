@@ -1,0 +1,138 @@
+/*
+ * Carrusel inferior del HUD (los nueve destinos). Vidrio con desenfoque (una de las tres superficies que lo piden) y
+ * contenido que desplaza en horizontal DENTRO de `.body`: `min-inline-size: 0` en toda la cadena, porque una fila
+ * flex con `max-content` empuja la página a 320 px si nadie la acota. Sin alturas fijas ni recortes (WCAG 1.4.12).
+ * Su colocación en la rejilla la da la página (`className`).
+ */
+.carousel {
+  composes: surface blur from '../../styles/glass.module.css';
+
+  /* Contenedor de consulta: el recuento «(9 destinos)» del título se omite cuando el carrusel es estrecho (con la ficha al lado). */
+  container-type: inline-size;
+
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-2);
+}
+
+.reason {
+  margin: 0;
+  padding-inline: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.controls {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.body {
+  composes: scroll from '../../styles/glass.module.css';
+
+  min-inline-size: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+}
+
+/* Botones de la cabecera: objetivos de 44 px, contorno de componente (≥ 3:1) sobre el vidrio. */
+.arrow,
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.arrow {
+  inline-size: var(--target-min);
+  padding: 0;
+}
+
+.toggle {
+  padding-inline: var(--space-3);
+}
+
+.arrow:hover,
+.toggle:hover {
+  background: var(--color-sunken);
+}
+
+/* Flechas y chevron dibujados con bordes (`currentcolor`): ningún icono, ningún color propio. */
+.arrowPrev,
+.arrowNext,
+.chevron {
+  display: block;
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  border-inline-end: 2px solid currentcolor;
+  border-block-end: 2px solid currentcolor;
+}
+
+.arrowPrev {
+  transform: rotate(135deg);
+  translate: 0.12rem 0;
+}
+
+.arrowNext {
+  transform: rotate(-45deg);
+  translate: -0.12rem 0;
+}
+
+.chevron {
+  transform: rotate(45deg);
+  translate: 0 -0.15rem;
+}
+
+.toggle[aria-expanded='false'] .chevron {
+  transform: rotate(-135deg);
+  translate: 0 0.1rem;
+}
+
+@media (min-width: 56rem) {
+  .carousel {
+    pointer-events: auto;
+  }
+
+  .controls {
+    display: flex;
+  }
+
+  /* Plegado: solo queda la cabecera (el botón «Mostrar los destinos»). */
+  .carousel[data-state='closed'] .body {
+    display: none;
+  }
+
+  .carousel[data-state='closed'] {
+    padding-block-end: var(--space-1);
+  }
+}
+
+@media (forced-colors: active) {
+  .arrow,
+  .toggle {
+    border-color: ButtonText;
+  }
+}

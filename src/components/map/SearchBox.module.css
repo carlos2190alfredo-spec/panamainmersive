@@ -1,0 +1,147 @@
+/*
+ * Buscador de destinos (zona `search` del HUD, arriba al centro). Una píldora de vidrio SIN desenfoque (las tres
+ * superficies que lo piden ya están usadas: carril, carrusel y ficha) con la etiqueta visible a la izquierda, el campo
+ * y, si hay texto, el botón de borrar. La píldora crece con el texto (WCAG 1.4.12: nada de alturas fijas ni recortes) y
+ * el campo se queda con el ancho sobrante. El foco lo dibuja el anillo global sobre el propio campo.
+ */
+.form {
+  composes: surface from '../../styles/glass.module.css';
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'label input clear';
+  align-items: center;
+  column-gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 3.5rem;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  /* El HUD no recibe punteros (`pointer-events: none`): cada superficie los pide para sí. */
+  pointer-events: auto;
+}
+
+.label {
+  grid-area: label;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  color: var(--color-ink);
+  font-size: var(--text-s);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.input {
+  grid-area: input;
+  min-inline-size: 0;
+  min-block-size: var(--target-min);
+  padding: 0 var(--space-2);
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  border-inline-start: 1px solid var(--color-line-soft);
+  border-radius: 0;
+  font: inherit;
+  font-size: 1rem;
+  appearance: none;
+}
+
+/* El anillo de foco rodea TODA la píldora (el campo transparente no tiene forma propia que enmarcar): el del propio campo
+   se hace transparente (en colores forzados el sistema lo vuelve visible) y lo dibuja el formulario. */
+.input:focus-visible {
+  outline-color: transparent;
+  box-shadow: none;
+}
+
+.form:has(.input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--color-focus-halo);
+}
+
+.input::placeholder {
+  color: var(--color-ink-muted);
+  opacity: 1;
+}
+
+/* El botón de borrar es el nuestro (con nombre accesible en los cinco idiomas): se oculta el de la plataforma. */
+.input::-webkit-search-cancel-button,
+.input::-webkit-search-decoration {
+  appearance: none;
+  display: none;
+}
+
+.clear {
+  grid-area: clear;
+  display: grid;
+  place-items: center;
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  padding: 0;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: var(--color-sunken);
+}
+
+/* La cruz se dibuja con dos barras de `currentcolor`: ningún icono ni color propio. */
+.cross {
+  position: relative;
+  display: block;
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.cross::before,
+.cross::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: 0;
+  block-size: 2px;
+  background: currentcolor;
+  border-radius: 1px;
+}
+
+.cross::before {
+  transform: rotate(45deg);
+}
+
+.cross::after {
+  transform: rotate(-45deg);
+}
+
+/* Estrecho (móvil): la etiqueta pasa ENCIMA del campo en vez de quitarse (WCAG 3.3.2) y la píldora se redondea menos. */
+@media (max-width: 30rem) {
+  .form {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'label label'
+      'input clear';
+    padding-block: var(--space-1);
+    padding-inline: var(--space-4) var(--space-2);
+    border-radius: var(--radius-l);
+  }
+
+  .label {
+    min-block-size: 1.75rem;
+  }
+
+  .input {
+    padding-inline: 0;
+    border-inline-start: 0;
+  }
+}

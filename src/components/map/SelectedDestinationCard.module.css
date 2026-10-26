@@ -1,62 +1,173 @@
+/*
+ * Ficha destacada del destino elegido: la mitad izquierda del «dock» inferior (el carrusel ocupa el resto). Es la región
+ * en vivo: existe SIEMPRE (vacía mientras no hay selección) y solo cambia su contenido. Vidrio con desenfoque (tercera y
+ * última superficie que lo pide). Sin etiqueta «Destacado», valoraciones ni descripción: no hay curaduría editorial ni
+ * datos (ADR-0025 §9).
+ *
+ * Compacta a propósito (≈ 200 px de alto, como el carrusel que tiene al lado): nombre y tipo a la izquierda, la acción
+ * principal a la derecha, la nota de procedencia debajo y las dos acciones secundarias en una fila. Nada recorta texto.
+ */
 .region {
-  margin-block-end: var(--space-4);
+  min-inline-size: 0;
 }
 
 .card {
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: 2px solid var(--color-accent);
-  border-radius: var(--radius-m);
+  composes: surface blur from '../../styles/glass.module.css';
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 10.5rem);
+  grid-template-areas:
+    'text link'
+    'note note'
+    'actions actions';
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  /* El HUD no recibe punteros (`pointer-events: none`): cada superficie los pide para sí. */
+  pointer-events: auto;
+}
+
+.text {
+  display: grid;
+  grid-area: text;
+  align-content: start;
+  gap: var(--space-1);
+  min-inline-size: 0;
 }
 
 .eyebrow {
   margin: 0;
   color: var(--color-ink-muted);
-  font-size: var(--text-s);
+  font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  hyphens: none;
 }
 
 .name {
-  margin-block: var(--space-1);
-  font-size: var(--text-l);
+  margin: 0;
+  font-size: var(--text-xl);
+  overflow-wrap: anywhere;
 }
 
-.kind,
-.badge,
-.note {
-  margin-block: var(--space-2) 0;
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
 }
 
-.note {
+.kind {
   color: var(--color-ink-muted);
   font-size: var(--text-s);
+}
+
+.note {
+  grid-area: note;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* El enlace a la ficha es la acción principal: relleno de acento con su texto (≥ 4,5:1). Su texto puede ocupar varias líneas. */
+.link {
+  display: inline-flex;
+  grid-area: link;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-radius: var(--radius-m);
+  font-size: var(--text-s);
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--color-accent-strong);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: center;
-  margin-block-start: var(--space-4);
+  grid-area: actions;
+  gap: var(--space-2);
 }
 
-.link {
-  font-weight: 700;
-}
-
-.clear {
+.secondary {
+  flex: 1 1 9rem;
   min-block-size: var(--target-min);
-  padding: var(--space-2) var(--space-4);
-  background: transparent;
+  padding: var(--space-1) var(--space-3);
   color: var(--color-ink);
+  background: transparent;
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-m);
   font: inherit;
+  font-size: var(--text-s);
+  line-height: 1.25;
   cursor: pointer;
 }
 
-.clear:hover {
+.secondary:hover:not(:disabled) {
   background: var(--color-sunken);
+}
+
+/* Sin mapa listo: se ve que no se puede pulsar (y el motivo, escrito, va debajo si no habrá mapa). */
+.secondary:disabled {
+  color: var(--color-ink-muted);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.reason {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+/* Móvil (pila bajo el mapa): una sola columna, la acción principal a todo el ancho. */
+@media (max-width: 55.99rem) {
+  .card {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'text'
+      'link'
+      'note'
+      'actions';
+  }
+
+  .link {
+    align-self: stretch;
+  }
+}
+
+/* Al aparecer, la ficha sube unos píxeles (solo `translate`: nada de opacidad sobre texto), una vez y con movimiento permitido. */
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: rise var(--motion-medium) var(--ease-out) both;
+  }
+}
+
+@keyframes rise {
+  from {
+    translate: 0 0.5rem;
+  }
+
+  to {
+    translate: 0 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .link {
+    border: 1px solid LinkText;
+  }
 }

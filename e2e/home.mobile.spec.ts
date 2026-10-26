@@ -37,8 +37,11 @@ test.describe('portada en móvil', () => {
       [...document.querySelectorAll('li[data-destination]')].map((li) => {
         const link = li.querySelectorAll('a')[1];
         // `min-block-size` y no la altura medida: el revelado al desplazarse escala la tarjeta (0,97) mientras entra.
+        // Por la misma razón, `offsetLeft` (posición de MAQUETACIÓN) y no `getBoundingClientRect().x`: una tarjeta aún
+        // fuera de la pantalla está escalada y su `x` medido se corre ≈ 2 px respecto de las ya reveladas, sin que
+        // haya dos columnas.
         return {
-          x: Math.round(li.getBoundingClientRect().x),
+          x: (li as HTMLElement).offsetLeft,
           min: link ? parseFloat(getComputedStyle(link).minBlockSize) : 0,
         };
       }),

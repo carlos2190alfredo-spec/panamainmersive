@@ -252,7 +252,8 @@
       "label": "Reiseziele suchen",
       "placeholder": "Name des Reiseziels",
       "count": "{count, plural, one {# Reiseziel passt zur Suche.} other {# Reiseziele passen zur Suche.}}",
-      "empty": "Kein Reiseziel passt zur Suche."
+      "empty": "Kein Reiseziel passt zur Suche.",
+      "clear": "Suche zurücksetzen"
     },
     "carousel": {
       "previous": "Vorherige Reiseziele",
@@ -266,6 +267,7 @@
     "tools": {
       "label": "Kartenwerkzeuge",
       "threeD": "3D-Relief",
+      "threeDShort": "3D",
       "layersOpen": "Ebenen und Legende"
     },
     "sheet": {
@@ -279,7 +281,8 @@
       "railLabel": "Kartenfilter und Ebenen",
       "searchRegionLabel": "Reiseziel-Suche",
       "carouselLabel": "Reiseziel-Karussell",
-      "toolsLabel": "Kartensteuerung"
+      "toolsLabel": "Kartensteuerung",
+      "mapUnavailable": "Nicht verfügbar: Die Karte ist nicht aktiv."
     }
   },
   "Destinations": {

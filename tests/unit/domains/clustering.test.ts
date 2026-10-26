@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { clusterByScreenDistance, type ClusterPoint } from '@/domains/geography/clustering';
+import {
+  clusterByScreenDistance,
+  separationZoom,
+  type ClusterPoint,
+} from '@/domains/geography/clustering';
+import { worldSize, worldX, worldY } from '@/domains/geography/mercator';
 
 const point = (key: string, x: number, y: number): ClusterPoint => ({
   key,
@@ -87,5 +92,54 @@ describe('agrupamiento de marcadores por distancia en pantalla', () => {
       }
       expect(clusters.flatMap((c) => c.keys)).toHaveLength(n);
     }
+  });
+});
+
+/** Anclas reales de data/anchors (los tres destinos de la ciudad están a ≈ 0,06° entre sí). */
+const CITY = [
+  { key: 'panama-canal', lon: -79.5907, lat: 8.99534 },
+  { key: 'panama-city', lon: -79.53418, lat: 8.97145 },
+  { key: 'casco-antiguo', lon: -79.53472, lat: 8.95255 },
+  { key: 'coiba', lon: -81.79592, lat: 7.48343 },
+] as const;
+
+/** Proyecta a píxeles de pantalla a `zoom` (el origen no importa: solo cuentan las distancias). */
+const project = (zoom: number): ClusterPoint[] =>
+  CITY.map((p) => ({
+    key: p.key,
+    x: worldX(p.lon) * worldSize(zoom),
+    y: worldY(p.lat) * worldSize(zoom),
+    lon: p.lon,
+    lat: p.lat,
+  }));
+
+describe('zoom de separación (suelo para encuadrar un destino sin que se funda con un grupo)', () => {
+  it('a ese zoom el destino NO queda dentro de un grupo; un poco por debajo, SÍ (control)', () => {
+    const z = separationZoom(CITY, 'panama-canal', 52);
+    expect(Number.isFinite(z)).toBe(true);
+    const clusterOf = (zoom: number) =>
+      clusterByScreenDistance(project(zoom), 52).find((c) => c.keys.includes('panama-canal'));
+    expect(clusterOf(z + 0.01)?.keys).toEqual(['panama-canal']);
+    // Control: por debajo del suelo el canal se funde con la ciudad (la prueba no es vacía)
+    expect(clusterOf(z - 0.5)?.keys.length).toBeGreaterThan(1);
+  });
+
+  it('el suelo lo marca el vecino MÁS CERCANO: el canal necesita más zoom que Coiba, que no tiene vecinos', () => {
+    expect(separationZoom(CITY, 'panama-canal', 52)).toBeGreaterThan(8);
+    expect(separationZoom(CITY, 'coiba', 52)).toBeLessThan(
+      separationZoom(CITY, 'panama-canal', 52),
+    );
+  });
+
+  it('un punto sin vecinos o una clave desconocida no imponen nada (−∞)', () => {
+    expect(separationZoom([CITY[3]], 'coiba', 52)).toBe(Number.NEGATIVE_INFINITY);
+    expect(separationZoom(CITY, 'no-existe', 52)).toBe(Number.NEGATIVE_INFINITY);
+    expect(separationZoom(CITY, 'panama-canal', 0)).toBe(Number.NEGATIVE_INFINITY);
+  });
+
+  it('doblar el radio exige exactamente un nivel de zoom más', () => {
+    expect(
+      separationZoom(CITY, 'casco-antiguo', 104) - separationZoom(CITY, 'casco-antiguo', 52),
+    ).toBeCloseTo(1, 9);
   });
 });

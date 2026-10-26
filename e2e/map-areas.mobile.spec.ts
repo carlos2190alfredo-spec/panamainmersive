@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { PATHS } from './helpers';
-import { MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON, openMap } from './map-helpers';
+import { MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON, openMap, openSheet } from './map-helpers';
 
 test.describe('selección de áreas en móvil', () => {
   test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
@@ -8,6 +8,7 @@ test.describe('selección de áreas en móvil', () => {
     page,
   }) => {
     await openMap(page, `${PATHS.explore.es}?d=coiba`);
+    await openSheet(page); // la lista de áreas está en el panel de información, DENTRO de la hoja
     const region = page.getByRole('region', { name: 'Áreas protegidas en esta vista' });
     await expect
       .poll(() => region.getByRole('button').count(), { timeout: 30_000 })

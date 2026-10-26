@@ -9,6 +9,8 @@ import {
   TERRAIN_HOST,
   mapCanvas,
   mapState,
+  markerInSafeArea,
+  openLayers,
   openMap,
   paintedFractions,
   routeTerrain,
@@ -119,11 +121,15 @@ test.describe('mapa: selección de destino', () => {
     ).toBeVisible();
     await expect
       .poll(async () => (await mapState(page)).zoom, { timeout: 15_000 })
-      .toBeGreaterThan(before + 1.5);
-    // El mapa termina centrado cerca del ancla de Boquete (derivada del ID de Overture).
-    await expect
-      .poll(async () => (await mapState(page)).center[1], { timeout: 15_000 })
-      .toBeGreaterThan(8.6);
+      .toBeGreaterThan(before + 1);
+    // (Antes `before + 1,5`: el encuadre cabe ahora en el hueco que dejan libre los paneles del HUD, ≈ 916×240 px y no
+    // los 1280×736 del lienzo, así que el mismo destino se ve a ≈ 1,2 niveles menos de zoom. Sigue siendo «acerca».)
+    // El mapa termina encuadrando Boquete (ancla derivada del ID de Overture). Con el HUD, el centro de la CÁMARA ya no
+    // es el del destino (el destino se centra en el hueco que dejan libre los paneles, bajo el centro de la pantalla):
+    // la intención —«la cámara va a Boquete»— se comprueba con el marcador DENTRO de ese hueco, no con la latitud del
+    // centro del lienzo, que depende del tamaño de los paneles. La latitud se conserva como cota gruesa (> 8,3).
+    await expect.poll(() => markerInSafeArea(page, 'boquete'), { timeout: 15_000 }).toBe(true);
+    expect((await mapState(page)).center[1]).toBeGreaterThan(8.3);
 
     await page.goBack();
     await expect(page).not.toHaveURL(/[?&]d=/);
@@ -206,18 +212,23 @@ test.describe('mapa: marcadores cercanos', () => {
 
 test.describe('mapa: enlaces profundos', () => {
   test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
-  test('?d=casco-antiguo encuadra el destino (zoom ≈ 15) y lo marca como seleccionado', async ({
+  test('?d=casco-antiguo encuadra el destino (calle: zoom > 14) y lo marca como seleccionado', async ({
     page,
   }) => {
     await openMap(page, `${EXPLORE}?d=casco-antiguo`);
     const state = await mapState(page);
-    expect(state.zoom).toBeGreaterThan(14.5);
-    expect(state.center[0]).toBeCloseTo(-79.5347, 2);
-    expect(state.center[1]).toBeCloseTo(8.9525, 2);
+    // Antes `> 14,5`: la caja del Casco Antiguo (≈ 800 m) cabe ahora en el hueco libre del HUD (≈ 916×240 px), no en el
+    // lienzo entero, y se encuadra a z ≈ 14,3: sigue siendo nivel de calle (el defaultZoom 15 es el TECHO, no el objetivo).
+    expect(state.zoom).toBeGreaterThan(14);
+    // El centro de la cámara se desplaza (≈ 190 px a este zoom ≈ 0,008°) para dejar el destino en el hueco libre de HUD:
+    // se conserva la cota de «cerca del ancla» (antes ±0,005°, ahora 0,02°) y se exige el marcador dentro del hueco.
+    expect(Math.abs(state.center[0] - -79.5347)).toBeLessThan(0.02);
+    expect(Math.abs(state.center[1] - 8.9525)).toBeLessThan(0.02);
     await expect(page.locator('button[data-destination="casco-antiguo"]')).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    expect(await markerInSafeArea(page, 'casco-antiguo')).toBe(true);
   });
 
   test('?c= fija la cámara: la altitud del enlace se convierte en el zoom esperado y vuelve a la URL', async ({
@@ -289,6 +300,7 @@ test.describe('mapa: capas y relieve de terceros', () => {
     const watch = watchPage(page);
     const terrain = await routeTerrain(page, 'ok');
     await openMap(page, EXPLORE);
+    await openLayers(page);
     expect(terrain.requests).toEqual([]); // antes de activar nada: cero peticiones a AWS
 
     await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
@@ -325,6 +337,7 @@ test.describe('mapa: capas y relieve de terceros', () => {
   test('«Relieve en 3D» permite inclinar más el mapa', async ({ page }) => {
     await routeTerrain(page, 'ok');
     await openMap(page, `${EXPLORE}?c=-82.5424,8.8089,9000,0,0,0&l=protectedAreas,terrain3d`);
+    await openLayers(page);
     await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).toBeChecked();
     await expect(page.locator('[data-map-layers]')).toHaveAttribute(
       'data-map-layers',
@@ -336,6 +349,7 @@ test.describe('mapa: capas y relieve de terceros', () => {
   test('si el relieve falla, el mapa base sigue funcionando y se avisa', async ({ page }) => {
     await routeTerrain(page, 'fail');
     await openMap(page, EXPLORE);
+    await openLayers(page);
     await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
     await expect(page.locator('[data-map-terrain-failed="true"]')).toBeAttached({
       timeout: 30_000,
@@ -351,6 +365,7 @@ test.describe('mapa: capas y relieve de terceros', () => {
     page,
   }) => {
     await openMap(page, EXPLORE);
+    await openLayers(page);
     const legend = page.getByRole('region', { name: 'Leyenda' });
     await expect(legend.getByText('Área protegida (borde discontinuo)')).toBeVisible();
     await expect(legend.getByText('Límite del país (línea continua)')).toBeVisible();
@@ -380,6 +395,7 @@ test.describe('mapa: capas propias y leyenda (registro declarativo)', () => {
   }) => {
     const terrain = await routeTerrain(page, 'ok');
     await openMap(page, EXPLORE);
+    await openLayers(page);
     for (const name of FIRST_PARTY) {
       await expect(page.getByRole('checkbox', { name }), name).toBeChecked();
     }
@@ -434,6 +450,7 @@ test.describe('mapa: capas propias y leyenda (registro declarativo)', () => {
       page,
     }) => {
       await openMap(page, EXPLORE);
+      await openLayers(page);
       const legend = page.getByRole('region', { name: 'Leyenda' });
       for (const text of c.legendGone) await expect(legend.getByText(text)).toBeVisible();
 
@@ -469,6 +486,7 @@ test.describe('mapa: capas propias y leyenda (registro declarativo)', () => {
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await openMap(page, EXPLORE);
+      await openLayers(page);
       const legend = page.getByRole('region', { name: 'Leyenda' });
       const items = legend.getByRole('listitem');
       expect(await items.count()).toBeGreaterThanOrEqual(10);
@@ -590,6 +608,7 @@ test.describe('mapa: idiomas, teclado y movimiento', () => {
     await expect(page.locator('[data-map-status="ready"]')).toBeVisible({ timeout: 60_000 });
     await expect(cardHeading(page)).toHaveText('Boquete');
     await expect(page.getByText('Selected destination')).toBeVisible();
+    await openLayers(page);
     await expect(page.getByRole('checkbox', { name: 'Terrain shading' })).toBeChecked();
   });
 
@@ -603,17 +622,35 @@ test.describe('mapa: idiomas, teclado y movimiento', () => {
       .toBeGreaterThan(before.center[0]);
   });
 
-  test('con prefers-reduced-motion el encuadre es inmediato (sin vuelo animado)', async ({
+  test('con prefers-reduced-motion el encuadre es inmediato (sin vuelo animado); sin él, dura lo que el vuelo', async ({
     page,
   }) => {
+    const flightMs = () => mapCanvas(page).getAttribute('data-flight-ms');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openMap(page, EXPLORE);
     const before = (await mapState(page)).zoom;
     await page.getByRole('button', { name: /^Ver en el mapa: Casco Antiguo$/ }).click();
-    // Un vuelo animado tarda ≈1,6 s; sin animación el zoom final llega casi de inmediato.
+    // Antes se esperaba `data-zoom > before + 5` en 1,2 s. Ese dato se actualiza en `idle` (cuando terminan de llegar las
+    // teselas) y, con el WebGL por software y la máquina cargada, `idle` tarda más que el propio encuadre: la prueba
+    // pasaba o fallaba según la carga, no según el código. Ahora se comprueba la DECISIÓN (duración pedida 0 ms: sin
+    // vuelo) y, con tiempo de sobra, que el encuadre fue de verdad a nivel de calle y dejó el destino a la vista.
+    await expect.poll(flightMs, { timeout: 5000 }).toBe('0');
     await expect
-      .poll(async () => (await mapState(page)).zoom, { timeout: 1200, intervals: [100] })
+      .poll(async () => (await mapState(page)).zoom, { timeout: 30_000 })
       .toBeGreaterThan(before + 5);
+    await expect
+      .poll(() => markerInSafeArea(page, 'casco-antiguo'), { timeout: 10_000 })
+      .toBe(true);
+  });
+
+  test('control: sin prefers-reduced-motion el encuadre SÍ es un vuelo animado (la prueba anterior no es vacía)', async ({
+    page,
+  }) => {
+    await openMap(page, EXPLORE);
+    await page.getByRole('button', { name: /^Ver en el mapa: Casco Antiguo$/ }).click();
+    await expect
+      .poll(() => mapCanvas(page).getAttribute('data-flight-ms'), { timeout: 5000 })
+      .toBe('1600');
   });
 
   test('el lienzo es alcanzable y describe su uso', async ({ page }) => {

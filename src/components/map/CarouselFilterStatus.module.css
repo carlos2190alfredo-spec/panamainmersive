@@ -1,0 +1,16 @@
+/*
+ * Eco visible del recuento (el anuncio para lectores de pantalla va aparte, en `role="status"`). Toma el sitio que sobra
+ * entre el título y los botones y, si no cabe en una línea, pasa a dos DENTRO de la cabecera (que ya mide 44 px): la
+ * altura del carrusel no cambia al filtrar.
+ */
+.status {
+  display: contents;
+}
+
+.echo {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 600;
+}

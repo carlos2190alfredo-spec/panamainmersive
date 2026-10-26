@@ -1,6 +1,6 @@
 .button {
   min-block-size: var(--target-min);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   background: transparent;
   color: var(--color-accent-strong);
   border: 2px solid var(--color-accent);
@@ -17,4 +17,13 @@
 .button[aria-pressed='true'] {
   background: var(--color-accent);
   color: var(--color-on-accent);
+}
+
+/* Sin mapa: se ve que no se puede pulsar (el motivo, escrito, está en el carrusel). */
+.button:disabled {
+  color: var(--color-ink-muted);
+  background: transparent;
+  border-color: var(--color-line-strong);
+  border-style: dashed;
+  cursor: not-allowed;
 }

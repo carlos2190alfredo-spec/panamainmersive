@@ -1,0 +1,285 @@
+/*
+ * Hoja inferior de Explorar en móvil (ADR-0025 §8, entrega 5j · E3). La base de este archivo ES la presentación móvil
+ * (< 56rem); desde 56rem la hoja desaparece como caja (`display: contents`) y sus zonas son celdas de la rejilla del HUD.
+ *
+ * Dos detentes con el MISMO cuerpo (nada se duplica ni se mueve):
+ *  - cerrada: solo la cabecera (asa, título y resumen del destino). El cuerpo mide 0 y está oculto con `visibility`
+ *    (no se ve, no se tabula, no se lee; React además lo marca `inert`);
+ *  - abierta: el cuerpo mide `--sheet-body-h` (≈ 60dvh en total, lo fija la página) y desplaza por dentro.
+ * El alto del cuerpo es lo que se anima (dos longitudes: funciona en todos los navegadores) y solo con
+ * `prefers-reduced-motion: no-preference`. La hoja NO recorta nada (WCAG 1.4.12): el cuerpo desplaza (`overflow-y: auto`)
+ * y la cabecera crece con el texto.
+ *
+ * `position: relative` + `z-index: var(--z-sheet)`: por encima de las herramientas flotantes del HUD y por debajo de la
+ * cabecera. La base de las superficies es SÓLIDA en móvil (sin desenfoque: `glass.module.css`).
+ */
+.sheet {
+  composes: surface from '../../styles/glass.module.css';
+
+  position: relative;
+  z-index: var(--z-sheet);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: 40rem;
+  min-inline-size: 0;
+  margin-inline: auto;
+  /* Respeta la zona segura de abajo (la barra de inicio de un iPhone, un recorte de pantalla): `env()` vale 0 donde no hay. */
+  padding-block-end: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+  border-block-end-width: 0;
+  border-start-start-radius: var(--radius-l);
+  border-start-end-radius: var(--radius-l);
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+  box-shadow: var(--shadow-depth-3);
+  pointer-events: auto;
+}
+
+/* Cabecera = detente cerrado: asa, título (`<h1>`) con su flecha y, si hay un destino elegido, su resumen. */
+.head {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  padding-block-end: var(--space-3);
+  padding-inline: var(--space-4);
+}
+
+/* El asa es un botón de 44 px de alto; su área de pulsación (`::after`) cubre TODA la cabecera: tocar el título también abre. */
+.handle {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: start center;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) 0 0;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  /* Un arrastre vertical sobre el asa es el gesto de la hoja, no un desplazamiento de la página. */
+  touch-action: none;
+}
+
+.handle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.grip {
+  display: block;
+  inline-size: 2.5rem;
+  block-size: 0.3125rem;
+  background: var(--color-line-strong);
+  border-radius: var(--radius-pill);
+}
+
+/* Flecha decorativa (un chevron de bordes, como los del carril): apunta hacia arriba cerrada y hacia abajo abierta. */
+.chevron {
+  grid-column: 2;
+  grid-row: 2;
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  margin-inline-end: var(--space-2);
+  border-inline-end: 2px solid var(--color-ink-muted);
+  border-block-end: 2px solid var(--color-ink-muted);
+  transform: rotate(-135deg);
+  translate: 0 0.15rem;
+}
+
+.sheet[data-state='open'] .chevron {
+  transform: rotate(45deg);
+  translate: 0 -0.15rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chevron {
+    transition: transform var(--motion-medium) var(--ease-out);
+  }
+}
+
+/* Región en vivo del resumen: SIEMPRE en el DOM (vacía mientras no hay destino o la hoja está abierta). */
+.summary {
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+}
+
+.selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  margin: var(--space-1) 0 0;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.kind {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+/* Cuerpo = detente abierto. Cerrado mide 0 y está oculto; el relleno va en los hijos (con 0 de alto, un relleno propio ya mediría). */
+.body {
+  composes: scroll from '../../styles/glass.module.css';
+
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  block-size: 0;
+  /* El relleno de los lados da sitio al anillo de foco (contorno + halo, ≈ 8 px) de lo que toca el borde: el cuerpo
+     desplaza y recortaría el anillo de un campo pegado a su borde. Arriba y abajo lo dan el margen del primer hijo, el
+     relleno del último y `scroll-padding` (con 0 de alto cerrado, un relleno propio de arriba o abajo ya mediría). */
+  padding-inline: var(--space-4);
+  scroll-padding-block: var(--space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  visibility: hidden;
+}
+
+.sheet[data-state='open'] .body {
+  block-size: var(--sheet-body-h);
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Al cerrar, el cuerpo se queda visible hasta que termina de encogerse; al abrir, visible desde el primer fotograma. */
+  .body {
+    transition:
+      block-size var(--motion-medium) var(--ease-out),
+      visibility 0s linear var(--motion-medium);
+  }
+
+  .sheet[data-state='open'] .body {
+    transition:
+      block-size var(--motion-medium) var(--ease-out),
+      visibility 0s;
+  }
+}
+
+/* Sin JavaScript no hay asa (sería un botón muerto): el cuerpo se muestra entero, en el flujo de la página. */
+@media (scripting: none) {
+  .sheet {
+    max-inline-size: none;
+    border-radius: 0;
+  }
+
+  .handle {
+    display: none;
+  }
+
+  .chevron {
+    display: none;
+  }
+
+  .body {
+    block-size: auto;
+    overflow-y: visible;
+    visibility: visible;
+  }
+}
+
+/*
+ * Lo que va DENTRO de la hoja deja de ser una tarjeta de vidrio suelta: sin fondo propio, sin sombra y sin radio, separado
+ * por filetes. Se pide por atributos `data-hud-zone` (las clases de cada zona son de su módulo) y solo en móvil: en
+ * escritorio esas mismas zonas SON las tarjetas flotantes. Selectores de dos clases/atributos: ganan a la superficie
+ * compuesta (`composes: surface`) sin depender del orden de las hojas.
+ */
+@media (max-width: 55.999rem) {
+  /* El título es el nombre de la hoja; con un destino elegido pasa a rótulo pequeño y el nombre del destino manda. */
+  .head [data-hud-zone='title'] {
+    grid-column: 1;
+    grid-row: 2;
+    margin: calc(-1 * var(--space-3)) 0 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: var(--text-l);
+  }
+
+  .head:has([data-sheet-selected]) [data-hud-zone='title'] {
+    color: var(--color-ink-muted);
+    font-family: var(--font-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+  }
+
+  .body [data-hud-zone='rail'],
+  .body [data-hud-zone='carousel'],
+  .body [data-hud-zone='panel'] {
+    padding: var(--space-1) 0 var(--space-2);
+    background: transparent;
+    border: 0;
+    border-block-start: 1px solid var(--color-line-soft);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .body [data-hud-zone='search'] {
+    padding-block-end: var(--space-3);
+  }
+
+  /* Los títulos de cada sección comparten el borde izquierdo (los de los módulos de cada zona traen su propio sangrado). */
+  .body [data-hud-group] > summary,
+  .body [data-hud-zone='carousel'] > div:first-child {
+    padding-inline: 0;
+  }
+
+  .body > :first-child {
+    margin-block-start: var(--space-2);
+  }
+
+  .body > :last-child {
+    padding-block-end: var(--space-3);
+  }
+}
+
+/*
+ * Sin JavaScript el asa no existe (`display: none`) y el título ya no tiene nada sobre sí a lo que acercarse: el margen
+ * negativo de arriba (que lo sube hasta el asa) lo sacaría de la caja y lo dejaría a caballo sobre su borde. Va DESPUÉS
+ * de la regla móvil y con la misma especificidad: gana por orden.
+ */
+@media (max-width: 55.999rem) and (scripting: none) {
+  .head [data-hud-zone='title'] {
+    margin: 0;
+    padding-block-start: var(--space-3);
+  }
+}
+
+/* Colores forzados: el fondo del asa se vuelve «Canvas» (invisible); se dibuja con el color del texto del sistema. */
+@media (forced-colors: active) {
+  .grip {
+    background: ButtonText;
+  }
+}
+
+@media (min-width: 56rem) {
+  .sheet,
+  .head,
+  .body {
+    display: contents;
+  }
+
+  /* `visibility` se HEREDA aunque la caja no exista: sin esto el cuerpo «cerrado» ocultaría todo el HUD de escritorio. */
+  .body {
+    visibility: visible;
+  }
+
+  .handle,
+  .chevron,
+  .summary {
+    display: none;
+  }
+}

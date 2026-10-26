@@ -12,3 +12,4 @@ docs/research
 db/migrations
 data
 .e2e-content-app
+vendor

@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { crc32, deflateSync } from 'node:zlib';
-import { expect, type Page, type Request } from '@playwright/test';
+import { expect, type Locator, type Page, type Request } from '@playwright/test';
+import { applyCss } from './a11y-probes';
 
 /**
  * El mapa base real (`public/data/panama-basemap.pmtiles`) no se versiona: lo produce `pnpm data:build` (Python,
@@ -112,7 +113,15 @@ export async function paintedFractions(
   page: Page,
   colors: Record<string, string>,
 ): Promise<{ fractions: Record<string, number>; distinct: number }> {
-  const png = (await mapCanvas(page).screenshot()).toString('base64');
+  // `screenshot()` del contenedor captura TODO lo que se pinta encima (paneles de vidrio del HUD, viñeta decorativa):
+  // se miden los colores del MAPA, no los del HUD, así que se ocultan (con una hoja construida: la CSP prohíbe `<style>`).
+  const restore = await hideHud(page);
+  let png: string;
+  try {
+    png = (await mapCanvas(page).screenshot()).toString('base64');
+  } finally {
+    await restore();
+  }
   return page.evaluate(
     async ({ png: b64, colors: wanted }) => {
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -149,4 +158,123 @@ export async function paintedFractions(
     },
     { png, colors },
   );
+}
+
+/**
+ * Oculta el HUD de Explorar y la viñeta decorativa del lienzo (`visibility: hidden`: conservan su sitio y no recolocan
+ * nada) y devuelve la función que lo restaura. Para medir el color real del MAPA (`paintedFractions`).
+ */
+export async function hideHud(page: Page): Promise<() => Promise<void>> {
+  const before = await page.evaluate(() => document.adoptedStyleSheets.length);
+  await applyCss(page, '[data-hud], [data-atmosphere] { visibility: hidden !important; }');
+  return async () => {
+    await page.evaluate((count) => {
+      document.adoptedStyleSheets = document.adoptedStyleSheets.slice(0, count);
+    }, before);
+  };
+}
+
+/**
+ * Despliega los grupos «Capas» y «Leyenda» del carril (están PLEGADOS por defecto: el filtro por tipo ocupa el carril y
+ * «Capas y leyenda», en las herramientas, los abre). Se abren con sus propios `<summary>` nativos, que no dependen de la isla
+ * de herramientas (llega tras hidratar); los identifica su `id`, no el idioma de su título.
+ */
+export async function openLayers(page: Page): Promise<void> {
+  await openSheet(page); // en móvil los grupos están DENTRO de la hoja inferior (cerrada es inerte); en escritorio no hace nada
+  for (const id of ['hud-group-layers', 'hud-group-legend']) {
+    const group = page.locator(`#${id}`);
+    if ((await group.getAttribute('open')) === null) await group.locator('> summary').click();
+    await expect(group).toHaveAttribute('open', '');
+  }
+}
+
+/** El asa de la hoja inferior móvil (en escritorio existe en el DOM pero no se pinta: la hoja no es una caja). */
+export const sheetHandle = (page: Page): Locator => page.locator('[data-sheet-handle]');
+
+/** El cuerpo de la hoja inferior móvil (lo que se pliega: buscador, filtro, capas, carrusel, información del mapa). */
+export const sheetBody = (page: Page): Locator => page.locator('[data-sheet-body]');
+
+/** Espera a que una caja deje de moverse (la hoja se abre y se cierra con una transición de 240 ms). */
+export async function settled(locator: Locator): Promise<void> {
+  let last = '';
+  await expect
+    .poll(
+      async () => {
+        const now = JSON.stringify(await locator.boundingBox());
+        const same = now === last;
+        last = now;
+        return same;
+      },
+      { timeout: 10_000, intervals: [120, 120, 120, 250, 250, 500] },
+    )
+    .toBe(true);
+}
+
+/**
+ * Abre la hoja inferior si estamos en móvil y está cerrada; en escritorio (el asa no se pinta) no hace nada. Devuelve cuando
+ * su cuerpo ya está visible y quieto.
+ */
+export async function openSheet(page: Page): Promise<void> {
+  const handle = sheetHandle(page);
+  // El asa existe solo tras hidratar (antes la hoja está en `pending`): sin esperar, «no se ve» podría ser «aún no hay».
+  await expect(page.locator('[data-hud-zone="sheet"]')).not.toHaveAttribute(
+    'data-state',
+    'pending',
+  );
+  if (!(await handle.isVisible())) return;
+  // Sin mapa la hoja se abre SOLA (una vez) y puede hacerlo entre la lectura y el clic: un clic sobre una hoja que acaba
+  // de abrirse la cerraría. Se reintenta leyendo antes de cada clic hasta que queda abierta.
+  await expect(async () => {
+    if ((await handle.getAttribute('aria-expanded')) === 'false') await handle.click();
+    await expect(handle).toHaveAttribute('aria-expanded', 'true', { timeout: 1500 });
+  }).toPass({ timeout: 15_000 });
+  await expect(sheetBody(page)).toBeVisible();
+  await settled(sheetBody(page));
+}
+
+/** Cierra la hoja inferior si está abierta (solo móvil). */
+export async function closeSheet(page: Page): Promise<void> {
+  const handle = sheetHandle(page);
+  await expect(page.locator('[data-hud-zone="sheet"]')).not.toHaveAttribute(
+    'data-state',
+    'pending',
+  );
+  if (!(await handle.isVisible())) return;
+  if ((await handle.getAttribute('aria-expanded')) === 'true') await handle.click();
+  await expect(handle).toHaveAttribute('aria-expanded', 'false');
+  await expect(sheetBody(page)).toBeHidden();
+}
+
+/** Botón que pliega o despliega el panel derecho (`<aside>`). Solo existe en escritorio, tras hidratar. */
+export const panelToggle = (page: Page): Locator => page.locator('aside button[aria-expanded]');
+
+/** Abre el panel derecho si está plegado (por defecto lo está en escritorio: el mapa manda). */
+export async function openAreasPanel(page: Page): Promise<void> {
+  const toggle = panelToggle(page);
+  if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+}
+
+/** Caja del hueco que el HUD deja libre (`[data-hud-safe]`), en coordenadas de la página. */
+export async function safeBox(
+  page: Page,
+): Promise<{ x: number; y: number; width: number; height: number }> {
+  const box = await page.locator('[data-hud-safe]').boundingBox();
+  if (!box)
+    throw new Error('No hay hueco libre de HUD (`[data-hud-safe]`): ¿el HUD no llegó a pintarse?');
+  return box;
+}
+
+/**
+ * ¿El marcador del destino está DENTRO del hueco que el HUD deja libre? Es lo que garantiza el encuadre consciente del
+ * HUD: un destino a la vista, no tapado por un panel. Mide el centro del botón del marcador.
+ */
+export async function markerInSafeArea(page: Page, key: string): Promise<boolean> {
+  const marker = page.locator(`button[data-destination="${key}"]`);
+  const box = await marker.boundingBox();
+  if (!box) return false;
+  const safe = await safeBox(page);
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  return cx >= safe.x && cx <= safe.x + safe.width && cy >= safe.y && cy <= safe.y + safe.height;
 }

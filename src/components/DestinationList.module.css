@@ -40,3 +40,123 @@
 .action {
   margin-block-start: var(--space-2);
 }
+
+/*
+ * Variante `cards` (carrusel del HUD de Explorar). La fila desplaza en horizontal DENTRO de su contenedor (el carrusel,
+ * `min-inline-size: 0`: si no, empujaría la página a 320 px). Nada de alturas fijas ni `overflow` recortado con texto:
+ * la tarjeta crece con el texto (WCAG 1.4.12). El pictograma es decorativo y su color sale de tokens.
+ */
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  display: flex;
+  gap: var(--space-3);
+  inline-size: max-content;
+  min-inline-size: 100%;
+}
+
+.card {
+  --glyph-accent: var(--color-accent);
+
+  position: relative;
+  flex: 0 0 18.5rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-m);
+  scroll-snap-align: start;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-medium) var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+}
+
+/* El filtro por tipo y la búsqueda ocultan las tarjetas con `hidden`; `display: grid` de arriba lo anularía. */
+.card[hidden] {
+  display: none;
+}
+
+/* El destino seleccionado (su botón está pulsado): borde de acento más grueso y sombra, no solo color. */
+.card:has([aria-pressed='true']) {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-depth-2);
+}
+
+.glyph {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: 0.35rem;
+  color: var(--color-ink);
+  background: var(--color-sunken);
+  border-radius: 50%;
+}
+
+.titles {
+  display: grid;
+  align-content: center;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+/* Enlace estirado: toda la tarjeta es el área de clic; el botón de la acción va por encima (z-index). */
+.cardLink {
+  /* Objetivo propio ≥ 24 px de alto (WCAG 2.5.8); el área real de clic es toda la tarjeta (`::after`). */
+  display: block;
+  min-block-size: 1.75rem;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-l);
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
+  line-height: var(--leading-tight);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.cardLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-m);
+}
+
+.cardLink:hover,
+.cardLink:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+
+.cardKind {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.cardFoot {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.cardAction {
+  position: relative;
+  z-index: 1;
+  /* Reserva el alto del botón (aparece tras hidratar): sin salto de maquetación (CLS 0). */
+  min-block-size: var(--target-min);
+  display: flex;
+  margin-inline-start: auto;
+}

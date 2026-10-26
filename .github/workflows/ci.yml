@@ -5,7 +5,8 @@
 # LIMITACIONES CONOCIDAS (honestas, no ocultas en el nombre de un job verde):
 #  · Este CI NO genera el mapa base (`public/data/panama-basemap.pmtiles`: Python + tippecanoe + red hacia Overture,
 #    ≈ 5 min). Sin él, las pruebas E2E que necesitan el mapa dibujado se OMITEN diciéndolo. Medido en local ocultando el
-#    fichero, 2026-10-24: 138 pasan, 57 omitidas (todas por esa causa), 0 fallan. `pnpm check:e2e-skips` limita las
+#    fichero, 2026-10-26: 255 pasan, 81 omitidas (todas por esa causa), 0 fallan (antes 254 y 80, 225 y 75; 2026-10-25: 184 y 66; 2026-10-24: 138 y 57; entre
+#    medias entraron las pruebas del HUD de Explorar, las de la portada, las de sus interacciones —filtro, buscador y 3D— y las de la hoja móvil). `pnpm check:e2e-skips` limita las
 #    omitidas a ese número: otra omisión nueva ya no pasa desapercibida. El mapa real solo se verifica en local (F3-14).
 #    ACTUALIZACIÓN 2026-10-24: el fichero ahora SÍ está versionado (staging de Vercel, docs/deploy.md §4), así que este CI
 #    lo encontrará en el checkout y EJECUTARÁ esas pruebas (el límite de omitidas sigue siendo un máximo, no un mínimo).
@@ -117,11 +118,11 @@ jobs:
         env:
           CI: 'true'
           SITE_ENV: development
-      # 57 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO: si algún día el CI genera el mapa, bájalo.
+      # 81 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO: si algún día el CI genera el mapa, bájalo.
       - name: Presupuesto de pruebas omitidas
         run: pnpm check:e2e-skips
         env:
-          E2E_MAX_SKIPPED: '57'
+          E2E_MAX_SKIPPED: '81'
       - name: Trazas de Playwright (solo si falla)
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

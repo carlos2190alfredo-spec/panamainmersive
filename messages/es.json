@@ -252,7 +252,8 @@
       "label": "Buscar destinos",
       "placeholder": "Nombre del destino",
       "count": "{count, plural, one {# destino coincide con la búsqueda.} other {# destinos coinciden con la búsqueda.}}",
-      "empty": "Ningún destino coincide con la búsqueda."
+      "empty": "Ningún destino coincide con la búsqueda.",
+      "clear": "Borrar la búsqueda"
     },
     "carousel": {
       "previous": "Destinos anteriores",
@@ -266,6 +267,7 @@
     "tools": {
       "label": "Herramientas del mapa",
       "threeD": "Relieve en 3D",
+      "threeDShort": "3D",
       "layersOpen": "Capas y leyenda"
     },
     "sheet": {
@@ -279,7 +281,8 @@
       "railLabel": "Filtros y capas del mapa",
       "searchRegionLabel": "Búsqueda de destinos",
       "carouselLabel": "Carrusel de destinos",
-      "toolsLabel": "Controles del mapa"
+      "toolsLabel": "Controles del mapa",
+      "mapUnavailable": "No disponible: el mapa no está activo."
     }
   },
   "Destinations": {

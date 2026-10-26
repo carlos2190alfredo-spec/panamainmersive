@@ -252,7 +252,8 @@
       "label": "Rechercher des destinations",
       "placeholder": "Nom de la destination",
       "count": "{count, plural, one {# destination correspond à la recherche.} other {# destinations correspondent à la recherche.}}",
-      "empty": "Aucune destination ne correspond à la recherche."
+      "empty": "Aucune destination ne correspond à la recherche.",
+      "clear": "Effacer la recherche"
     },
     "carousel": {
       "previous": "Destinations précédentes",
@@ -266,6 +267,7 @@
     "tools": {
       "label": "Outils de la carte",
       "threeD": "Relief en 3D",
+      "threeDShort": "3D",
       "layersOpen": "Couches et légende"
     },
     "sheet": {
@@ -279,7 +281,8 @@
       "railLabel": "Filtres et couches de la carte",
       "searchRegionLabel": "Recherche de destinations",
       "carouselLabel": "Carrousel de destinations",
-      "toolsLabel": "Commandes de la carte"
+      "toolsLabel": "Commandes de la carte",
+      "mapUnavailable": "Indisponible\u00a0: la carte n’est pas active."
     }
   },
   "Destinations": {

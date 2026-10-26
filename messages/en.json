@@ -252,7 +252,8 @@
       "label": "Search destinations",
       "placeholder": "Destination name",
       "count": "{count, plural, one {# destination matches the search.} other {# destinations match the search.}}",
-      "empty": "No destination matches the search."
+      "empty": "No destination matches the search.",
+      "clear": "Clear the search"
     },
     "carousel": {
       "previous": "Previous destinations",
@@ -266,6 +267,7 @@
     "tools": {
       "label": "Map tools",
       "threeD": "3D terrain",
+      "threeDShort": "3D",
       "layersOpen": "Layers and legend"
     },
     "sheet": {
@@ -279,7 +281,8 @@
       "railLabel": "Map filters and layers",
       "searchRegionLabel": "Destination search",
       "carouselLabel": "Destination carousel",
-      "toolsLabel": "Map controls"
+      "toolsLabel": "Map controls",
+      "mapUnavailable": "Unavailable: the map is not active."
     }
   },
   "Destinations": {

@@ -1,0 +1,104 @@
+/*
+ * Herramientas del mapa (zona `tools` del HUD): un grupo de botones cuadrados de 44 px, con la misma piel que el grupo
+ * nativo de zoom y brújula de MapLibre que tiene encima (vidrio, borde, radio, sombra, separadores finos). El HUD no
+ * recibe punteros: el grupo los pide para sí. «Relieve en 3D» lleva un rótulo de texto («3D»); «Capas y leyenda», solo
+ * un icono (su nombre accesible lo dice con palabras).
+ */
+.tools {
+  composes: surface from '../../styles/glass.module.css';
+
+  display: grid;
+  inline-size: var(--target-min);
+  overflow-wrap: anywhere;
+  box-shadow: var(--shadow-depth-1);
+  pointer-events: auto;
+}
+
+.tool {
+  display: grid;
+  place-items: center;
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  padding: 0;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: var(--text-s);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.tool + .tool {
+  border-block-start: 1px solid var(--color-line-soft);
+}
+
+.tool:first-child {
+  border-start-start-radius: var(--radius-glass);
+  border-start-end-radius: var(--radius-glass);
+}
+
+.tool:last-child {
+  border-end-start-radius: var(--radius-glass);
+  border-end-end-radius: var(--radius-glass);
+}
+
+.tool:hover:not(:disabled, [aria-pressed='true'], [aria-expanded='true']) {
+  background: var(--color-sunken);
+}
+
+/* Estado activo SIN depender solo del color: relleno de acento y texto/icono en negrita. */
+.tool[aria-pressed='true'],
+.tool[aria-expanded='true'] {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.tool:disabled {
+  color: var(--color-ink-muted);
+  cursor: not-allowed;
+}
+
+.icon {
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+}
+
+/*
+ * Móvil (< 56rem): las herramientas son una píldora HORIZONTAL arriba a la izquierda (la columna derecha es del zoom y la
+ * brújula nativos, y abajo a la derecha están los créditos: en vertical se tocarían con la hoja abierta).
+ */
+@media (max-width: 55.999rem) {
+  .tools {
+    grid-auto-flow: column;
+    inline-size: auto;
+  }
+
+  .tool + .tool {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--color-line-soft);
+  }
+
+  .tool:first-child {
+    border-start-start-radius: var(--radius-glass);
+    border-start-end-radius: 0;
+    border-end-start-radius: var(--radius-glass);
+    border-end-end-radius: 0;
+  }
+
+  .tool:last-child {
+    border-start-start-radius: 0;
+    border-start-end-radius: var(--radius-glass);
+    border-end-start-radius: 0;
+    border-end-end-radius: var(--radius-glass);
+  }
+}
+
+@media (forced-colors: active) {
+  .tool[aria-pressed='true'],
+  .tool[aria-expanded='true'] {
+    color: HighlightText;
+    background: Highlight;
+  }
+}
