@@ -251,12 +251,43 @@ describe('HudSheet · arrastre vertical del asa (una mejora del botón)', () => 
     expect(isSheetOpen()).toBe(false);
   });
 
-  it('un toque o un temblor (menos de 24 px) no decide: lo resuelve el click', () => {
+  it('un temblor del dedo (menos de 24 px) es un TOQUE: alterna UNA vez, llegue o no el click (Linux no lo genera si el dedo se movió más que su holgura)', () => {
     render(<Sheet />);
+    // Sin `click` (el navegador lo retiene porque el dedo se movió): se resuelve en el `pointerup`
     drag(400, 392);
+    expect(isSheetOpen()).toBe(true);
+    // Con `click` (el dedo no se movió): el eco del mismo gesto no lo deshace
+    drag(400, 400);
+    fireEvent.click(handle());
+    expect(isSheetOpen()).toBe(false);
+  });
+
+  it('con el ratón, un clic corto lo resuelve el `click` (una sola vez, no el pointerup además)', () => {
+    render(<Sheet />);
+    fireEvent.pointerDown(handle(), {
+      pointerId: 1,
+      clientY: 400,
+      pointerType: 'mouse',
+      button: 0,
+    });
+    fireEvent.pointerUp(handle(), { pointerId: 1, clientY: 400, pointerType: 'mouse' });
     expect(isSheetOpen()).toBe(false);
     fireEvent.click(handle());
     expect(isSheetOpen()).toBe(true);
+  });
+
+  it('un click del teclado después de un toque NO se confunde con su eco', () => {
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
+    try {
+      render(<Sheet />);
+      drag(400, 400);
+      expect(isSheetOpen()).toBe(true);
+      vi.setSystemTime(Date.now() + 5_000);
+      fireEvent.click(handle()); // Enter o Espacio, mucho después: es otra activación
+      expect(isSheetOpen()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('un gesto cancelado (el navegador lo toma para desplazar) no abre ni cierra', () => {

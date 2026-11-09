@@ -8,6 +8,13 @@
  */
 export const DRAG_THRESHOLD_PX = 24;
 
+/**
+ * Un `click` que llega menos de esto después del `pointerup` que ya decidió el gesto es el eco de ese mismo gesto y se descarta.
+ * Generoso a propósito (el eco llega en milisegundos): un `click` de otro origen (teclado, tecnología de asistencia) llega mucho
+ * después de un toque y no se confunde con él.
+ */
+export const CLICK_AFTER_GESTURE_MS = 400;
+
 export type SheetDrag = 'tap' | 'open' | 'close';
 
 export function decideSheetDrag(dy: number): SheetDrag {

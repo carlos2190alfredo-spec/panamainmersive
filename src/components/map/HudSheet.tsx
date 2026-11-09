@@ -13,7 +13,7 @@ import {
 import type { DestinationKey } from '@/domains/tourism/destinations';
 import { useHudStore } from './hud-store';
 import styles from './HudSheet.module.css';
-import { decideSheetDrag } from './sheet-gesture';
+import { CLICK_AFTER_GESTURE_MS, decideSheetDrag } from './sheet-gesture';
 import { resetSheetStore, setSheetOpen, useMobileLayout, useSheetOpen } from './sheet-store';
 import { useHydrated, useMapUrlState } from './use-map-url-state';
 
@@ -107,7 +107,8 @@ export function HudSheet({
   const rootRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const drag = useRef<{ id: number; startY: number; dy: number } | null>(null);
-  const swallowClick = useRef(false);
+  /** `timeStamp` del `pointerup` que ya decidió el gesto: el `click` que el navegador dispara justo después no debe repetirlo. */
+  const decidedAt = useRef<number | null>(null);
   const state = !hydrated ? 'pending' : open ? 'open' : 'closed';
   const folded = hydrated && mobile && !open;
 
@@ -169,13 +170,12 @@ export function HudSheet({
     drag.current = null;
     if (event.type === 'pointercancel') return;
     const result = decideSheetDrag(current.dy);
-    if (result === 'tap') return; // lo resuelve el `click` del botón
-    setSheetOpen(result === 'open');
-    // Tras un arrastre el navegador aún dispara el `click` del botón: no debe deshacer lo decidido.
-    swallowClick.current = true;
-    window.setTimeout(() => {
-      swallowClick.current = false;
-    }, 60);
+    // El ratón siempre genera su `click`: lo resuelve el botón. Un dedo que se movió más que la holgura del navegador (≈ 5 px en
+    // Linux, ≈ 8 en Android) pero menos que el umbral NO genera `click`: el toque se perdería (lo vio el CI de Linux con un
+    // temblor de 8 px). Se resuelve aquí, y el `click` que sí llegue se descarta (uno solo en cualquier caso).
+    if (result === 'tap' && event.pointerType === 'mouse') return;
+    setSheetOpen(result === 'tap' ? !open : result === 'open');
+    decidedAt.current = event.timeStamp;
   }
 
   return (
@@ -202,8 +202,11 @@ export function HudSheet({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerEnd}
             onPointerCancel={onPointerEnd}
-            onClick={() => {
-              if (swallowClick.current) return;
+            onClick={(event) => {
+              // Se mide con el `timeStamp` de los propios eventos (no con un temporizador, que una máquina cargada retrasa)
+              const decided = decidedAt.current;
+              decidedAt.current = null;
+              if (decided !== null && event.timeStamp - decided < CLICK_AFTER_GESTURE_MS) return;
               setSheetOpen(!open);
             }}
           >
