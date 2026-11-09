@@ -54,6 +54,9 @@ function prepareApp(snapshotJson: string): void {
   }
   cpSync(join(ROOT, 'src'), join(APP, 'src'), { recursive: true });
   cpSync(join(ROOT, 'messages'), join(APP, 'messages'), { recursive: true });
+  // `MapStage.tsx` importa `../../../vendor/maplibre-gl.trimmed.css` (la hoja de MapLibre recortada): sin `vendor/` el build de la
+  // copia falla con «Module not found» (lo vio el CI en `bfdbea2`; `ca34997` ya lo importaba y esta suite no se había re-ejecutado)
+  cpSync(join(ROOT, 'vendor'), join(APP, 'vendor'), { recursive: true });
   for (const dir of ['anchors', 'rights']) {
     cpSync(join(ROOT, 'data', dir), join(APP, 'data', dir), { recursive: true });
   }
