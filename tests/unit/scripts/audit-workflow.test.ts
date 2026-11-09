@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Guardas TEXTUALES de `.github/workflows/audit.yml` (T-20). No lo ejecutan (ESTADO: IMPLEMENTED, no VERIFIED: no hay
- * remoto). La auditoría de avisos va APARTE de `ci.yml` a propósito: la base de avisos cambia aunque el código no
+ * Guardas TEXTUALES de `.github/workflows/audit.yml` (T-20). No lo ejecutan (en GitHub corrió dos veces, 2026-10-26 y 2026-11-02, en verde y
+ * nunca en rojo: E-98). La auditoría de avisos va APARTE de `ci.yml` a propósito: la base de avisos cambia aunque el código no
  * cambie, y un aviso nuevo sobre algo no relacionado no debe bloquear un cambio (PROMPT-MAESTRO §18). Por eso se
  * programa, y por eso no debe engancharse nunca a `push` ni a `pull_request`. El mismo calendario vigila que la
  * evidencia de cobertura no esté a punto de caducar (T-19): también cambia con la FECHA, no con el código.

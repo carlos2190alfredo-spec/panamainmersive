@@ -4,6 +4,11 @@
  * recibe punteros: el grupo los pide para sí. «Relieve en 3D» lleva un rótulo de texto («3D»); «Capas y leyenda», solo
  * un icono (su nombre accesible lo dice con palabras).
  */
+/* El contenedor del grupo y de su aviso previo: el aviso se coloca respecto a él, no respecto a la columna del HUD. */
+.root {
+  position: relative;
+}
+
 .tools {
   composes: surface from '../../styles/glass.module.css';
 
@@ -92,6 +97,76 @@
     border-start-end-radius: var(--radius-glass);
     border-end-start-radius: 0;
     border-end-end-radius: var(--radius-glass);
+  }
+}
+
+/*
+ * Aviso PREVIO del botón «Relieve en 3D» (r3:F-01): antes de pulsar, dice a quién llegará la dirección IP. Es la descripción
+ * accesible del botón (`aria-describedby`), así que está SIEMPRE en el DOM y en el árbol de accesibilidad: oculto con
+ * `visibility`, que NO lo quita de la descripción cuando se referencia directamente. Se VE al pasar el cursor o enfocar con el
+ * teclado (y no con el relieve ya activo: entonces lo dice el aviso de estado). WCAG 1.4.13: se puede descartar (Escape,
+ * `data-dismissed`), el cursor puede pasar sobre él (la franja `::before` cubre el hueco hasta el botón) y se queda mientras
+ * dure el cursor o el foco. Sin transiciones ni animaciones. Es vidrio SIN desenfoque (el límite son tres superficies).
+ */
+.notice {
+  composes: surface from '../../styles/glass.module.css';
+
+  position: absolute;
+  z-index: calc(var(--z-hud) + 2);
+  inline-size: min(17rem, calc(100vw - 2 * var(--hud-gap, var(--space-3))));
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-s);
+  line-height: 1.4;
+  hyphens: manual;
+  visibility: hidden;
+  pointer-events: none;
+  /* Móvil: bajo la píldora horizontal (la columna de la derecha es del zoom y la brújula nativos). */
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-start: 0;
+}
+
+.notice::before {
+  content: '';
+  position: absolute;
+  inset-block-end: 100%;
+  inset-inline: 0;
+  block-size: var(--space-2);
+}
+
+@media (min-width: 56rem) {
+  /* Escritorio: a la IZQUIERDA del botón (la columna de herramientas está en el borde derecho del mapa). */
+  .notice {
+    inset-block-start: 0;
+    inset-inline-start: auto;
+    inset-inline-end: calc(100% + var(--space-2));
+  }
+
+  .notice::before {
+    inset-block: 0;
+    inset-inline: 100% auto;
+    inline-size: var(--space-2);
+    block-size: auto;
+  }
+}
+
+.root:has(.threeD:is(:hover, :focus-visible, :focus):not([aria-pressed='true'], :disabled))
+  .notice:not([data-dismissed]),
+.root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice:hover:not([data-dismissed]) {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/*
+ * Sin cursor (pantalla táctil) no existe «pasar por encima» ni foco previo al toque: el toque dispara hover, foco y clic en la
+ * misma tarea, antes de que se pinte un solo cuadro, y el relieve ya estaría pidiéndose a AWS. Ahí el aviso se VE siempre que
+ * pulsar pida algo (apagado y utilizable); `pointer-events: none` sigue, así que los toques lo atraviesan hasta el mapa. Con el
+ * relieve activo lo dice el aviso de estado de `MapStage`. `hover: none` mira solo el puntero PRINCIPAL: un portátil con pantalla
+ * táctil y trackpad lo tiene con `hover`, y un toque directo hace lo mismo; por eso también `any-pointer: coarse`.
+ */
+@media (hover: none), (any-pointer: coarse) {
+  .root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice {
+    visibility: visible;
   }
 }
 

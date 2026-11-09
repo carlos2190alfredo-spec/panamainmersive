@@ -22,19 +22,21 @@
 }
 
 .title {
+  composes: eyebrow from '../../styles/glass.module.css';
+
   margin: 0;
   color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: var(--text-l);
-  font-weight: 600;
-  line-height: var(--leading-tight);
   max-inline-size: none;
 }
 
 .body {
-  composes: scroll from '../../styles/glass.module.css';
+  composes: scroll cue from '../../styles/glass.module.css';
 
   min-block-size: 0;
+  /* Holgura lateral para el anillo de foco (≈ 8 px: contorno + halo) de lo que llega al borde del cuerpo, que desplaza y lo
+     recortaría (r2:N5); el margen negativo devuelve el contenido a su sitio. */
+  padding-inline: var(--space-2);
+  margin-inline: calc(-1 * var(--space-2));
 }
 
 /* El botón solo existe desde 56rem (en móvil el panel no se pliega). */

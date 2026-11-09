@@ -1,7 +1,26 @@
+/*
+ * Tabla de fuentes: cinco columnas; la región se desplaza (ScrollRegion avisa con una sombra) y cada columna de texto tiene
+ * un ancho mínimo propio: sin él, a 320 px la columna «Uso» medía ≈ 90 px y se leía en tiras («oc-cupa-tion»; r1:V-14).
+ * Sin guionado en las celdas (base.css: `table { hyphens: manual }`).
+ */
 .table {
   min-inline-size: 44rem;
   background: var(--color-surface);
   border: 1px solid var(--color-line-soft);
+}
+
+.table th:nth-child(1) {
+  min-inline-size: 12rem;
+}
+
+.table td:nth-child(2),
+.table td:nth-child(5) {
+  min-inline-size: 13rem;
+}
+
+.table td:nth-child(3),
+.table td:nth-child(4) {
+  min-inline-size: 9rem;
 }
 
 .table th,

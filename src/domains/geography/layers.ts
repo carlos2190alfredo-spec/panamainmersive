@@ -269,6 +269,14 @@ const backgroundRule: CustomRule = {
   ],
 };
 
+/**
+ * Halo (px) de las etiquetas de áreas protegidas. Muchas son MARINAS y se dibujan sobre el agua: el verde de su línea
+ * (`protectedLine`) contra el agua del tema oscuro mide 2,16:1 (< 3:1), así que lo que las hace legibles es el halo oscuro
+ * que las rodea (9,3:1 con el texto). Con 1,6 px los trazos finos de un cuerpo de 12 px dejaban pasar el agua por entre
+ * las letras (r2:N1); 2,2 px las encierran. `contrast.test.ts` exige este mínimo a toda etiqueta que no llegue a 3:1 con el agua.
+ */
+export const PROTECTED_LABEL_HALO_WIDTH = 2.2;
+
 const protectedLabelRule: CustomRule = {
   kind: 'custom',
   id: 'protected-label',
@@ -285,7 +293,11 @@ const protectedLabelRule: CustomRule = {
         'text-size': 12,
         'text-max-width': 9,
       },
-      paint: { 'text-color': c.protectedLine, 'text-halo-color': c.halo, 'text-halo-width': 1.6 },
+      paint: {
+        'text-color': c.protectedLine,
+        'text-halo-color': c.halo,
+        'text-halo-width': PROTECTED_LABEL_HALO_WIDTH,
+      },
     },
   ],
 };

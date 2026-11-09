@@ -131,7 +131,9 @@ export default async function DestinationPage(props: Props) {
         />
       </section>
 
-      <section aria-labelledby="data-title" className={styles.section}>
+      {/* Sin `aria-labelledby`: el encabezado nombra la REGIÓN desplazable de la tabla (ScrollRegion); la sección con el mismo
+          nombre duplicaría el hito (axe `landmark-unique`, r2:F1). */}
+      <section className={styles.section}>
         <h2 id="data-title">{t('dataStatusHeading')}</h2>
         {first ? (
           <p className={styles.evidenceNote}>
@@ -166,7 +168,7 @@ export default async function DestinationPage(props: Props) {
         </ScrollRegion>
       </section>
 
-      <p>
+      <p className={styles.action}>
         <ButtonLink href={{ pathname: '/explore', query: { d: entry.key } }}>
           {t('viewOnMap')}
         </ButtonLink>

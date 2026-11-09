@@ -597,6 +597,10 @@ test.describe('mapa: idiomas, teclado y movimiento', () => {
   }
 
   test('cambiar de idioma conserva destino y capas y vuelve a abrir el mapa', async ({ page }) => {
+    // Dos cargas COMPLETAS del mapa (la inicial y la del idioma nuevo), cada una con un navegador recién abierto y WebGL por
+    // software: ≈ 12 s solo, ≈ 21 s con tres trabajadores y más con la suite entera (falló a los 30 s por defecto en una
+    // pasada completa, 2 de 2 intentos). Las esperas de dentro ya admiten 60 s: el plazo de la prueba tiene que caber con ellas.
+    test.setTimeout(90_000);
     await routeTerrain(page, 'ok');
     await openMap(page, `${EXPLORE}?d=boquete&l=protectedAreas,hillshade`);
     await page.locator('summary').first().click();

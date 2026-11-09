@@ -197,33 +197,8 @@ test.describe('buscador de destinos', () => {
     expect(urls.filter((u) => u.toLowerCase().includes('zzqxw'))).toEqual([]);
   });
 
-  for (const locale of LOCALES) {
-    test(`sin JavaScript (${locale}): el formulario lleva a la ruta localizada de Explorar`, async ({
-      browser,
-      baseURL,
-    }) => {
-      const context = await browser.newContext({
-        javaScriptEnabled: false,
-        ...(baseURL ? { baseURL } : {}),
-      });
-      try {
-        const page = await context.newPage();
-        await page.goto(PATHS.home[locale]);
-        const form = page.getByRole('search');
-        await expect(form).toHaveAttribute('method', 'get');
-        await expect(form).toHaveAttribute('action', PATHS.explore[locale]);
-        await form.locator('input[name="q"]').fill('baru');
-        const [response] = await Promise.all([
-          page.waitForNavigation(),
-          form.getByRole('button').click(),
-        ]);
-        expect(response?.status()).toBe(200);
-        expect(new URL(page.url()).pathname).toBe(PATHS.explore[locale]);
-      } finally {
-        await context.close();
-      }
-    });
-  }
+  // Sin JavaScript el formulario se OCULTA y el campo no lleva `name` (r0:F-09: antes la consulta acababa en `?q=…` y Explorar la
+  // ignoraba): lo prueba e2e/shell-review-x3.spec.ts, «buscador de la portada sin JavaScript».
 });
 
 test.describe('tarjetas: enlace estirado y foco', () => {
@@ -302,13 +277,41 @@ test.describe('movimiento: finito, solo con no-preference y sin inclinar con red
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(PATHS.home.es);
     await hydrated(page);
-    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+    // Se cuenta lo PERCEPTIBLE: ninguna animación con `@keyframes` y ninguna transición de más de 1 ms. La regla de reduce de
+    // base.css deja TODA transición en 0,01 ms (no en 0), y la cabecera es un contenedor (consultas de contenedor): al medirse
+    // en la primera maquetación el navegador vuelve a calcular los estilos de sus hijos y cada cambio nace como una transición
+    // de 0,01 ms que `getAnimations()` ve unos milisegundos (hasta 77 a la vez, intermitente; X3). Eso no es movimiento.
+    const perceptible = () =>
+      page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter(
+              (a) =>
+                !(a instanceof CSSTransition) ||
+                Number(a.effect?.getComputedTiming().duration ?? 0) > 1,
+            ).length,
+      );
+    expect(await perceptible()).toBe(0);
+    // Control del detector: una animación de 1 s inyectada SÍ se cuenta
+    await page.evaluate(() => {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(
+        '@keyframes e2eSlide{to{translate:10px 0}} main h1{animation:e2eSlide 1s linear both !important}',
+      );
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    });
+    expect(await perceptible()).toBeGreaterThanOrEqual(1);
   });
 
   test('la inclinación del marco de la marca solo ocurre con no-preference', async ({ page }) => {
     const transformOnHover = async (): Promise<string> => {
       await page.goto(PATHS.home.es);
-      await hydrated(page);
+      // `networkidle` NO llega en la SEGUNDA visita de este contexto: Explorar se regenera (ISR, r0:F-07) y su respuesta
+      // (`s-maxage` + `stale-while-revalidate`, también la de su prefetch desde la portada) la revalida Chromium en segundo
+      // plano, petición que a Playwright no le llega a terminar (2 pendientes durante 25 s con el servidor respondiendo en 24 ms;
+      // sin `revalidate` en Explorar no ocurre). Esta prueba solo mide un `transform` CSS: basta con que la página haya cargado.
+      await page.waitForLoadState('load');
       const frame = page.locator('main img').locator('..');
       await frame.hover();
       await page.waitForTimeout(500);

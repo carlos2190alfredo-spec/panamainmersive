@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Suspense, useRef, useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import {
   DEFAULT_MAP_LAYERS,
   MAP_LAYER_IDS,
@@ -18,7 +18,7 @@ import {
   useMobileLayout,
   useSheetOpen,
 } from './sheet-store';
-import { readMapUrlState, useHydrated, useMapUrlState, writeLayers } from './use-map-url-state';
+import { currentUrlLayers, useHydrated, useMapUrlState, writeLayers } from './use-map-url-state';
 
 /** Cabeceo (grados) al activar el relieve en 3D: lo justo para que se distinga sin perder el mapa de vista. */
 const TILT_DEGREES = 55;
@@ -59,6 +59,36 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
   const layersOpen = useLayersGroupOpen() && (!mobile || sheetOpen);
   /** Si el botón añadió el sombreado (no lo había pedido la persona), al apagar el 3D se retira con él. */
   const addedHillshade = useRef(false);
+  // Aviso PREVIO de privacidad (r3:F-01): antes de pulsar, el botón dice a quién llegará la dirección IP. Descripción accesible
+  // SIEMPRE (también para quien no pasa el cursor) y texto visible al pasar el cursor o enfocar con el teclado; Escape lo
+  // descarta mientras siga el cursor o el foco (WCAG 1.4.13) y el cursor puede pasar sobre él sin que se cierre.
+  const noticeId = useId();
+  const threeDRef = useRef<HTMLButtonElement>(null);
+  const noticeRef = useRef<HTMLParagraphElement>(null);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      const button = threeDRef.current;
+      const notice = noticeRef.current;
+      if (!button || !notice) return;
+      if (
+        button.matches(':hover, :focus-visible') ||
+        notice.matches(':hover') ||
+        button.matches(':focus')
+      ) {
+        setNoticeDismissed(true);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+  /** Volver a entrar o enfocar lo rearma: «descartado» solo vale mientras dura ese cursor o ese foco. */
+  const rearmNotice = (): void => {
+    setNoticeDismissed(false);
+  };
 
   const active = allowedLayers(state.layers ?? DEFAULT_MAP_LAYERS, terrainAllowed);
   const threeD = active.includes('terrain3d');
@@ -72,11 +102,7 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
   const threeDDisabled = !hydrated || mapStatus !== 'ready' || !terrainAllowed;
 
   /** Capas actuales LEÍDAS DE LA URL (no del render): dos pulsaciones seguidas no pueden usar un estado viejo. */
-  const currentLayers = (): readonly MapLayerId[] =>
-    allowedLayers(
-      readMapUrlState(window.location.search).state.layers ?? DEFAULT_MAP_LAYERS,
-      terrainAllowed,
-    );
+  const currentLayers = (): readonly MapLayerId[] => currentUrlLayers(terrainAllowed);
 
   /**
    * Solo al pulsar (nunca por defecto): el relieve de AWS se pide cuando `l` lleva `terrain3d`. Se añade también el
@@ -127,57 +153,76 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
     }
   }
 
+  // Qué describe al botón: el aviso previo (solo si pulsarlo pide algo: apagado Y utilizable; encendido, el aviso de estado ya
+  // lo dice, y desactivado no enviará nada a nadie) y, si lo hay, el motivo por el que no se puede usar.
+  const reasonId =
+    reason === null ? null : !terrainAllowed ? 'layer-hint-terrain3d' : CAROUSEL_UNAVAILABLE_ID;
+  const describedBy = [threeD || threeDDisabled ? null : noticeId, reasonId]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div
-      role="group"
-      className={styles.tools}
-      aria-label={t('tools.label')}
-      data-hud-island="tools"
-    >
-      <button
-        type="button"
-        className={styles.tool}
-        aria-pressed={threeD}
-        // El nombre accesible CONTIENE el texto visible («3D», WCAG 2.5.3).
-        aria-label={t('tools.threeD')}
-        aria-describedby={
-          reason === null
-            ? undefined
-            : !terrainAllowed
-              ? 'layer-hint-terrain3d'
-              : CAROUSEL_UNAVAILABLE_ID
-        }
-        title={reason ?? undefined}
-        disabled={threeDDisabled}
-        onClick={toggleThreeD}
+    <div className={styles.root}>
+      <div
+        role="group"
+        className={styles.tools}
+        aria-label={t('tools.label')}
+        data-hud-island="tools"
       >
-        <span aria-hidden="true">{t('tools.threeDShort')}</span>
-      </button>
-      <button
-        type="button"
-        className={styles.tool}
-        aria-expanded={layersOpen}
-        aria-controls={GROUP_IDS.join(' ')}
-        aria-label={t('tools.layersOpen')}
-        disabled={!hydrated}
-        onClick={toggleLayers}
-      >
-        <svg
-          className={styles.icon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          aria-hidden="true"
-          focusable="false"
+        <button
+          ref={threeDRef}
+          type="button"
+          className={`${styles.tool} ${styles.threeD}`}
+          aria-pressed={threeD}
+          // El nombre accesible CONTIENE el texto visible («3D», WCAG 2.5.3).
+          aria-label={t('tools.threeD')}
+          aria-describedby={describedBy === '' ? undefined : describedBy}
+          title={reason ?? undefined}
+          disabled={threeDDisabled}
+          onClick={toggleThreeD}
+          onPointerEnter={rearmNotice}
+          onFocus={rearmNotice}
         >
-          <path d="m12 3 9 4.5-9 4.5-9-4.5z" />
-          <path d="m3 12 9 4.5 9-4.5" />
-          <path d="m3 16.5 9 4.5 9-4.5" />
-        </svg>
-      </button>
+          <span aria-hidden="true">{t('tools.threeDShort')}</span>
+        </button>
+        <button
+          type="button"
+          className={styles.tool}
+          aria-expanded={layersOpen}
+          aria-controls={GROUP_IDS.join(' ')}
+          aria-label={t('tools.layersOpen')}
+          disabled={!hydrated}
+          onClick={toggleLayers}
+        >
+          <svg
+            className={styles.icon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="m12 3 9 4.5-9 4.5-9-4.5z" />
+            <path d="m3 12 9 4.5 9-4.5" />
+            <path d="m3 16.5 9 4.5 9-4.5" />
+          </svg>
+        </button>
+      </div>
+      {/* El aviso previo vive SIEMPRE en el DOM (es la descripción del botón) y solo se ve al pasar el cursor o enfocar. */}
+      <p
+        ref={noticeRef}
+        id={noticeId}
+        role="tooltip"
+        className={styles.notice}
+        data-dismissed={noticeDismissed ? 'true' : undefined}
+        data-tool-notice="threeD"
+        onPointerEnter={rearmNotice}
+      >
+        {t('tools.threeDNotice')}
+      </p>
     </div>
   );
 }

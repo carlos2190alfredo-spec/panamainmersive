@@ -26,11 +26,13 @@
 }
 
 /*
- * Pantallas estrechas (< 36rem): solo el globo, en un botón cuadrado del tamaño mínimo de objetivo. El nombre del idioma
- * sigue en el árbol de accesibilidad (se oculta visualmente, no se quita) y el texto «Seleccionar idioma» ya está
- * visualmente oculto: el nombre accesible no cambia («Seleccionar idioma: Español»).
+ * Cabecera estrecha (< 34rem de contenido): solo el globo, en un botón cuadrado del tamaño mínimo de objetivo. El nombre del
+ * idioma sigue en el árbol de accesibilidad (se oculta visualmente, no se quita) y el texto «Seleccionar idioma» ya está
+ * visualmente oculto: el nombre accesible no cambia («Seleccionar idioma: Español»). Es una consulta de CONTENEDOR (el
+ * contenedor más cercano es la cabecera: SiteHeader.module.css) y no de ventana, para que cuente el tamaño de letra real
+ * (r2:F7: con el texto al 200 % «Español» ya no cabe junto a la marca aunque la ventana mida 768 px).
  */
-@media (max-width: 35.99rem) {
+@container (max-width: 33.99rem) {
   .summary {
     justify-content: center;
     inline-size: var(--target-min);

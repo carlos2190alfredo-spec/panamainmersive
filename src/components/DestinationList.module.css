@@ -152,6 +152,18 @@
   gap: var(--space-2) var(--space-3);
 }
 
+/*
+ * La insignia de cobertura con su rótulo («Geometría» + «✓ Verificada»): ocupa lo que deja el botón de la acción (base 0, para
+ * que NO fuerce un salto de línea) pero nunca menos que su contenido más ancho. Si el rótulo no cabe a su lado, va encima de la
+ * insignia (StatusBadge.module.css): dos líneas ≈ 35 px caben en los 44 px del botón y la tarjeta no crece.
+ */
+.cardMeta {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-inline-size: min-content;
+}
+
 .cardAction {
   position: relative;
   z-index: 1;

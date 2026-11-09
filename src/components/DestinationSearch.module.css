@@ -5,8 +5,22 @@
  */
 .search {
   display: grid;
+  /* Una columna que PUEDE encoger: sin `minmax(0, …)` el ancho intrínseco del campo (`size`, ≈ 20 caracteres) ensanchaba la
+     columna y, con el texto al 200 % en un teléfono, la portada ganaba desplazamiento horizontal (r2:F7). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
-  margin-block-end: var(--space-5);
+  /* Va DESPUÉS de los botones del héroe (r1:V-04: la llamada principal tiene que verse sin desplazarse): separación por arriba. */
+  margin-block-start: var(--space-5);
+}
+
+/*
+ * Sin JavaScript el campo no puede buscar nada (el emparejamiento es del navegador): se oculta el formulario en vez de dejar
+ * un cuadro que engaña (r0:F-09). Quedan los botones del héroe y las nueve tarjetas, que son enlaces reales.
+ */
+@media (scripting: none) {
+  .search {
+    display: none;
+  }
 }
 
 .label {
@@ -62,6 +76,25 @@
 
 .submit:focus-visible {
   border-radius: var(--radius-m);
+}
+
+/*
+ * Teléfonos (< 30rem): campo y botón en dos filas, a todo el ancho. En una sola fila el campo medía ≈ 200 px y el texto de
+ * ayuda se recortaba a media palabra («Busca entre los 9 des…»; r1:V-04); a todo el ancho cabe cualquiera de los cinco textos.
+ */
+@media (max-width: 29.99rem) {
+  .row {
+    flex-direction: column;
+  }
+
+  .input {
+    flex: 0 0 auto;
+    inline-size: 100%;
+  }
+
+  .submit {
+    inline-size: 100%;
+  }
 }
 
 .scope {

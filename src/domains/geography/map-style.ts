@@ -3,7 +3,8 @@ import { legendFor, styleLayersFor, terrainFor, usesSource, type LegendEntry } f
 import {
   BASEMAP_ATTRIBUTION,
   BASEMAP_SOURCE_ID,
-  TERRAIN_ATTRIBUTION,
+  TERRAIN_ATTRIBUTION_CREDIT,
+  TERRAIN_ATTRIBUTION_LABEL,
   TERRAIN_SOURCE_ID,
   type LabelLanguage,
   type MapPalette,
@@ -37,6 +38,16 @@ export interface MapStyleOptions {
   readonly selectedAreaId?: string | null;
 }
 
+/**
+ * La atribución de una fuente la inyecta MapLibre TAL CUAL en su control de créditos (es HTML), y dentro de una página
+ * en cinco idiomas esos créditos son inglés (nombres propios) o español («Relieve:»): sin `lang` un lector de pantalla los
+ * lee con la voz del idioma de la interfaz (WCAG 3.1.2; r2:F6). Solo el HTML del ESTILO lleva las etiquetas: las constantes
+ * `*_ATTRIBUTION` (las usan el registro de capas y la página de fuentes) siguen siendo texto plano.
+ */
+const inLanguage = (lang: string, text: string): string => `<span lang="${lang}">${text}</span>`;
+export const BASEMAP_ATTRIBUTION_HTML = inLanguage('en', BASEMAP_ATTRIBUTION);
+export const TERRAIN_ATTRIBUTION_HTML = `${inLanguage('es', TERRAIN_ATTRIBUTION_LABEL)} ${inLanguage('en', TERRAIN_ATTRIBUTION_CREDIT)}`;
+
 export function usesTerrain(layers: readonly MapLayerId[]): boolean {
   return usesSource(layers, TERRAIN_SOURCE_ID);
 }
@@ -48,7 +59,7 @@ export function buildMapStyle(options: MapStyleOptions): StyleSpecification {
     [BASEMAP_SOURCE_ID]: {
       type: 'vector',
       url: `pmtiles://${options.basemapUrl}`,
-      attribution: BASEMAP_ATTRIBUTION,
+      attribution: BASEMAP_ATTRIBUTION_HTML,
     },
   };
   if (usesTerrain(layers)) {
@@ -58,7 +69,7 @@ export function buildMapStyle(options: MapStyleOptions): StyleSpecification {
       tileSize: 256,
       encoding: 'terrarium',
       maxzoom: 15,
-      attribution: TERRAIN_ATTRIBUTION,
+      attribution: TERRAIN_ATTRIBUTION_HTML,
     };
   }
 

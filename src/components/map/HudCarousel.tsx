@@ -6,6 +6,29 @@ import { CAROUSEL_UNAVAILABLE_ID, useHudStore } from './hud-store';
 import styles from './HudCarousel.module.css';
 import { useHydrated } from './use-map-url-state';
 
+/** Holgura (px) que se deja entre una tarjeta enfocada y el borde del carrusel: el anillo de foco (contorno + halo) mide ≈ 8 px. */
+const FOCUS_MARGIN_PX = 8;
+
+/**
+ * Trae a la vista la tarjeta que contiene el elemento enfocado, ENTERA y con holgura para su anillo de foco (r2:F8). El
+ * navegador solo desplaza lo justo para que el elemento enfocado «se vea», y con la mitad de una tarjeta a la vista no mueve
+ * nada: el foco quedaba en un botón cortado y su anillo, recortado por el borde del carrusel. Solo desplaza el propio
+ * carrusel en horizontal (nunca `scrollIntoView`: movería también la página o la hoja móvil) y de golpe (sin animación: el
+ * foco por teclado debe llegar a su sitio ya).
+ */
+function revealFocusedCard(body: HTMLElement, target: EventTarget): void {
+  if (!(target instanceof Element)) return;
+  const card = target.closest('li');
+  if (!card || !body.contains(card)) return;
+  const area = body.getBoundingClientRect();
+  const box = card.getBoundingClientRect();
+  let delta = 0;
+  if (box.left < area.left + FOCUS_MARGIN_PX) delta = box.left - area.left - FOCUS_MARGIN_PX;
+  else if (box.right > area.right - FOCUS_MARGIN_PX)
+    delta = box.right - area.right + FOCUS_MARGIN_PX;
+  if (delta !== 0) body.scrollBy({ left: delta, behavior: 'auto' });
+}
+
 /**
  * Carrusel inferior de los nueve destinos del HUD de Explorar: la lista (componente de servidor, hijos) más sus
  * controles (anterior, siguiente, ocultar/mostrar), que solo existen con JavaScript y tras hidratar. Sin JavaScript
@@ -99,7 +122,7 @@ export function HudCarousel({
         {hydrated ? (
           <div className={styles.controls}>
             {open ? (
-              <>
+              <span className={styles.arrows}>
                 <button
                   type="button"
                   className={styles.arrow}
@@ -120,7 +143,7 @@ export function HudCarousel({
                 >
                   <span className={styles.arrowNext} aria-hidden="true" />
                 </button>
-              </>
+              </span>
             ) : null}
             {unavailable ? null : (
               <button
@@ -144,7 +167,14 @@ export function HudCarousel({
           {t('hud.mapUnavailable')}
         </p>
       ) : null}
-      <div id={bodyId} ref={bodyRef} className={styles.body}>
+      <div
+        id={bodyId}
+        ref={bodyRef}
+        className={styles.body}
+        onFocus={(event) => {
+          if (bodyRef.current) revealFocusedCard(bodyRef.current, event.target);
+        }}
+      >
         {children}
       </div>
     </section>

@@ -31,9 +31,16 @@
   min-inline-size: 0;
 }
 
-/* La silueta del país a 3 rem de alto (≈ 97 px de ancho: proporción 2,01). */
+/*
+ * La silueta del país sobre una PLACA clara (Arena, como en las «versiones alternativas» del tablero de marca; r1:V-12): sus
+ * zonas azules se confundían con el Azul Profundo del pie y la marca se leía como una cinta rota. La imagen mide 2,5 rem de
+ * alto dentro de la placa (3,5 rem con el relleno): ≈ 80 px de ancho (proporción 2,01). Decorativa (alt vacío).
+ */
 .mark {
-  block-size: 3rem;
+  block-size: 3.5rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-brand-sand);
+  border-radius: var(--radius-m);
 }
 
 .tagline {

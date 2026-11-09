@@ -151,3 +151,147 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
     }
   });
 });
+
+describe('textos que prometen algo comprobable (revisión independiente de 5j)', () => {
+  const text = (locale: Locale, key: string): string => {
+    const value = flatten(load(locale)).get(key);
+    if (value === undefined) throw new Error(`falta ${locale}:${key}`);
+    return value;
+  };
+
+  it('«Cambiar de idioma conserva…» NO dice que conserva los filtros: el filtro por tipo y la búsqueda de Explorar son estado local (r0:F-02)', () => {
+    for (const locale of LOCALES) {
+      const help = text(locale, 'Language.help');
+      // lo que de verdad viaja en la URL: el destino, la vista del mapa y las capas activas
+      expect(help, locale).not.toMatch(/filtr|filter|Filter/i);
+      expect(help.length).toBeGreaterThan(30);
+    }
+    expect(text('es', 'Language.help')).toMatch(/destino.*vista del mapa.*capas/);
+    expect(text('en', 'Language.help')).toMatch(/destination.*map view.*layers/);
+    expect(text('pt', 'Language.help')).toMatch(/destino.*vista do mapa.*camadas/);
+    expect(text('fr', 'Language.help')).toMatch(/destination.*vue de la carte.*couches/);
+    expect(text('de', 'Language.help')).toMatch(/Reiseziel.*Kartenansicht.*Ebenen/);
+  });
+
+  it('el aviso previo de «Relieve en 3D» dice a quién llega la IP, en los cinco idiomas, y no es el aviso de estado (r3:F-01)', () => {
+    for (const locale of LOCALES) {
+      const before = text(locale, 'Map.tools.threeDNotice');
+      const after = text(locale, 'Map.layers.thirdPartyNotice');
+      expect(before, locale).toContain('Amazon Web Services');
+      expect(before, locale).toMatch(/\bIP\b/);
+      expect(before, locale).not.toBe(after);
+      expect(before.length, locale).toBeLessThan(160); // cabe en un aviso de 17rem
+    }
+    // el aviso posterior se mantiene tal cual en los cinco idiomas
+    for (const locale of LOCALES) {
+      expect(text(locale, 'Map.layers.thirdPartyNotice'), locale).toContain('Amazon Web Services');
+    }
+  });
+
+  it('la búsqueda no promete otros nombres: lo dice (r0:F-05)', () => {
+    expect(text('es', 'Search.scope')).toMatch(/no reconoce otros nombres/);
+    expect(text('en', 'Search.scope')).toMatch(/does not recognise other commonly used names/);
+    expect(text('pt', 'Search.scope')).toMatch(/não reconhece outros nomes/);
+    expect(text('fr', 'Search.scope')).toMatch(/ne reconnaît pas les autres noms/);
+    expect(text('de', 'Search.scope')).toMatch(/andere gebräuchliche Namen erkennt sie nicht/);
+  });
+
+  it('el nombre del asa de la hoja lleva el título visible ({title}) en los cinco idiomas y NO el de Explorar a mano (r2:N2)', () => {
+    for (const locale of LOCALES) {
+      for (const key of ['Map.sheet.open', 'Map.sheet.close']) {
+        const message = text(locale, key);
+        expect(message, `${locale}:${key}`).toContain('{title}');
+        expect(message.startsWith('{title}'), `${locale}:${key}`).toBe(true);
+        expect(message, `${locale}:${key}`).not.toContain(text(locale, 'Explore.title'));
+      }
+    }
+  });
+
+  it('el rótulo de la insignia de geometría existe en los cinco idiomas (r0:F-01)', () => {
+    const labels = LOCALES.map((l) => text(l, 'Coverage.geometryLabel'));
+    expect(new Set(labels).size).toBe(5);
+  });
+});
+
+describe('portada y textos de ayuda: nada promete lo que no existe y todo cabe (revisión independiente de 5j · X3)', () => {
+  const text = (locale: Locale, key: string): string => {
+    const value = flatten(load(locale)).get(key);
+    if (value === undefined) throw new Error(`falta ${locale}:${key}`);
+    return value;
+  };
+
+  // «organizar/planificar viajes» (r0:F-06): no hay planificador, itinerarios, cuentas ni listas (ADR-0025 §9)
+  const PLANNING: Record<Locale, RegExp> = {
+    es: /organizar|planificar|planear|itinerario|\bviajes?\b/i,
+    en: /\bplan\b|\btrips?\b|itinerar|organi[sz]e/i,
+    pt: /organizar|planejar|planear|roteiro|\bviagens?\b/i,
+    fr: /organiser|planifier|\bvoyages?\b|itinéraire/i,
+    de: /\bplanen\b|\bReisen\b|Reiseplan|organisieren/i,
+  };
+
+  it.each(LOCALES)(
+    '%s: Home.lead y Meta.home.description no prometen organizar ni planificar viajes',
+    (locale) => {
+      for (const key of ['Home.lead', 'Meta.home.description']) {
+        expect(text(locale, key), `${locale}:${key}`).not.toMatch(PLANNING[locale]);
+      }
+    },
+  );
+
+  it('control: la redacción de antes SÍ la detecta el filtro', () => {
+    expect('Una plataforma para descubrir, comprender y organizar viajes por Panamá.').toMatch(
+      PLANNING.es,
+    );
+    expect('A platform to discover, understand and plan trips across Panama.').toMatch(PLANNING.en);
+    expect('Eine Plattform, um Reisen durch Panama zu entdecken und zu planen.').toMatch(
+      PLANNING.de,
+    );
+  });
+
+  it.each(LOCALES)(
+    '%s: Home.lead dice lo que hay (descubrir y comprender a partir de fuentes abiertas) y muestra la procedencia',
+    (locale) => {
+      const lead = text(locale, 'Home.lead');
+      expect(lead, locale).toMatch(/Panam/);
+      // el lema NO se acompaña de afirmaciones nuevas: sigue siendo la frase del propietario, tal cual
+      expect(text(locale, 'Brand.tagline').length).toBeGreaterThan(10);
+      expect(lead).not.toContain(text(locale, 'Brand.tagline'));
+    },
+  );
+
+  it.each(LOCALES)(
+    '%s: el texto de ayuda del buscador de la portada es corto y sin recuento (cabe a 320 px sin recortarse)',
+    (locale) => {
+      const placeholder = text(locale, 'Search.placeholder');
+      expect(placeholder.length, locale).toBeLessThanOrEqual(24);
+      expect(placeholder, locale).not.toMatch(/\{|…|\.\.\./);
+    },
+  );
+
+  it('alemán: «die ersten neun Reiseziele» (no el calco «die neun ersten») en todas las claves', () => {
+    for (const key of [
+      'Search.scope',
+      'Meta.explore.description',
+      'Meta.destinations.description',
+    ]) {
+      expect(text('de', key), key).not.toMatch(/neun ersten/);
+    }
+    expect(text('de', 'Search.scope')).toContain('die ersten neun Reiseziele');
+  });
+
+  it('«Volver a encuadrar el destino» no usa jerga de cámara en inglés, portugués ni alemán, y cabe en una línea', () => {
+    expect(text('en', 'Map.featured.reframe')).not.toMatch(/reframe/i);
+    expect(text('pt', 'Map.featured.reframe')).not.toMatch(/enquadrar/i);
+    expect(text('de', 'Map.featured.reframe')).not.toMatch(/ausrichten/);
+    for (const locale of LOCALES) {
+      expect(text(locale, 'Map.featured.reframe').length, locale).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it('la zona de herramientas del mapa tiene UNA sola etiqueta: no queda una segunda clave con otro texto (Map.hud.toolsLabel era código muerto)', () => {
+    for (const locale of LOCALES) {
+      expect(flatten(load(locale)).has('Map.hud.toolsLabel'), locale).toBe(false);
+      expect(text(locale, 'Map.tools.label').length).toBeGreaterThan(3);
+    }
+  });
+});

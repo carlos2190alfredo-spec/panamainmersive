@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { TERRAIN_ORIGIN, buildCsp, securityHeaders } from '@/config/security-headers';
 
@@ -73,10 +75,26 @@ describe('cabeceras de seguridad', () => {
     expect(get(prod, 'Cross-Origin-Opener-Policy')).toBe('same-origin');
   });
 
-  it('la geolocalización solo se permite para este origen; el resto de capacidades, denegadas', () => {
+  it('ninguna capacidad sensible se permite, tampoco la geolocalización (el producto ya no la usa; r3:N-03)', () => {
     const pp = get(prod, 'Permissions-Policy') ?? '';
-    expect(pp).toContain('geolocation=(self)');
-    for (const f of ['camera', 'microphone', 'payment', 'usb']) expect(pp).toContain(`${f}=()`);
+    for (const f of ['geolocation', 'camera', 'microphone', 'payment', 'usb'])
+      expect(pp, f).toContain(`${f}=()`);
+    // Ni «self» ni «*» para ninguna: una capacidad abierta sin función que la use es superficie de ataque gratuita
+    expect(pp).not.toMatch(/=\((self|\*)/);
+    expect(get(dev, 'Permissions-Policy')).toBe(pp);
+  });
+
+  it('el producto no pide la ubicación: ningún código del cliente llama a la API de geolocalización', () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? walk(path) : /\.(ts|tsx)$/.test(name) ? [path] : [];
+      });
+    const offenders = walk('src').filter((file) =>
+      /\bgeolocation\b/.test(readFileSync(file, 'utf8').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '')),
+    );
+    // Solo la propia política de cabeceras nombra la capacidad (para cerrarla)
+    expect(offenders).toEqual(['src/config/security-headers.ts']);
   });
 
   it('HSTS solo en producción', () => {

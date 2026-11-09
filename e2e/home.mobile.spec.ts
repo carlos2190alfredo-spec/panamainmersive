@@ -1,16 +1,22 @@
 import { expect, test } from '@playwright/test';
 import { PATHS } from './helpers';
 
-/** Portada en móvil (Pixel 5): la marca va ARRIBA del texto, sin desbordes y con el buscador usable. */
+/**
+ * Portada en móvil (Pixel 5): sin tarjeta de marca (la marca ya está en la cabecera; empujaba la llamada principal fuera del
+ * primer pliegue: r1:V-04), con la llamada principal a la vista, el buscador usable y nada que desborde.
+ */
 test.describe('portada en móvil', () => {
-  test('la marca queda por encima del título y nada desborda', async ({ page }) => {
+  test('la tarjeta de la marca no ocupa lugar, la llamada principal se ve sin desplazarse y nada desborda', async ({
+    page,
+  }) => {
     await page.goto(PATHS.home.es);
     await page.waitForLoadState('networkidle');
-    const [title, mark] = await Promise.all([
-      page.locator('main h1').boundingBox(),
-      page.locator('main img').boundingBox(),
-    ]);
-    expect(title && mark && mark.y + mark.height <= title.y + 1).toBe(true);
+    // La marca sigue en la cabecera (y es la ÚNICA imagen visible); la del héroe está oculta con CSS
+    expect((await page.locator('main img').boundingBox())?.width ?? 0).toBe(0);
+    expect((await page.locator('header img').boundingBox())?.width ?? 0).toBeGreaterThan(20);
+    const cta = await page.locator('main a[class*="cta"]').first().boundingBox();
+    const viewport = page.viewportSize();
+    expect(cta && viewport && cta.y + cta.height <= viewport.height - 40).toBe(true);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

@@ -2,15 +2,25 @@
  * Cabecera fija de ALTURA EXACTA (ADR-0025 §7): `block-size: var(--header-height)` —no `min-block-size`— y una sola fila
  * sin `flex-wrap` en todos los anchos, porque Explorar mide `100dvh − var(--header-height)` y una cabecera que crece
  * con el idioma desbordaría el mapa. Montserrat es ≈ 12 % más ancha que la fuente anterior y el alemán o el francés
- * alargan los rótulos: lo que no cabe NO baja de línea, se reorganiza por anchura (de menos a más espacio):
- *   < 36rem  marca + menú + selector de idioma reducido a un globo
- *   ≥ 36rem  el selector vuelve a mostrar el nombre del idioma
- *   ≥ 48rem  aparece la llamada a la acción «Abrir el mapa»
- *   ≥ 64rem  los tres enlaces se muestran en línea y el botón del menú desaparece
- * Anchos ESTIMADOS (no medidos en un navegador) con las métricas reales de las fuentes (tabla hmtx de los woff2, con un
- * 10 % de margen por el peso) y el texto más largo de los cinco idiomas, relleno incluido: a 64rem la fila ocupa ≈ 870 px
- * de 1024 (≈ 950 con el espaciado de WCAG 1.4.12); a 48rem, ≈ 580–600 de 768; a 320 px, ≈ 275 de 320. Hay que
- * confirmarlo en un navegador real (e2e/a11y: reflow a 320 px y espaciado 1.4.12).
+ * alargan los rótulos: lo que no cabe NO baja de línea, se reorganiza por anchura (de menos a más espacio).
+ *
+ * La anchura que decide NO es la de la ventana sino la de la PROPIA cabecera, medida con una CONSULTA DE CONTENEDOR
+ * (`container-type: inline-size`): las `rem` de una consulta de contenedor son las del tamaño de letra REAL del documento,
+ * así que con el texto agrandado (WCAG 1.4.4: ajuste de la persona, o `html { font-size: 150 % }`) el espacio disponible
+ * en `rem` se encoge y la cabecera pasa antes a la disposición reducida. Con `@media` no ocurría (r2:F7): sus `rem` valen
+ * siempre el tamaño inicial del navegador, y a 390 px con el texto al 200 % el rótulo se partía letra a letra, se salía de
+ * los 4 rem y la portada ganaba desplazamiento horizontal. Anchos del CONTENIDO de la cabecera (sin el relleno lateral):
+ *   < 16rem  solo la marca P (el rótulo se oculta; el nombre accesible ya lo da el `aria-label` del enlace) + menú + globo
+ *   < 28rem  rótulo sin filetes rojos
+ *   < 34rem  el selector de idioma es solo un globo (LocaleSwitcher.module.css)
+ *   ≥ 34rem  el selector vuelve a mostrar el nombre del idioma
+ *   ≥ 46rem  aparece la llamada a la acción «Abrir el mapa»
+ *   ≥ 61rem  los tres enlaces se muestran en línea y el botón del menú desaparece
+ * Lo que cada nivel necesita, MEDIDO en un navegador (Chromium 156, a 100 %, suma de las cajas más los huecos): marca + rótulo
+ * + menú + globo ≈ 246 px = 15,4rem; con el nombre del idioma y la llamada a la acción, 31,5–32,8rem (es, de, pt, fr); con los
+ * tres enlaces en línea, 47,2–49,8rem. Los umbrales de arriba dejan siempre más que eso; la prueba E2E recorre anchos × tamaños
+ * de letra y comprueba que nada se sale de la cabecera. El relleno lateral sí sigue las `@media` (la cabecera no puede cambiar su propio relleno desde una
+ * consulta sobre sí misma); es cosmético.
  *
  * Variables locales (todo sale de tokens semánticos que YA cambian con el tema, así que valen en los tres ámbitos:
  * claro, oscuro e inmersivo —siempre oscuro, `:root:has([data-immersive])`—; tests/unit/design/shell-css.test.ts mide
@@ -41,6 +51,9 @@
   background: var(--header-bg);
   color: var(--header-fg);
   border-block-end: 1px solid var(--header-line);
+  /* Los umbrales de abajo se miden sobre el ancho de ESTA caja (ver el comentario de arriba). Sin nombre: así la consulta
+     del selector de idioma (otro archivo) alcanza a su contenedor más cercano, que es esta cabecera. */
+  container-type: inline-size;
 }
 
 @media (min-width: 30rem) {
@@ -72,12 +85,16 @@
 .wordmark {
   display: flex;
   flex-direction: column;
-  min-inline-size: 0;
   line-height: 1;
   text-transform: uppercase;
-  /* Un nombre propio no se parte con guion; si no cupiera (zoom extremo), se rompe antes que desbordar la página. */
+  /*
+   * Un nombre propio es UNA línea: ni con guion ni letra a letra (r2:F7: con el texto al 200 % se apilaba en una columna de
+   * 42 px de ancho y 402 de alto y se salía de la cabecera). Cuando no cabe, no se parte: se OCULTA entero con la consulta de
+   * contenedor de más abajo (queda la marca P; el nombre accesible lo da el `aria-label` del enlace).
+   */
+  white-space: nowrap;
   hyphens: none;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 
 .primary {
@@ -113,10 +130,22 @@
   margin-inline-start: -0.3em;
 }
 
-@media (max-width: 29.99rem) {
+@container (max-width: 27.99rem) {
   .secondary::before,
   .secondary::after {
     display: none;
+  }
+}
+
+/* Sin sitio para el rótulo (< 16rem de cabecera: texto agrandado en un teléfono): solo la marca P, en un objetivo de 44 px. */
+@container (max-width: 15.99rem) {
+  .wordmark {
+    display: none;
+  }
+
+  .brand {
+    justify-content: center;
+    min-inline-size: var(--target-min);
   }
 }
 
@@ -218,14 +247,24 @@
   white-space: nowrap;
 }
 
-@media (min-width: 48rem) {
+@container (min-width: 46rem) {
   .header .cta {
     display: inline-flex;
   }
 }
 
-/* Menú desplegable: solo bajo 64rem y solo si el navegador conoce `:popover-open`. */
-@media (max-width: 63.99rem) {
+/*
+ * En Explorar la llamada «Abrir el mapa» enlazaría a la propia pantalla y, roja, sería lo más saturado de la vista del mapa
+ * (r1:V-17). `data-explore` lo pone esa página en su contenedor —NO `data-immersive`, que también lleva la portada, donde la
+ * llamada SÍ es la entrada al mapa—; «Explorar» sigue en el menú y la marca sigue llevando a la portada, así que no se pierde
+ * ninguna ruta ni cambia el orden de tabulación del resto. Especificidad (0,3,1) frente a (0,2,0): gana a cualquier ancho.
+ */
+body:has([data-explore]) .header .cta {
+  display: none;
+}
+
+/* Menú desplegable: solo bajo 61rem de cabecera y solo si el navegador conoce `:popover-open`. */
+@container (max-width: 60.99rem) {
   @supports selector(:popover-open) {
     .menuButton {
       display: inline-flex;

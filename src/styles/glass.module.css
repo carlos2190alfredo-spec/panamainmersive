@@ -69,3 +69,49 @@
     scrollbar-color: var(--color-line-strong) transparent;
   }
 }
+
+/*
+ * Indicio de que hay MÁS contenido abajo (r1:V-08), sin degradados (el HUD no pinta ninguno: ver hud-css.test.ts) y sin
+ * JavaScript: un `::after` de alto 0 PEGADO al borde inferior del panel (`position: sticky`) cuya sombra difusa, del color de
+ * la superficie, funde las últimas líneas. Solo se pinta cuando el panel puede desplazar hacia abajo (consulta de estado de
+ * desplazamiento del contenedor: `scrollable: bottom`; sin soporte no hay nada que pintar y queda la barra de desplazamiento,
+ * que es siempre visible y fina más arriba). Al llegar al final deja de poder desplazar y la sombra desaparece, así que
+ * nunca atenúa la última línea de un panel que cabe entero.
+ */
+@supports (container-type: scroll-state) {
+  .cue {
+    container-type: scroll-state;
+  }
+
+  .cue::after {
+    content: '';
+    display: block;
+    position: sticky;
+    inset-block-end: 0;
+    block-size: 0;
+    box-shadow: 0 -0.25rem 0.75rem 0.75rem var(--color-glass-base);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @container scroll-state(scrollable: bottom) {
+    .cue::after {
+      opacity: 1;
+    }
+  }
+}
+
+/*
+ * Rótulo de grupo del HUD (r1:V-21): los títulos de grupo («Tipo de destino», «Capas», «Leyenda», «Destinos», el panel de
+ * información) eran Playfair de ≈ 22 px, MÁS grandes que el `<h1>` «Explorar Panamá» (≈ 21 px): cinco títulos del mismo
+ * peso competían. Ahora son rótulos pequeños en mayúsculas espaciadas (Montserrat 700, como el rótulo del tablero de marca
+ * y el de la ficha) y el único título en Playfair del carril es el `<h1>`. `text-transform` no cambia el texto accesible.
+ */
+.eyebrow {
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: var(--leading-tight);
+  text-transform: uppercase;
+}

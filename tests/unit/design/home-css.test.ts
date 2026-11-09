@@ -228,17 +228,56 @@ describe('portada: reglas que las herramientas no ven', () => {
     expect(withGradient.length).toBeGreaterThan(0);
   });
 
-  it('el vidrio es SÓLIDO por defecto (móvil, sin soporte) y translúcido solo con puntero fino, ≥ 56rem y soporte', () => {
+  it('las dos tarjetas del héroe son SÓLIDAS en todos los anchos (sin vidrio) y el rótulo no lleva «chapa» propia (r1:V-11)', () => {
     const base = rule('.copy, .frame');
     expect(decl(base, 'background')).toBe('var(--color-glass-base)');
     expect(decl(base, 'border-radius')).toBe('var(--radius-glass)');
     expect(decl(base, 'border')).toBe('var(--glass-border)');
-    const glass = page.filter((r) => decl(r, 'background') === 'var(--surface-glass)');
-    expect(glass).toHaveLength(1);
-    expect(glass[0]?.context.join(' ')).toMatch(
-      /min-width: 56rem\) and \(hover: hover\) and \(pointer: fine/,
+    // Ninguna regla de la portada vuelve a hacer translúcido el marco ni desenfoca lo de detrás
+    expect(page.filter((r) => decl(r, 'background') === 'var(--surface-glass)')).toEqual([]);
+    expect(page.filter((r) => r.declarations.some((d) => /backdrop-filter/.test(d.prop)))).toEqual(
+      [],
     );
-    expect(glass[0]?.context.join(' ')).toMatch(/@supports \(backdrop-filter: blur\(1px\)\)/);
+    // El rótulo va directamente sobre la tarjeta: sin fondo ni relleno propios (era un rectángulo más oscuro dentro del marco)
+    const wordmark = page.filter((r) => r.selector === '.wordmark');
+    expect(wordmark.length).toBeGreaterThan(0);
+    for (const r of wordmark) {
+      expect(decl(r, 'background'), '.wordmark background').toBeUndefined();
+      expect(decl(r, 'background-color'), '.wordmark background-color').toBeUndefined();
+      expect(decl(r, 'padding'), '.wordmark padding').toBeUndefined();
+    }
+  });
+
+  it('control: con la «chapa» o el marco translúcido de antes la comprobación SÍ falla', () => {
+    const withPlate = read(FILES.page).replace(
+      '.wordmark {\n  display: grid;',
+      '.wordmark {\n  background: var(--color-glass-base);\n  display: grid;',
+    );
+    expect(withPlate).not.toBe(read(FILES.page));
+    const chapa = flatten(withPlate).find((r) => r.selector === '.wordmark');
+    expect(decl(chapa as FlatRule, 'background')).toBeDefined();
+  });
+
+  it('la tarjeta de la marca no se muestra en teléfonos (< 40rem), va arriba de 40 a 64rem y es columna desde 64rem (r1:V-04, r1:V-10)', () => {
+    expect(decl(rule('.brand', '(min-width'), 'display')).toBe('block');
+    const base = page.find((r) => r.selector === '.brand' && r.context.length === 0);
+    expect(decl(base as FlatRule, 'display')).toBe('none');
+    const shown = page.find((r) => r.selector === '.brand' && decl(r, 'display') === 'block');
+    expect(shown?.context.join(' ')).toContain('(min-width: 40rem)');
+    // Dos columnas SOLO desde 64rem: a 768 px la segunda columna apretaba el formulario
+    const columns = page.filter(
+      (r) => r.selector === '.heroInner' && decl(r, 'grid-template-columns'),
+    );
+    const two = columns.find((r) => /7fr/.test(decl(r, 'grid-template-columns') ?? ''));
+    expect(two?.context.join(' ')).toContain('(min-width: 64rem)');
+    expect(page.some((r) => /\(min-width: 48rem\)/.test(r.context.join(' ')))).toBe(false);
+  });
+
+  it('en el héroe el título no se guioniza y el texto de apoyo se reduce en teléfonos para que la llamada principal entre en el pliegue', () => {
+    expect(decl(rule('.title'), 'font-size')).toBe('clamp(1.65rem, 1.15rem + 2.6vw, 3.1rem)');
+    expect(decl(rule('.lead'), 'font-size')).toBe('var(--text-m)');
+    expect(decl(rule('.lead', '(min-width: 30rem)'), 'font-size')).toBe('var(--text-l)');
+    expect(decl(rule('.hero'), 'padding-block')).toBe('var(--space-4) var(--space-6)');
   });
 
   it('la inclinación en perspectiva solo ocurre al pasar el cursor o enfocar, y dentro de `no-preference`', () => {
@@ -414,5 +453,38 @@ describe('buscador: reglas que las herramientas no ven', () => {
         'var(--radius-m)',
       );
     }
+  });
+});
+
+describe('buscador de la portada: reglas que las herramientas no ven (r0:F-09, r1:V-04, r2:F7)', () => {
+  const search = flatten(read(FILES.search));
+  const find = (selector: string, context: string): FlatRule | undefined =>
+    search.find((r) => r.selector === selector && r.context.join(' ').includes(context));
+  const decl = (r: FlatRule | undefined, prop: string): string | undefined =>
+    r?.declarations.find((d) => d.prop === prop)?.value;
+
+  it('sin JavaScript el formulario se OCULTA entero: un campo que no puede buscar engaña', () => {
+    expect(decl(find('.search', '(scripting: none)'), 'display')).toBe('none');
+  });
+
+  it('en teléfonos (< 30rem) el campo y el botón van en dos filas a todo el ancho: ningún texto de ayuda se recorta', () => {
+    const phones = '(max-width: 29.99rem)';
+    expect(decl(find('.row', phones), 'flex-direction')).toBe('column');
+    expect(decl(find('.submit', phones), 'inline-size')).toBe('100%');
+    expect(decl(find('.input', phones), 'inline-size')).toBe('100%');
+    // y la regla va DESPUÉS de la base de `.input` y `.submit` (misma especificidad: manda el orden)
+    const css = read(FILES.search);
+    expect(css.indexOf(`@media ${phones}`)).toBeGreaterThan(css.indexOf('.submit:focus-visible'));
+  });
+
+  it('la columna del formulario puede encoger (`minmax(0, 1fr)`): con el texto al 200 % el campo no ensancha la página', () => {
+    const base = search.find((r) => r.selector === '.search' && r.context.length === 0);
+    expect(decl(base, 'grid-template-columns')).toBe('minmax(0, 1fr)');
+  });
+
+  it('va DESPUÉS de los botones del héroe: separación por arriba y no por abajo', () => {
+    const base = search.find((r) => r.selector === '.search' && r.context.length === 0);
+    expect(decl(base, 'margin-block-start')).toBe('var(--space-5)');
+    expect(decl(base, 'margin-block-end')).toBeUndefined();
   });
 });

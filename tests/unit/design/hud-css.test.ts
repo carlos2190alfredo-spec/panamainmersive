@@ -116,6 +116,19 @@ describe('CSS del HUD: reglas que las herramientas no ven', () => {
     });
   }
 
+  it('la etiqueta de un marcador que solo se ve por el cursor o el foco respeta `data-label-dismissed` (Escape, WCAG 1.4.13); la que se ve por sitio o selección no depende de ello (r2:N4)', () => {
+    const css = read(HUD_FILES.stage);
+    expect(css).toMatch(/\.marker:hover:not\(\[data-label-dismissed\]\) \.label/);
+    expect(css).toMatch(/\.marker:focus-visible:not\(\[data-label-dismissed\]\) \.label/);
+    expect(css).toMatch(/\.marker\[data-label-visible\] \.label/);
+    expect(css).toMatch(/\.markerSelected \.label/);
+    // sin un `:hover`/`:focus-visible` desnudo que se salte el descarte
+    expect(css).not.toMatch(/\.marker:hover \.label/);
+    expect(css).not.toMatch(/\.marker:focus-visible \.label/);
+    // y el descarte NO añade otra regla que recorte (la etiqueta oculta ya lo hace una vez: `.label`)
+    expect(css.match(/data-label-dismissed/g)?.length).toBeLessThanOrEqual(4);
+  });
+
   it('control: el detector SÍ ve cada infracción (un CSS malo no pasa)', () => {
     const bad = (css: string): string[] => violations(css);
     expect(bad('.a { animation: x 1s infinite; }').join()).toMatch(/infinita/);
@@ -261,10 +274,11 @@ describe('maquetación del HUD (móvil: hoja inferior · escritorio ≥ 56rem: r
     const WIDE = 'min-width: 80rem';
     // Entre 56rem y 80rem: la rejilla de siempre (el carril solo en la fila del hueco, el dock a todo el ancho)
     expect(decl('.rail', 'grid-row', DESKTOP)).toBe('2');
-    expect(decl('.dock', 'grid-column', DESKTOP)).toBe('1 / -1');
+    // (el dock llega hasta la columna del panel, la 3, y NO ocupa la de las herramientas, la 4: ver la prueba de F5 más abajo)
+    expect(decl('.dock', 'grid-column', DESKTOP)).toBe('1 / 4');
     // Desde 80rem: el carril cruza las filas 2 y 3 y el dock deja su columna
     expect(decl('.rail', 'grid-row', WIDE)).toBe('2 / -1');
-    expect(decl('.dock', 'grid-column', WIDE)).toBe('2 / -1');
+    expect(decl('.dock', 'grid-column', WIDE)).toBe('2 / 4');
     // …sin dejar de desplazar por dentro si aun así no cabe (portátiles bajos): nunca recorta
     expect(decl('.rail', 'overflow-y', DESKTOP)).toBe('auto');
     expect(decl('.rail', 'max-block-size', DESKTOP)).toBe('100%');
@@ -285,10 +299,13 @@ describe('maquetación del HUD (móvil: hoja inferior · escritorio ≥ 56rem: r
     // y no se pisa con el zoom y la brújula (derecha) ni con las herramientas (arriba)
     expect(decl('.safe', 'margin-inline-end')).toContain('var(--target-min)');
     expect(decl('.safe', 'margin-block-start')).toContain('var(--target-min)');
+    // …ni con la escala y los créditos, que se montan SOBRE la hoja (r1:V-18: a 320 px la «i» tapaba parte del grupo «3»)
+    expect(decl('.safe', 'margin-block-end')).toBe('2.5rem');
   });
 
   it('las zonas del buscador y de las herramientas existen; la del buscador RESERVA su alto (la isla llega tras hidratar) y las herramientas no ocupan sitio mientras están vacías', () => {
-    expect(decl('.search', 'grid-column', DESKTOP)).toBe('2');
+    // El buscador abarca las columnas del centro y del panel (su suma no cambia al abrir el panel: no salta) y nunca la 4
+    expect(decl('.search', 'grid-column', DESKTOP)).toBe('2 / 4');
     expect(decl('.tools', 'grid-column', DESKTOP)).toBe('4');
     expect(decl('.search', 'min-block-size')).toBe('var(--hud-search-h)');
     expect(decl('.tools:empty', 'display', DESKTOP)).toBe('none');
@@ -334,6 +351,112 @@ describe('maquetación del HUD (móvil: hoja inferior · escritorio ≥ 56rem: r
     expect(read('vendor/maplibre-gl.trimmed.css')).toMatch(
       /\.maplibregl-ctrl-bottom-right[^{]*\{[^}]*z-index:2/,
     );
+  });
+});
+
+describe('zona de herramientas, panel y dock con poca altura o texto agrandado (r2:F5, r1:V-07)', () => {
+  const page = flatten(read(HUD_FILES.page));
+  const panelCss = flatten(read(HUD_FILES.panel));
+  const DESKTOP = 'min-width: 56rem';
+  const decl = (selector: string, prop: string, within?: string) =>
+    valueOf(page, selector, prop, within);
+
+  it('la píldora «Información del mapa» y el panel abierto van SIEMPRE en la columna 3 (nunca en la de las herramientas, la 4) y no cambian de columna al plegarse', () => {
+    expect(decl('.panel', 'grid-column', DESKTOP)).toBe('3');
+    expect(decl('.panel', 'grid-row', DESKTOP)).toBe('2');
+    expect(decl('.panel', 'justify-self', DESKTOP)).toBe('end');
+    expect(decl('.panel', 'align-self', DESKTOP)).toBe('end');
+    // Ninguna regla del panel vuelve a mandarlo a la columna de las herramientas
+    const toTools = page.filter(
+      (r) =>
+        r.selector.includes('.panel') &&
+        r.declarations.some((d) => d.prop === 'grid-column' && /(^|\s)4$/.test(d.value)),
+    );
+    expect(toTools.map((r) => r.selector)).toEqual([]);
+    // El panel pegado abajo a ras del dock y, plegado, solo del ancho de su rótulo
+    expect(decl(".panel[data-state='closed']", 'inline-size', DESKTOP)).toBe('max-content');
+  });
+
+  it('la columna del panel mide 0 plegado y `--hud-panel-w` abierto: la píldora desborda hacia la izquierda sin ocupar sitio y el centro cede lo que el panel gana', () => {
+    expect(decl('.shell', '--hud-panel-col')).toBe('0px');
+    expect(decl('.hud', 'grid-template-columns', DESKTOP)).toBe(
+      'var(--hud-rail-w) minmax(0, 1fr) var(--hud-panel-col) var(--hud-tools-w)',
+    );
+    expect(
+      decl(".hud:has([data-hud-zone='panel'][data-state='open'])", '--hud-panel-col', DESKTOP),
+    ).toBe('var(--hud-panel-w)');
+    // El panel abierto mide lo mismo que su columna (el ancho de HudPanel.module.css es `--hud-panel-w`)
+    expect(valueOf(panelCss, '.panel', 'inline-size', DESKTOP)).toBe('var(--hud-panel-w)');
+    // 16rem entre 56rem y 80rem (a 1024 px uno más ancho tapaba la etiqueta del destino: r1:V-16) y 18rem desde 80rem
+    expect(decl('.shell', '--hud-panel-w')).toBe('16rem');
+    expect(decl('.shell', '--hud-panel-w', 'min-width: 80rem')).toBe('18rem');
+  });
+
+  it('el dock NO ocupa la columna de las herramientas: esa columna baja ≈ 15rem desde arriba y con poca altura o texto agrandado tapaba el botón «Ocultar los destinos»', () => {
+    // El final de `grid-column` es EXCLUSIVO: `1 / 4` y `2 / 4` terminan en la columna 3
+    for (const [within, start] of [
+      [DESKTOP, '1'],
+      ['min-width: 80rem', '2'],
+    ] as const) {
+      const column = decl('.dock', 'grid-column', within);
+      expect(column, within).toBe(`${start} / 4`);
+    }
+    expect(decl('.tools', 'grid-column', DESKTOP)).toBe('4');
+  });
+
+  it('`--sheet-body-h` tiene un SUELO: con muy poca altura la hoja abierta cubre el mapa en lugar de abrirse con 0 px de cuerpo (r2:F4)', () => {
+    const value = decl('.shell', '--sheet-body-h') ?? '';
+    expect(value).toMatch(/^max\(/);
+    // El segundo término es el suelo: depende de la altura (nunca ≤ 0 mientras haya cabecera) y no pasa de 8rem
+    expect(value).toMatch(/min\(calc\(100dvh - var\(--header-height\) - 7rem\), 8rem\)/);
+  });
+
+  it('el HUD no guiona palabras (r1:V-06): `hyphens: manual` en el contenedor de toda la pantalla', () => {
+    expect(decl('.shell', 'hyphens')).toBe('manual');
+  });
+
+  it('el carril y el cuerpo del panel avisan de que hay más contenido (sombra sticky, sin degradados) y su lista no recorta el anillo de foco (r1:V-08, r2:N5)', () => {
+    expect(read(HUD_FILES.page)).toMatch(/composes: surface blur scroll cue from/);
+    expect(read(HUD_FILES.panel)).toMatch(/composes: scroll cue from/);
+    const glass = flatten(read(HUD_FILES.glass));
+    expect(valueOf(glass, '.cue::after', 'position', 'container-type: scroll-state')).toBe(
+      'sticky',
+    );
+    expect(valueOf(glass, '.cue::after', 'box-shadow', 'container-type: scroll-state')).toMatch(
+      /var\(--color-glass-base\)/,
+    );
+    // Solo se pinta cuando el panel puede desplazar hacia abajo
+    expect(valueOf(glass, '.cue::after', 'opacity', 'scrollable: bottom')).toBe('1');
+    const base = glass.find((r) => r.selector === '.cue::after' && r.context.length === 1);
+    expect(base?.declarations.find((d) => d.prop === 'opacity')?.value).toBe('0');
+    // La lista de áreas desplaza: su relleno (y el margen negativo que lo compensa) deja sitio al anillo de ≈ 8 px
+    const areas = flatten(read('src/components/map/AreasInView.module.css'));
+    expect(valueOf(areas, '.list', 'padding')).toBe('var(--space-2)');
+    expect(valueOf(areas, '.list', 'margin')).toBe('calc(-1 * var(--space-2))');
+    // …y la fila de tipos (que desplaza en móvil) también: su caja recortaba el anillo del primer y del último chip
+    const chips = flatten(read(HUD_FILES.chips));
+    expect(valueOf(chips, '.list', 'margin')).toBe('calc(-1 * var(--space-2))');
+    expect(valueOf(chips, '.list', 'margin', 'min-width: 56rem')).toBe('0'); // en escritorio no desplaza: sin relleno ni margen
+    // (su caja contenedora es `flow-root`: sin ello el margen negativo se colapsaba con el de la caja y el carril subía 8 px)
+    expect(valueOf(flatten(read(HUD_FILES.page)), '.filterSlot', 'display')).toBe('flow-root');
+    expect(valueOf(chips, '.list', 'padding')).toBe(
+      'var(--space-2) var(--space-2) calc(var(--space-1) + var(--space-2))',
+    );
+    expect(valueOf(panelCss, '.body', 'padding-inline')).toBe('var(--space-2)');
+    expect(valueOf(panelCss, '.body', 'margin-inline')).toBe('calc(-1 * var(--space-2))');
+  });
+
+  it('el eco del filtro tiene su sitio en el carrusel estrecho: rejilla de dos filas con posiciones explícitas (sin `order`), y la caja del carrusel pide el desplazamiento con holgura para el anillo', () => {
+    const carousel = flatten(read(HUD_FILES.carousel));
+    const NARROW = 'max-width: 40rem';
+    expect(valueOf(carousel, '.head', 'display', NARROW)).toBe('grid');
+    expect(valueOf(carousel, '.head', 'grid-template-areas', NARROW)).toBe(
+      "'title toggle' 'echo arrows'",
+    );
+    expect(valueOf(carousel, '.head [data-filter-echo]', 'grid-area', NARROW)).toBe('echo');
+    expect(valueOf(carousel, '.head > .controls', 'display', NARROW)).toBe('contents');
+    expect(carousel.filter((r) => r.declarations.some((d) => d.prop === 'order'))).toEqual([]);
+    expect(valueOf(carousel, '.body', 'scroll-padding-inline')).toBe('var(--space-2)');
   });
 });
 
@@ -430,11 +553,87 @@ describe('hoja inferior móvil (HudSheet.module.css)', () => {
 describe('piel de los controles nativos y de los marcadores', () => {
   const stage = flatten(read(HUD_FILES.stage));
 
+  it('el lienzo del mapa tiene un indicador de foco INTERIOR (r2:F3): el anillo global quedaba fuera de su caja y lo recortaban el mapa y la ventana', () => {
+    const canvas = '.stage :global(.maplibregl-canvas:focus-visible)';
+    expect(valueOf(stage, canvas, 'outline')).toBe('3px solid var(--color-focus)');
+    // Separación NEGATIVA: el anillo se dibuja dentro de la caja del lienzo, donde nada lo recorta
+    expect(valueOf(stage, canvas, 'outline-offset')).toBe('-3px');
+    expect(valueOf(stage, canvas, 'border-radius')).toBe('0');
+    // …y un segundo anillo, del color del halo, junto al primero (un `box-shadow` sobre un <canvas> queda DEBAJO de su contenido)
+    const halo = '.stage .canvas:has(:global(.maplibregl-canvas:focus-visible))::after';
+    expect(valueOf(stage, halo, 'border')).toBe('2px solid var(--color-focus-halo)');
+    expect(valueOf(stage, halo, 'pointer-events')).toBe('none');
+  });
+
   it('los avisos del mapa flotan POR ENCIMA del HUD (hay que poder leerlos) y el aviso de estado queda debajo', () => {
     expect(valueOf(stage, '.notices', 'z-index', 'min-width: 56rem')).toBe(
       'calc(var(--z-hud) + 1)',
     );
     expect(Number(valueOf(stage, '.overlay', 'z-index'))).toBeLessThan(10);
+  });
+
+  it('los avisos del mapa usan la MISMA columna y el mismo ancho que el buscador y el lenguaje del vidrio (r1:V-09)', () => {
+    const wide = 'min-width: 56rem';
+    expect(valueOf(stage, '.notices', 'inline-size', wide)).toBe('min(32rem, 100%)');
+    expect(valueOf(stage, '.notices', 'inset-inline', wide)).toBe(
+      'calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2) calc(var(--hud-tools-w, var(--target-min)) + var(--hud-gap) * 2)',
+    );
+    expect(valueOf(stage, '.notices', 'margin-inline', wide)).toBe('auto');
+    expect(valueOf(stage, '.notices > div', 'border-radius', wide)).toBe('var(--radius-glass)');
+    expect(valueOf(stage, '.notices > div', 'box-shadow', wide)).toBe('var(--shadow-depth-2)');
+  });
+
+  it('el estado de carga lleva una barra con un destello FINITO (tres vueltas, < 5 s) solo con movimiento permitido (r1:V-19, WCAG 2.2.2)', () => {
+    const animation = valueOf(stage, '.loading::after', 'animation', NO_PREFERENCE) ?? '';
+    // duración · función · retraso · repeticiones (el retraso es el de la prueba siguiente)
+    expect(animation).toMatch(/^shimmer 1\.4s linear 2s 3$/);
+    expect(animation).not.toMatch(/infinite/);
+    // 3 × 1,4 s = 4,2 s: por debajo de los 5 s a partir de los cuales una animación necesita pausa
+    expect(3 * 1.4).toBeLessThan(5);
+    expect(valueOf(stage, '.loading::after', 'animation')).toBeUndefined();
+  });
+
+  it('la pantalla de carga no pinta degradados y su relleno ESPERA (≥ 1,5 s) y se mueve con `transform`: con WebGL por software le quitaban el turno al mapa (X4: `ready` 3,6 s → 4,7 s)', () => {
+    const delay = (css: string): number => {
+      const animation = valueOf(flatten(css), '.loading::after', 'animation', NO_PREFERENCE) ?? '';
+      // tiempos de la declaración, en orden: duración y, si lo hay, retraso
+      const times = [...animation.matchAll(/(\d+(?:\.\d+)?)s\b/g)].map((m) => Number(m[1]));
+      return times[1] ?? 0;
+    };
+    const css = read(HUD_FILES.stage);
+    expect(delay(css)).toBeGreaterThanOrEqual(1.5);
+    // control: sin retraso (como estaba) el detector lo ve
+    expect(
+      delay(
+        '@media (prefers-reduced-motion: no-preference) { .loading::after { animation: shimmer 1.4s linear 3; } }',
+      ),
+    ).toBe(0);
+
+    // Sin degradados: ni en el fondo del aviso (`.overlay`) ni en la pista y el relleno (`.loading`)
+    const rules = flatten(css);
+    const gradients = (all: ReturnType<typeof flatten>): string[] =>
+      all
+        .filter((r) => /^\.(overlay|loading)\b/.test(r.selector))
+        .flatMap((r) =>
+          r.declarations
+            .filter((d) => /gradient\(/.test(d.value))
+            .map((d) => `${r.selector} { ${d.prop}: ${d.value} }`),
+        );
+    expect(gradients(rules)).toEqual([]);
+    // control: el detector SÍ ve un degradado en esos selectores
+    expect(
+      gradients(flatten('.overlay { background: radial-gradient(circle, red, blue); }')),
+    ).toHaveLength(1);
+    expect(
+      gradients(flatten('.loading::after { background: linear-gradient(red, blue); }')),
+    ).toHaveLength(1);
+
+    // El destello solo mueve `transform` (no repinta nada por cuadro)
+    const keyframes = rules.filter((r) => r.selector === '@keyframes shimmer');
+    expect(keyframes.length).toBeGreaterThan(0);
+    expect([...new Set(keyframes.flatMap((r) => r.declarations.map((d) => d.prop)))]).toEqual([
+      'transform',
+    ]);
   });
 
   it('los iconos nativos se invierten SOLO en su span (el botón no, o se invertiría el anillo de foco)', () => {
@@ -489,6 +688,26 @@ describe('sin estilos en línea', () => {
       'src/components/map/HudIslandsLazy.tsx',
     ];
     for (const file of files) expect(read(file), file).not.toMatch(/\sstyle=[{"']/);
+  });
+});
+
+describe('aviso previo de «Relieve en 3D» en pantalla táctil (privacidad)', () => {
+  const NOTICE = ".root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice";
+
+  it('sin cursor (hover: none) el aviso se VE sin pasar ni enfocar, y no captura toques: el toque dispara hover, foco y clic en la misma tarea y pediría el relieve a AWS antes de poder leerlo', () => {
+    const tools = flatten(read(HUD_FILES.tools));
+    expect(valueOf(tools, NOTICE, 'visibility', '(hover: none), (any-pointer: coarse)')).toBe(
+      'visible',
+    );
+    // Sin esa condición el aviso seguiría oculto (solo hover/foco lo muestran): la regla de arriba es la única que lo enseña sin cursor
+    expect(valueOf(tools, '.notice', 'visibility')).toBe('hidden');
+    expect(valueOf(tools, '.notice', 'pointer-events')).toBe('none');
+  });
+
+  it('control: si la regla no está bajo (hover: none), la lectura no la encuentra', () => {
+    const mutated = read(HUD_FILES.tools).replace('@media (hover: none)', '@media (hover: hover)');
+    expect(mutated).not.toBe(read(HUD_FILES.tools));
+    expect(valueOf(flatten(mutated), NOTICE, 'visibility', '(hover: none)')).toBeUndefined();
   });
 });
 

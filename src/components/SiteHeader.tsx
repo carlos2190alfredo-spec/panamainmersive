@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { BrandMark } from './BrandMark';
 import { ButtonLink } from './ButtonLink';
 import { LocaleSwitcher } from './LocaleSwitcher';
+import { MenuFocusGuard } from './MenuFocusGuard';
 import { NavLink } from './NavLink';
 import styles from './SiteHeader.module.css';
 
@@ -18,7 +19,9 @@ const MENU_ID = 'site-menu';
  * El menú de pantallas estrechas es la API Popover NATIVA (`<button popovertarget>` + `<nav popover>`): sin JavaScript,
  * sin hidratación y sin `<details>`/`<summary>` (el selector de idioma debe seguir siendo el PRIMER `<summary>` del DOM:
  * lo asumen varias pruebas E2E). Escape, clic fuera y devolver el foco al botón los da el navegador. En navegadores sin
- * soporte el botón no se muestra y los enlaces quedan visibles en línea (ver SiteHeader.module.css).
+ * soporte el botón no se muestra y los enlaces quedan visibles en línea (ver SiteHeader.module.css). Lo único que no da el
+ * navegador es cerrar el menú cuando el foco SALE de él con Tab (r2:F2: cubriría lo que se enfoca a continuación):
+ * `MenuFocusGuard`, una isla mínima que no pinta nada.
  *
  * Sin «Iniciar sesión» ni «Planifica tu viaje»: no existen cuentas ni planificador (ADR-0025 §9).
  */
@@ -62,6 +65,7 @@ export async function SiteHeader() {
           </li>
         </ul>
       </nav>
+      <MenuFocusGuard menuId={MENU_ID} />
       <LocaleSwitcher />
       <ButtonLink variant="cta" href="/explore" className={styles.cta}>
         {t('cta')}

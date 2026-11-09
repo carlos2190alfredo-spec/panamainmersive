@@ -1,6 +1,6 @@
 /**
- * Lectura plana de un CSS para las pruebas de diseño (no es `*.test.ts`: vitest no lo recoge). Aplana `@media` y
- * `@supports` anidados en reglas con su contexto y separa las declaraciones; lanza ante llaves sin emparejar. Es lo que
+ * Lectura plana de un CSS para las pruebas de diseño (no es `*.test.ts`: vitest no lo recoge). Aplana `@media`,
+ * `@supports` y `@container` anidados en reglas con su contexto y separa las declaraciones; lanza ante llaves sin emparejar. Es lo que
  * necesitan las pruebas que miran QUÉ regla declara QUÉ y bajo QUÉ condición (el desenfoque, los recortes, las capas).
  */
 import { parseRules, type Rule } from './tokens-css';
@@ -13,7 +13,7 @@ export interface Declaration {
 export interface FlatRule {
   /** Selector o lista de selectores tal cual (para `@keyframes`, `@keyframes nombre`). */
   selector: string;
-  /** Condiciones de las `@media`/`@supports` que la envuelven, de fuera adentro. */
+  /** Condiciones de las `@media`/`@supports`/`@container` que la envuelven, de fuera adentro. */
   context: string[];
   declarations: Declaration[];
   keyframes: boolean;
@@ -26,13 +26,20 @@ export function declarationsOf(body: string): Declaration[] {
     .filter((chunk) => chunk.includes(':'))
     .map((chunk) => {
       const at = chunk.indexOf(':');
-      return { prop: chunk.slice(0, at).trim().toLowerCase(), value: chunk.slice(at + 1).trim() };
+      // El valor se lee con los blancos colapsados: Prettier parte las listas largas (`grid-template-areas`, `inset-inline`) en líneas
+      return {
+        prop: chunk.slice(0, at).trim().toLowerCase(),
+        value: chunk
+          .slice(at + 1)
+          .trim()
+          .replace(/\s+/g, ' '),
+      };
     });
 }
 
 export function flatten(css: string, context: string[] = []): FlatRule[] {
   return parseRules(css).flatMap((rule: Rule): FlatRule[] => {
-    if (/^@(media|supports)\b/.test(rule.prelude)) {
+    if (/^@(media|supports|container)\b/.test(rule.prelude)) {
       return flatten(rule.body, [...context, rule.prelude]);
     }
     if (rule.prelude.startsWith('@keyframes')) {

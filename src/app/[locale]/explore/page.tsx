@@ -64,6 +64,15 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
 };
 
+/**
+ * Las insignias de cobertura del carrusel y de la ficha (`effectiveStatus(…, hoy)`) dependen del DÍA: una página prerrenderizada
+ * las congelaría en la fecha del build y, desde el 2027-01-18 (caduca la cobertura de terreno de los nueve destinos), diría
+ * «Verificada» mientras la ficha de cada destino dice «Desconocida» (r0:F-07). Se regenera cada hora, igual que la ficha y el
+ * sitemap. Debe ser un literal (Next lo analiza estáticamente); `pnpm check:bundle` lo comprueba sobre el build real.
+ * ISR es _stale-while-revalidate_: la primera visita tras el plazo recibe la versión anterior (F4-16).
+ */
+export const revalidate = 3600;
+
 /** `id` del encabezado que nombra la región del carrusel y de su descripción (la lista es la alternativa del mapa). */
 const CAROUSEL_HEADING_ID = 'destinations-heading';
 const CAROUSEL_HELP_ID = 'destinations-help';
@@ -89,6 +98,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
   const t = await getTranslations('Explore');
   const kinds = await getTranslations('DestinationKind');
   const map = await getTranslations('Map');
+  const coverage = await getTranslations('Coverage');
   const nav = await getTranslations('Nav');
   const messages = await getMessages();
   const today = getTodayIsoDate();
@@ -117,10 +127,15 @@ export default async function ExplorePage({ params }: LocaleParams) {
   const filterOptions = kindOptions(searchIndex).map((o) => ({ ...o, label: kinds(o.kind) }));
   const filterItems = searchIndex.map(({ key, kind }) => ({ key, kind }));
 
-  /** Estado de la geometría de un destino hoy (la insignia que ya mostraba la ficha). */
+  /**
+   * Estado de la GEOMETRÍA de un destino hoy (la insignia que ya mostraba la ficha), con su rótulo visible: sola, junto al
+   * nombre de un lugar, «Verificada» se leería como «destino verificado» y es el estado del polígono derivado de OSM (r0:F-01).
+   */
   const geometryBadge = (key: (typeof DESTINATIONS)[number]['key']) => {
     const geometry = COVERAGE[key].find((c) => c.capability === 'geometry');
-    return geometry ? <StatusBadge status={effectiveStatus(geometry, today)} /> : null;
+    return geometry ? (
+      <StatusBadge status={effectiveStatus(geometry, today)} label={coverage('geometryLabel')} />
+    ) : null;
   };
 
   const selectedItems: SelectedItem[] = DESTINATIONS.map((d) => ({
@@ -136,7 +151,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
   // Solo los textos del mapa viajan al cliente, y solo en esta página.
   return (
     <NextIntlClientProvider messages={{ Map: messages.Map }}>
-      <div className={styles.shell} data-immersive>
+      <div className={styles.shell} data-immersive data-explore>
         <section className={styles.map} aria-label={t('mapLabel')}>
           <Suspense fallback={null}>
             <MapStageLazy
@@ -164,6 +179,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
           {/* Hueco libre de HUD: el mapa lo mide para encuadrar (decorativo, sin contenido). */}
           <div className={styles.safe} data-hud-safe aria-hidden="true" />
           <HudSheet
+            titleText={t('title')}
             title={
               <h1 className={styles.title} data-hud-zone="title">
                 {t('title')}
@@ -231,7 +247,13 @@ export default async function ExplorePage({ params }: LocaleParams) {
             <HudPanel className={styles.panel} label={t('panelLabel')} title={t('panelLabel')}>
               <SelectedAreaCard />
               <AreasInView />
-              <p className={styles.attribution}>{map('attribution', { release: info.release })}</p>
+              {/* Los créditos conservan su idioma original (`lang="en"`, WCAG 3.1.2); el resto del párrafo es el de la interfaz. */}
+              <p className={styles.attribution}>
+                {map.rich('attribution', {
+                  release: info.release,
+                  en: (chunks) => <span lang="en">{chunks}</span>,
+                })}
+              </p>
               <ul className={styles.links}>
                 <li>
                   <Link className={styles.link} href="/sources">

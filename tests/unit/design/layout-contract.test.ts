@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseRules, parseThemes, rawToken } from './tokens-css';
+import { parseRules, parseThemes, rawToken, stripComments } from './tokens-css';
 
 /**
  * Contratos de maquetación que comparten varias piezas (ADR-0025): la cabecera mide EXACTAMENTE `--header-height`
@@ -87,5 +87,61 @@ describe('foco visible (doble anillo) y desplazamiento bajo la cabecera', () => 
     const headings = parseRules(base).find((r) => r.prelude === 'h1, h2, h3');
     expect(headings, 'h1, h2, h3').toBeDefined();
     expect(rawToken(headings?.body ?? '', 'font-family')).toBe('var(--font-display)');
+  });
+});
+
+describe('pie al fondo en páginas cortas (r1:V-01) y separación de las acciones (r1:V-02)', () => {
+  it('el cuerpo es una columna a pantalla completa y `main` absorbe el sobrante (el pie queda abajo)', () => {
+    const body = ruleBody(base, 'body');
+    expect(rawToken(body, 'display')).toBe('flex');
+    expect(rawToken(body, 'flex-direction')).toBe('column');
+    expect(rawToken(body, 'min-block-size')).toBe('100dvh');
+    expect(rawToken(ruleBody(base, 'main'), 'flex')).toBe('1 0 auto');
+  });
+
+  it('control: sin la columna o sin que `main` crezca la comprobación SÍ falla', () => {
+    const noFlex = base.replace('flex: 1 0 auto;', 'flex: 0 0 auto;');
+    expect(noFlex).not.toBe(base);
+    expect(rawToken(ruleBody(noFlex, 'main'), 'flex')).not.toBe('1 0 auto');
+    const noColumn = base.replace('flex-direction: column;', 'flex-direction: row;');
+    expect(noColumn).not.toBe(base);
+    expect(rawToken(ruleBody(noColumn, 'body'), 'flex-direction')).not.toBe('column');
+  });
+
+  it('`.actions` separa los botones con un hueco de token (no con el espacio de una palabra) y los aparta de lo anterior', () => {
+    const actions = ruleBody(base, '.actions');
+    expect(rawToken(actions, 'display')).toBe('flex');
+    expect(rawToken(actions, 'flex-wrap')).toBe('wrap');
+    expect(rawToken(actions, 'gap')).toBe('var(--space-3)');
+    expect(rawToken(actions, 'margin-block-start')).toBe('var(--space-5)');
+  });
+});
+
+describe('guionado (r1:V-03): manual por defecto; automático solo en párrafos de lectura y en palabras largas', () => {
+  it('el cuerpo NO guioniza solo; titulares y tablas tampoco', () => {
+    expect(rawToken(ruleBody(base, 'body'), 'hyphens')).toBe('manual');
+    expect(rawToken(ruleBody(base, 'h1, h2, h3'), 'hyphens')).toBe('manual');
+    expect(rawToken(ruleBody(base, 'table'), 'hyphens')).toBe('manual');
+  });
+
+  it('`.page` y `.hyphenate` (secciones de lectura) sí, y solo con palabras de ≥ 10 letras y ≥ 4 a cada lado', () => {
+    const prose = ruleBody(base, '.page, .hyphenate');
+    expect(rawToken(prose, 'hyphens')).toBe('auto');
+    expect(rawToken(prose, 'hyphenate-limit-chars')).toBe('10 4 4');
+  });
+
+  it('no queda ningún `hyphens: auto` suelto en el resto del CSS (nada vuelve a guionizar celdas ni rótulos)', () => {
+    const offenders: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(join(process.cwd(), dir), { withFileTypes: true })) {
+        const path = `${dir}/${entry.name}`;
+        if (entry.isDirectory()) walk(path);
+        else if (entry.name.endsWith('.css') && path !== 'src/styles/base.css') {
+          if (/hyphens:\s*auto/.test(stripComments(read(path)))) offenders.push(path);
+        }
+      }
+    };
+    walk('src');
+    expect(offenders).toEqual([]);
   });
 });

@@ -2,8 +2,11 @@ import { readFileSync } from 'node:fs';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, it } from 'vitest';
 import {
+  BASEMAP_ATTRIBUTION,
+  BASEMAP_SOURCE_ID,
   BASEMAP_SOURCE_LAYERS,
   PALETTE_KEYS,
+  TERRAIN_ATTRIBUTION,
   TERRAIN_SOURCE_ID,
   buildLegend,
   buildMapStyle,
@@ -87,6 +90,26 @@ describe('estilo del mapa', () => {
     expect(style.terrain).toBeUndefined();
     expect(usesTerrain(['terrain3d'])).toBe(true);
     expect(usesTerrain(['protectedAreas'])).toBe(false);
+  });
+
+  it('los créditos que MapLibre inyecta en su control llevan `lang` (inglés; «Relieve:» en español) y su texto no cambia (r2:F6)', () => {
+    const style = buildMapStyle(options(['hillshade']));
+    const attribution = (id: string): string =>
+      (style.sources[id] as { attribution?: string } | undefined)?.attribution ?? '';
+    const plain = (html: string): string => html.replace(/<[^>]+>/g, '');
+    const base = attribution(BASEMAP_SOURCE_ID);
+    expect(base).toBe(`<span lang="en">${BASEMAP_ATTRIBUTION}</span>`);
+    expect(plain(base)).toBe(BASEMAP_ATTRIBUTION);
+    const terrain = attribution(TERRAIN_SOURCE_ID);
+    expect(terrain).toContain('<span lang="en">AWS Terrain Tiles (SRTM, GMTED, ETOPO1)</span>');
+    expect(terrain).toContain('<span lang="es">Relieve:</span>');
+    expect(plain(terrain)).toBe(TERRAIN_ATTRIBUTION);
+    // Todo texto de los créditos está dentro de un elemento con `lang` (ninguno queda «suelto» en el idioma de la interfaz)
+    for (const html of [base, terrain]) {
+      expect(html.replace(/<span lang="[a-z]{2}">[^<]*<\/span>/g, '').trim()).toBe('');
+    }
+    // Las constantes de texto plano (registro de capas, página de fuentes) NO llevan marcas HTML
+    for (const text of [BASEMAP_ATTRIBUTION, TERRAIN_ATTRIBUTION]) expect(text).not.toMatch(/[<>]/);
   });
 
   it('terrain3d activa el relieve en 3D del estilo', () => {

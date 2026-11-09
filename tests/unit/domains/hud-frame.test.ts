@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { WORKING_BBOX } from '@/domains/geography/bounds';
 import {
+  bestEffortFrame,
   framePadding,
   reachFrame,
   type Box,
   type FramePadding,
   type GeoBox,
 } from '@/domains/geography/hud-frame';
+import { DESTINATIONS } from '@/domains/tourism/destinations';
+import { DESTINATION_ANCHORS } from '@/lib/destination-anchors';
 
 const stage: Box = { left: 0, top: 64, right: 1280, bottom: 800 }; // 1280 × 736, bajo la cabecera de 64 px
 
@@ -336,6 +339,392 @@ describe('encuadre alcanzable (reachFrame)', () => {
         padding,
         limits: WORKING_BBOX,
         inset: 40,
+      }),
+    ).toBeNull();
+  });
+});
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* bestEffortFrame: la vista inicial (r1:V-05). Con `maxBounds` NINGÚN encuadre deja los nueve destinos a la vez en el   */
+/* hueco libre; el que deja más a la vista sí existe. Los huecos son los MEDIDOS en Chromium 156 sobre el build real     */
+/* (`[data-hud-safe]` de /es/explorar sin destino, carril y dock abiertos); el oráculo es el de arriba (Mercator a mano).  */
+/* ------------------------------------------------------------------------------------------------------------------ */
+
+const SCREENS = [
+  {
+    name: '1920×1080',
+    width: 1920,
+    height: 1080,
+    safe: { left: 296, top: 152, right: 1828, bottom: 830 },
+  },
+  {
+    name: '1440×900',
+    width: 1440,
+    height: 900,
+    safe: { left: 296, top: 152, right: 1348, bottom: 650 },
+  },
+  {
+    name: '1280×800',
+    width: 1280,
+    height: 800,
+    safe: { left: 296, top: 152, right: 1188, bottom: 550 },
+  },
+  {
+    name: '1024×768',
+    width: 1024,
+    height: 768,
+    safe: { left: 296, top: 152, right: 932, bottom: 518 },
+  },
+] as const;
+
+const HEADER = 64;
+const NINE = DESTINATIONS.map((d) => {
+  const anchor = DESTINATION_ANCHORS.anchors[d.key];
+  return { key: d.key, lon: anchor.lon, lat: anchor.lat };
+});
+const INSET = 24;
+/** La vista de siempre: el centro de `maxBounds` (en Mercator, no en grados). */
+const NATURAL_CENTER = { lon: (WORKING_BBOX.west + WORKING_BBOX.east) / 2, lat: 8.3527 };
+
+/** Zoom mínimo con `maxBounds`: la vista no puede ser mayor que la caja (oráculo). */
+function minZoomFor(size: { width: number; height: number }): number {
+  const boxW = (mx(WORKING_BBOX.east) - mx(WORKING_BBOX.west)) * WORLD;
+  const boxH = (my(WORKING_BBOX.south) - my(WORKING_BBOX.north)) * WORLD;
+  return Math.max(Math.log2(size.width / boxW), Math.log2(size.height / boxH));
+}
+
+/** Cuántos destinos caen dentro del hueco con ese encuadre, contados con el oráculo (no con la implementación). */
+function countInside(
+  center: { lon: number; lat: number },
+  zoom: number,
+  size: { width: number; height: number },
+  padding: FramePadding,
+): number {
+  return NINE.filter((p) => {
+    const at = screenOf(p, center, zoom, size);
+    return (
+      at.x >= padding.left + INSET &&
+      at.x <= size.width - padding.right - INSET &&
+      at.y >= padding.top + INSET &&
+      at.y <= size.height - padding.bottom - INSET
+    );
+  }).length;
+}
+
+describe('encuadre de mejor esfuerzo (bestEffortFrame): la vista inicial de Explorar', () => {
+  const setup = (screen: (typeof SCREENS)[number]) => {
+    const size = { width: screen.width, height: screen.height - HEADER };
+    const stageBox: Box = { left: 0, top: HEADER, right: screen.width, bottom: screen.height };
+    const padding = framePadding(stageBox, screen.safe, 8);
+    const minZoom = minZoomFor(size);
+    return { size, padding, minZoom };
+  };
+
+  it.each(SCREENS)(
+    '$name: el recuento de la función coincide con el del oráculo y el encuadre es admisible para MapLibre',
+    (screen) => {
+      const { size, padding, minZoom } = setup(screen);
+      const result = bestEffortFrame({
+        points: NINE,
+        size,
+        padding,
+        limits: WORKING_BBOX,
+        minZoom,
+        maxZoom: 18,
+        inset: INSET,
+      });
+      expect(result).not.toBeNull();
+      if (!result) return;
+      expect(result.total).toBe(9);
+      expect(result.zoom).toBeGreaterThanOrEqual(minZoom - 1e-9);
+      // El centro devuelto ya cumple `maxBounds`: el oráculo, que restringe, lo deja donde está
+      const clamped = screenOf(result.center, result.center, result.zoom, size);
+      expect(clamped.x).toBeCloseTo(size.width / 2, 3);
+      expect(clamped.y).toBeCloseTo(size.height / 2, 3);
+      expect(countInside(result.center, result.zoom, size, padding)).toBe(result.inside);
+    },
+  );
+
+  it.each(SCREENS)(
+    '$name: nunca deja menos destinos a la vista que la vista de siempre, y con `maxBounds` NO caben los nueve',
+    (screen) => {
+      const { size, padding, minZoom } = setup(screen);
+      const baseline = countInside(NATURAL_CENTER, minZoom, size, padding);
+      const result = bestEffortFrame({
+        points: NINE,
+        size,
+        padding,
+        limits: WORKING_BBOX,
+        minZoom,
+        maxZoom: 18,
+        inset: INSET,
+      });
+      expect(result?.inside ?? 0).toBeGreaterThanOrEqual(baseline);
+      // El límite físico (documentado en progress.md): ningún encuadre admisible deja los nueve a la vez en el hueco
+      expect(result?.inside ?? 0).toBeLessThan(9);
+    },
+  );
+
+  it('a 1920×1080 acerca un poco y desplaza el centro al oeste: Bocas del Toro y Boquete dejan de quedar bajo el carril (5 → 7 destinos)', () => {
+    const screen = SCREENS[0];
+    const { size, padding, minZoom } = setup(screen);
+    const baseline = countInside(NATURAL_CENTER, minZoom, size, padding);
+    const result = bestEffortFrame({
+      points: NINE,
+      size,
+      padding,
+      limits: WORKING_BBOX,
+      minZoom,
+      maxZoom: 18,
+      inset: INSET,
+    });
+    expect(baseline).toBe(5);
+    expect(result?.moved).toBe(true);
+    expect(result?.inside).toBe(7);
+    expect(result?.center.lon).toBeLessThan(NATURAL_CENTER.lon - 0.5);
+    expect(result?.zoom).toBeGreaterThan(minZoom);
+    // Los dos que antes tapaba el carril ahora caen en el hueco (comprobado con el oráculo, punto por punto)
+    for (const key of ['bocas-del-toro', 'boquete'] as const) {
+      const p = NINE.find((n) => n.key === key);
+      const at = p && result ? screenOf(p, result.center, result.zoom, size) : null;
+      expect(at && at.x > padding.left + INSET, key).toBe(true);
+    }
+  });
+
+  it.each([SCREENS[1], SCREENS[2], SCREENS[3]])(
+    '$name: si moverse gana menos de dos destinos la vista no se mueve (zoom mínimo, centro de siempre)',
+    (screen) => {
+      const { size, padding, minZoom } = setup(screen);
+      const result = bestEffortFrame({
+        points: NINE,
+        size,
+        padding,
+        limits: WORKING_BBOX,
+        minZoom,
+        maxZoom: 18,
+        inset: INSET,
+      });
+      expect(result?.moved).toBe(false);
+      expect(result?.zoom).toBeCloseTo(minZoom, 9);
+      expect(Math.abs((result?.center.lat ?? 0) - NATURAL_CENTER.lat)).toBeLessThan(0.01);
+      // A 1024 de ancho el centro de siempre ya está en el límite admisible: lo único que se garantiza es no empeorar
+      if (screen.width >= 1280) {
+        expect(Math.abs((result?.center.lon ?? 0) - NATURAL_CENTER.lon)).toBeLessThan(0.01);
+      }
+    },
+  );
+
+  it('`minGain: 1` baja el umbral: a 1440×900 SÍ se mueve para ganar Bocas del Toro (el valor por defecto lo evita a propósito)', () => {
+    const screen = SCREENS[1];
+    const { size, padding, minZoom } = setup(screen);
+    const eager = bestEffortFrame({
+      points: NINE,
+      size,
+      padding,
+      limits: WORKING_BBOX,
+      minZoom,
+      maxZoom: 18,
+      inset: INSET,
+      minGain: 1,
+    });
+    expect(eager?.moved).toBe(true);
+    expect(eager?.inside).toBe(6);
+  });
+
+  it('es óptimo frente a una búsqueda más fina del oráculo (no se deja un destino a la vista sin recoger)', () => {
+    const screen = SCREENS[0];
+    const { size, padding, minZoom } = setup(screen);
+    const result = bestEffortFrame({
+      points: NINE,
+      size,
+      padding,
+      limits: WORKING_BBOX,
+      minZoom,
+      maxZoom: 18,
+      inset: INSET,
+      minGain: 1,
+    });
+    let oracle = 0;
+    for (let z = minZoom; z <= minZoom + 1.2; z += 0.1) {
+      for (let i = 0; i <= 60; i++) {
+        for (let j = 0; j <= 60; j++) {
+          const center = {
+            lon: WORKING_BBOX.west + ((WORKING_BBOX.east - WORKING_BBOX.west) * i) / 60,
+            lat: WORKING_BBOX.south + ((WORKING_BBOX.north - WORKING_BBOX.south) * j) / 60,
+          };
+          oracle = Math.max(oracle, countInside(center, z, size, padding));
+        }
+      }
+    }
+    expect(result?.inside).toBeGreaterThanOrEqual(oracle);
+  });
+
+  it.each([
+    ['sin puntos', { points: [] }],
+    ['lienzo de tamaño nulo', { size: { width: 0, height: 0 } }],
+    ['lienzo con NaN', { size: { width: Number.NaN, height: 700 } }],
+    ['zoom máximo menor que el mínimo', { maxZoom: 5 }],
+    [
+      'relleno que cubre todo el lienzo',
+      { padding: { top: 500, right: 800, bottom: 500, left: 800 } },
+    ],
+  ])('entrada inválida (%s): null, sin lanzar', (_name, override) => {
+    const screen = SCREENS[1];
+    const { size, padding, minZoom } = setup(screen);
+    expect(
+      bestEffortFrame({
+        points: NINE,
+        size,
+        padding,
+        limits: WORKING_BBOX,
+        minZoom,
+        maxZoom: 18,
+        ...override,
+      }),
+    ).toBeNull();
+  });
+});
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* bestEffortFrame con `aim`: el encuadre de los RESULTADOS de un filtro o de la búsqueda (X2, hallazgo del paso)       */
+/* ------------------------------------------------------------------------------------------------------------------ */
+
+/**
+ * Lo que midió el navegador a 1440×900 al buscar «Panamá» (Ciudad de Panamá y Canal de Panamá, a 6 km): lienzo de 1440 × 836
+ * y el relleno que deja el HUD con un margen de 72 px. `cameraForBounds` ajustó la caja de los dos a zoom 13,40.
+ */
+describe('bestEffortFrame con `aim` (encuadre de resultados concretos)', () => {
+  const size = { width: 1440, height: 836 };
+  const padding: FramePadding = { top: 146.74, right: 150.74, bottom: 317.23, left: 354.74 };
+  const CITY = { lon: -79.53418, lat: 8.97145 };
+  const CANAL = { lon: -79.5907, lat: 8.99534 };
+  const FIT_ZOOM = 13.4;
+  const near = (a: { lon: number; lat: number }, b: { lon: number; lat: number }) =>
+    Math.hypot(a.lon - b.lon, a.lat - b.lat);
+
+  /** Cuántos de los puntos caen dentro del hueco con el encuadre dado (oráculo propio, no la implementación). */
+  const inside = (
+    points: readonly { lon: number; lat: number }[],
+    center: { lon: number; lat: number },
+    zoom: number,
+    inset: number,
+  ) =>
+    points.filter((p) => {
+      const at = screenOf(p, center, zoom, size);
+      return (
+        at.x >= padding.left + inset &&
+        at.x <= size.width - padding.right - inset &&
+        at.y >= padding.top + inset &&
+        at.y <= size.height - padding.bottom - inset
+      );
+    }).length;
+
+  const resultsFrame = (points: readonly { lon: number; lat: number }[], fitZoom: number) =>
+    bestEffortFrame({
+      points,
+      size,
+      padding,
+      limits: WORKING_BBOX,
+      minZoom: Math.max(fitZoom - 1.5, minZoomFor(size)),
+      maxZoom: fitZoom,
+      zoomSpan: 1.5,
+      inset: INSET,
+      aim: true,
+    });
+
+  it('CONTROL: sin `aim` (la rejilla de 41 × 41 sobre toda la caja de trabajo) la búsqueda «Panamá» fallaba: el centro caía a cientos de km de los resultados', () => {
+    const legacy = bestEffortFrame({
+      points: [CITY, CANAL],
+      size,
+      padding,
+      limits: WORKING_BBOX,
+      minZoom: Math.max(FIT_ZOOM, minZoomFor(size)),
+      maxZoom: 18,
+      inset: INSET,
+      minGain: 1,
+    });
+    expect(legacy).not.toBeNull();
+    // el defecto original: ningún punto a la vista y el centro de siempre (≈ -80,1; 8,35)
+    expect(legacy?.inside).toBe(0);
+    expect(near(legacy?.center ?? CITY, NATURAL_CENTER)).toBeLessThan(0.5);
+    expect(near(legacy?.center ?? CITY, CITY)).toBeGreaterThan(0.5);
+  });
+
+  it('con `aim` los DOS resultados quedan dentro del hueco libre, el encuadre se centra en ellos y está cerca (cerca del zoom de ajuste, no en el mapa del país)', () => {
+    const result = resultsFrame([CITY, CANAL], FIT_ZOOM);
+    expect(result).not.toBeNull();
+    expect(result?.moved).toBe(true);
+    expect(result?.inside).toBe(2);
+    expect(result?.total).toBe(2);
+    const center = result?.center ?? NATURAL_CENTER;
+    const zoom = result?.zoom ?? 0;
+    // oráculo propio: de verdad caen dentro del hueco con el encuadre devuelto
+    expect(inside([CITY, CANAL], center, zoom, INSET)).toBe(2);
+    // centrado en los resultados (a menos de 0,1° ≈ 11 km), no en el centro de la caja de trabajo
+    expect(
+      near(center, { lon: (CITY.lon + CANAL.lon) / 2, lat: (CITY.lat + CANAL.lat) / 2 }),
+    ).toBeLessThan(0.1);
+    // el más cercano que los deja ver: no baja más de lo necesario (a igual número de puntos gana el zoom MÁS ALTO)
+    expect(zoom).toBeGreaterThan(FIT_ZOOM - 0.6);
+    expect(zoom).toBeLessThanOrEqual(FIT_ZOOM);
+  });
+
+  it('a igual número de puntos a la vista elige el zoom MÁS ALTO (lo contrario que la vista de conjunto, que prefiere el más bajo)', () => {
+    const aimed = resultsFrame([CITY, CANAL], FIT_ZOOM);
+    // mismo rango de zoom y mismos puntos, sin `aim`: la vista de conjunto prefiere el zoom más bajo
+    const overview = bestEffortFrame({
+      points: [CITY, CANAL],
+      size,
+      padding,
+      limits: WORKING_BBOX,
+      minZoom: Math.max(FIT_ZOOM - 1.5, minZoomFor(size)),
+      maxZoom: FIT_ZOOM,
+      zoomSpan: 1.5,
+      inset: INSET,
+      minGain: 1,
+    });
+    // (con la rejilla gruesa el resultado sin `aim` no es fiable a este zoom: solo se compara el sentido del desempate)
+    expect(aimed?.zoom ?? 0).toBeGreaterThanOrEqual(overview?.zoom ?? Number.POSITIVE_INFINITY);
+  });
+
+  it('un solo resultado: el punto queda en el centro del hueco libre (no bajo el carril ni el dock)', () => {
+    const result = resultsFrame([CANAL], 14);
+    expect(result?.inside).toBe(1);
+    const at = screenOf(CANAL, result?.center ?? CANAL, result?.zoom ?? 14, size);
+    expect(at.x).toBeCloseTo(padding.left + (size.width - padding.left - padding.right) / 2, 0);
+    expect(at.y).toBeCloseTo(padding.top + (size.height - padding.top - padding.bottom) / 2, 0);
+  });
+
+  it('respeta `maxBounds`: con dos puntos lejanos (Bocas del Toro y Coiba) el centro devuelto es admisible y se cuenta lo que de verdad cae dentro', () => {
+    const far = [
+      { lon: -82.1, lat: 9.3 },
+      { lon: -81.75, lat: 7.55 },
+    ];
+    const result = resultsFrame(far, minZoomFor(size) + 0.3);
+    expect(result).not.toBeNull();
+    const center = result?.center ?? NATURAL_CENTER;
+    const zoom = result?.zoom ?? 0;
+    expect(zoom).toBeGreaterThanOrEqual(minZoomFor(size) - 1e-9);
+    // el centro restringido por `screenOf` es el mismo: ya era admisible
+    const again = screenOf(center, center, zoom, size);
+    expect(again.x).toBeCloseTo(size.width / 2, 3);
+    expect(again.y).toBeCloseTo(size.height / 2, 3);
+    expect(inside(far, center, zoom, INSET)).toBe(result?.inside);
+    expect(result?.inside ?? 0).toBeGreaterThanOrEqual(1);
+  });
+
+  it('entrada inválida con `aim`: null, sin lanzar (sin puntos, rango de zoom vacío)', () => {
+    expect(resultsFrame([], 13)).toBeNull();
+    expect(
+      bestEffortFrame({
+        points: [CITY],
+        size,
+        padding,
+        limits: WORKING_BBOX,
+        minZoom: 13,
+        maxZoom: 12,
+        inset: INSET,
+        aim: true,
       }),
     ).toBeNull();
   });

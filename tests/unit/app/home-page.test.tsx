@@ -119,7 +119,7 @@ describe.each(LOCALES)('portada (%s)', (locale) => {
     expect(levels).toEqual([1, 2, 3, 3, 3, 2, 2]);
   });
 
-  it('héroe: eyebrow, lema, título, lead, buscador y los dos botones, en ese orden', () => {
+  it('héroe: eyebrow, lema, título, lead, los dos botones y DESPUÉS el buscador, en ese orden', () => {
     const copy = doc.querySelector('h1')?.parentElement;
     const texts = [...(copy?.children ?? [])].map(
       (el) => el.tagName + ':' + (el.getAttribute('role') ?? ''),
@@ -130,9 +130,10 @@ describe.each(LOCALES)('portada (%s)', (locale) => {
     expect(copy?.children[1]?.textContent).toBe(tr(locale, 'Brand')('tagline'));
     expect(copy?.children[2]?.tagName).toBe('H1');
     expect(copy?.children[3]?.textContent).toBe(home('lead'));
-    expect(copy?.children[4]?.getAttribute('role')).toBe('search');
+    // Los botones van ANTES del buscador: la llamada principal tiene que verse sin desplazarse en un teléfono (r1:V-04)
+    expect(copy?.children[5]?.getAttribute('role')).toBe('search');
     expect(copy?.children).toHaveLength(6); // la entrada escalonada de page.module.css cuenta con seis hijos
-    const actions = [...(copy?.children[5]?.querySelectorAll('a') ?? [])];
+    const actions = [...(copy?.children[4]?.querySelectorAll('a') ?? [])];
     expect(actions.map((a) => a.getAttribute('data-href'))).toEqual([
       '"/explore"',
       '"/destinations"',
@@ -143,6 +144,17 @@ describe.each(LOCALES)('portada (%s)', (locale) => {
     ]);
     expect(actions[0]?.className).toMatch(/cta/);
     expect(actions[1]?.className).toMatch(/onBrand/);
+  });
+
+  it('no promete lo que no existe: el texto de apoyo y la descripción no hablan de organizar ni planificar viajes (r0:F-06)', () => {
+    const meta = tr(locale, 'Meta');
+    const PROMISE =
+      /organizar|planificar|planear|plan\b|plan trips|planen|planejar|organiser|planifier|organis[ae]/i;
+    expect(home('lead')).not.toMatch(PROMISE);
+    expect(meta('home.description', { siteName: SITE.name })).not.toMatch(PROMISE);
+    expect(home('lead')).not.toMatch(/\b(trip|viaje|viagem|voyage|reise)/i);
+    // El lema es del propietario y se conserva tal cual, sin afirmaciones nuevas a su lado
+    expect(doc.body.textContent).toContain(tr(locale, 'Brand')('tagline'));
   });
 
   it('marca P: UNA imagen decorativa con prioridad, y el nombre como texto vivo (no es un encabezado)', () => {

@@ -3,7 +3,7 @@
  *  1. ningún secreto ni nombre de variable solo-servidor en el bundle de cliente (`.next/static`);
  *  2. presupuesto de JS/CSS que carga cada página pública (medición real, gzip);
  *  3. presupuesto del mapa, que se carga DIFERIDO (MapLibre + su worker + PMTiles) solo en /explorar;
- *  4. la ficha y el sitemap se regeneran (`revalidate`): la caducidad del contenido se evalúa por día.
+ *  4. la ficha, Explorar y el sitemap se regeneran (`revalidate`): la caducidad del contenido y de la cobertura se evalúa por día.
  * Los presupuestos son objetivos iniciales (docs/performance.md): se ajustan con evidencia.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -167,7 +167,8 @@ if (hudKb > HUD_LAZY_BUDGET_KB) {
   failed = true;
 }
 // 4) Regeneración de lo que depende del día --------------------------------------------------------------
-// La caducidad del contenido verificado se evalúa por día al regenerar: la ficha y el sitemap deben tener revalidate.
+// La caducidad del contenido verificado y de la cobertura se evalúa por día al regenerar: la ficha, Explorar y el sitemap
+// deben tener revalidate.
 const manifestPath = join(NEXT, 'prerender-manifest.json');
 if (!existsSync(manifestPath)) {
   console.error('FALLO: falta .next/prerender-manifest.json (¿cambió la forma del build?).');
@@ -180,6 +181,8 @@ if (!existsSync(manifestPath)) {
   for (const p of isrProblems) console.error(`FALLO: ${p}`);
   if (isrProblems.length > 0) failed = true;
   else
-    console.log(`\nOK: la ficha y el sitemap se regeneran cada ${String(REVALIDATE_SECONDS)} s.`);
+    console.log(
+      `\nOK: la ficha, Explorar y el sitemap se regeneran cada ${String(REVALIDATE_SECONDS)} s.`,
+    );
 }
 if (failed) process.exit(1);

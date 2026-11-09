@@ -27,10 +27,12 @@ interface FlatRule {
   body: string;
 }
 
-/** Reglas con sus condiciones (`@media`, `@supports`) aplanadas; las listas de selectores se separan. */
+/** Reglas con sus condiciones (`@media`, `@supports`, `@container`) aplanadas; las listas de selectores se separan. */
 function flatten(css: string, conditions: string[] = []): FlatRule[] {
   return parseRules(css).flatMap((rule) =>
-    rule.prelude.startsWith('@media') || rule.prelude.startsWith('@supports')
+    rule.prelude.startsWith('@media') ||
+    rule.prelude.startsWith('@supports') ||
+    rule.prelude.startsWith('@container')
       ? flatten(rule.body, [...conditions, rule.prelude])
       : [
           {
@@ -65,7 +67,12 @@ function rule(css: string, selector: string, conditions: string[] = []): Map<str
   return new Map(found.flatMap((r) => [...declarations(r.body)]));
 }
 
-const MEDIA_NARROW = '@media (max-width: 63.99rem)';
+/**
+ * Las decisiones ESTRUCTURALES de la cabecera (qué se muestra según el ancho) son consultas de CONTENEDOR sobre la propia
+ * cabecera, no `@media` (r2:F7): las `rem` de una consulta de contenedor son las del tamaño de letra real del documento y las de
+ * una `@media` siempre las del navegador, así que solo la primera reacciona a un `html { font-size: 200% }`.
+ */
+const CONTAINER_NARROW = '@container (max-width: 60.99rem)';
 const SUPPORTS_POPOVER = '@supports selector(:popover-open)';
 
 describe('cabecera: altura exacta', () => {
@@ -173,32 +180,35 @@ describe('navegación: popover nativo con degradación a enlaces en línea', () 
 
   it('el botón del menú está oculto por defecto: sin soporte de popover nunca se muestra', () => {
     expect(rule(HEADER_CSS, '.menuButton').get('display')).toBe('none');
-    // Solo se muestra dentro de @media (< 64rem) Y de @supports selector(:popover-open).
+    // Solo se muestra dentro de la consulta de contenedor (< 61rem) Y de @supports selector(:popover-open).
     const shown = flatten(HEADER_CSS).filter(
       (r) =>
         r.selectors.includes('.menuButton') &&
         declarations(r.body).get('display') === 'inline-flex',
     );
     expect(shown).toHaveLength(1);
-    expect(shown[0]?.conditions).toEqual([MEDIA_NARROW, SUPPORTS_POPOVER]);
+    expect(shown[0]?.conditions).toEqual([CONTAINER_NARROW, SUPPORTS_POPOVER]);
   });
 
-  it('el desplegable (< 64rem y con soporte): cerrado oculto; abierto fijo bajo la cabecera, a todo el ancho', () => {
-    const closed = rule(HEADER_CSS, '.nav:not(:popover-open)', [MEDIA_NARROW, SUPPORTS_POPOVER]);
+  it('el desplegable (< 61rem de cabecera y con soporte): cerrado oculto; abierto fijo bajo la cabecera, a todo el ancho', () => {
+    const closed = rule(HEADER_CSS, '.nav:not(:popover-open)', [
+      CONTAINER_NARROW,
+      SUPPORTS_POPOVER,
+    ]);
     expect(closed.get('display')).toBe('none');
-    const open = rule(HEADER_CSS, '.nav:popover-open', [MEDIA_NARROW, SUPPORTS_POPOVER]);
+    const open = rule(HEADER_CSS, '.nav:popover-open', [CONTAINER_NARROW, SUPPORTS_POPOVER]);
     expect(open.get('position')).toBe('fixed');
     expect(open.get('inset-block-start')).toBe('var(--header-height)');
     expect(open.get('inset-inline')).toBe('0');
     expect(open.get('max-block-size')).toBe('calc(100dvh - var(--header-height))');
     expect(open.get('background')).toBe('var(--header-bg)');
-    const list = rule(HEADER_CSS, '.nav:popover-open .list', [MEDIA_NARROW, SUPPORTS_POPOVER]);
+    const list = rule(HEADER_CSS, '.nav:popover-open .list', [CONTAINER_NARROW, SUPPORTS_POPOVER]);
     expect(list.get('flex-direction')).toBe('column');
   });
 
-  it('sin soporte de popover (< 64rem) la fila de enlaces se desplaza en vez de desbordar la página', () => {
+  it('sin soporte de popover (< 61rem de cabecera) la fila de enlaces se desplaza en vez de desbordar la página', () => {
     const fallback = rule(HEADER_CSS, '.nav', [
-      MEDIA_NARROW,
+      CONTAINER_NARROW,
       '@supports not selector(:popover-open)',
     ]);
     expect(fallback.get('overflow-x')).toBe('auto');
@@ -210,11 +220,38 @@ describe('navegación: popover nativo con degradación a enlaces en línea', () 
 });
 
 describe('llamada a la acción y objetivos táctiles', () => {
-  it('«Abrir el mapa» está oculta en pantallas estrechas y aparece desde 48rem (el menú ya lleva «Explorar»)', () => {
+  it('«Abrir el mapa» está oculta en cabeceras estrechas y aparece desde 46rem de cabecera (el menú ya lleva «Explorar»)', () => {
     expect(rule(HEADER_CSS, '.header .cta').get('display')).toBe('none');
-    expect(rule(HEADER_CSS, '.header .cta', ['@media (min-width: 48rem)']).get('display')).toBe(
+    expect(rule(HEADER_CSS, '.header .cta', ['@container (min-width: 46rem)']).get('display')).toBe(
       'inline-flex',
     );
+  });
+
+  it('en Explorar la llamada se oculta a CUALQUIER ancho (enlaza a la propia pantalla y es lo más saturado del mapa; r1:V-17)', () => {
+    const hide = rule(HEADER_CSS, 'body:has([data-explore]) .header .cta');
+    expect(hide.get('display')).toBe('none');
+    // La regla va DESPUÉS de la que la muestra desde 48rem, y pesa más (0,3,1 frente a 0,2,0): no depende del orden
+    const order = HEADER_CSS.indexOf('body:has([data-explore])');
+    expect(order).toBeGreaterThan(HEADER_CSS.indexOf('@container (min-width: 46rem)'));
+    // El gancho es `data-explore`, NO `data-immersive` (también lo lleva la portada, donde la llamada sí es la entrada al mapa)
+    expect(HEADER_CSS).not.toMatch(/\[data-immersive\][^{]*\.cta/);
+    // Es CSS «puro» de CSS Modules: el selector contiene clases locales
+    expect('body:has([data-explore]) .header .cta').toMatch(/\.header\b.*\.cta\b/);
+  });
+
+  it('solo la página de Explorar pone `data-explore` (la portada no): el resto del sitio conserva la llamada', () => {
+    const explore = read('src/app/[locale]/explore/page.tsx');
+    expect(explore).toMatch(/<div className=\{styles\.shell\} data-immersive data-explore>/);
+    for (const path of [
+      'src/app/[locale]/page.tsx',
+      'src/app/[locale]/destinations/page.tsx',
+      'src/app/[locale]/destinations/[slug]/page.tsx',
+      'src/app/[locale]/sources/page.tsx',
+      'src/app/[locale]/accessibility/page.tsx',
+      'src/app/[locale]/layout.tsx',
+    ]) {
+      expect(read(path), path).not.toContain('data-explore');
+    }
   });
 
   it('todo lo interactivo mide al menos --target-min (44 px)', () => {
@@ -225,9 +262,9 @@ describe('llamada a la acción y objetivos táctiles', () => {
     expect(rule(HEADER_CSS, '.link').get('min-block-size')).toBe('var(--target-min)');
     expect(rule(FOOTER_CSS, '.link').get('min-block-size')).toBe('var(--target-min)');
     expect(rule(LOCALE_CSS, '.summary').get('min-block-size')).toBe('var(--target-min)');
-    expect(rule(LOCALE_CSS, '.summary', ['@media (max-width: 35.99rem)']).get('inline-size')).toBe(
-      'var(--target-min)',
-    );
+    expect(
+      rule(LOCALE_CSS, '.summary', ['@container (max-width: 33.99rem)']).get('inline-size'),
+    ).toBe('var(--target-min)');
   });
 
   it('el rótulo no recorta ni fija su tamaño: puede crecer con el espaciado de texto (1.4.12) y los idiomas largos', () => {
@@ -245,11 +282,87 @@ describe('llamada a la acción y objetivos táctiles', () => {
       }
     }
     expect(rule(HEADER_CSS, '.brand').get('min-inline-size')).toBe('0');
-    expect(rule(HEADER_CSS, '.wordmark').get('overflow-wrap')).toBe('anywhere');
+  });
+});
+
+describe('texto agrandado (r2:F7): el rótulo es UNA línea y, si no cabe, se oculta (queda la marca P)', () => {
+  const HIDE = ['@container (max-width: 15.99rem)'];
+
+  it('el rótulo no se parte: una línea, sin guion y sin romper letra a letra', () => {
+    const d = rule(HEADER_CSS, '.wordmark');
+    expect(d.get('white-space')).toBe('nowrap');
+    expect(d.get('overflow-wrap')).toBe('normal');
+    expect(d.get('hyphens')).toBe('none');
+    // `anywhere` y `break-word` fueron la causa: a 200 % en 390 px el rótulo se apilaba en una columna de 42 px
+    expect(HEADER_CSS.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(
+      /overflow-wrap:\s*(anywhere|break-word)/,
+    );
   });
 
+  it('la cabecera es un contenedor de ANCHO en línea y SIN nombre (el selector de idioma, otro archivo, lo consulta por cercanía)', () => {
+    const d = rule(HEADER_CSS, '.header');
+    expect(d.get('container-type')).toBe('inline-size');
+    expect(d.has('container-name')).toBe(false);
+    expect(d.has('container')).toBe(false);
+  });
+
+  it('cuando la cabecera mide < 16rem el rótulo se OCULTA y la marca queda en un objetivo de 44 px', () => {
+    expect(rule(HEADER_CSS, '.wordmark', HIDE).get('display')).toBe('none');
+    const brand = rule(HEADER_CSS, '.brand', HIDE);
+    expect(brand.get('min-inline-size')).toBe('var(--target-min)');
+  });
+
+  it('el umbral deja sitio a lo MEDIDO: marca + rótulo + menú + globo ≈ 246 px = 15,4 rem (a 100 %)', () => {
+    const measured = 246 / 16;
+    const threshold = Number(/max-width:\s*([\d.]+)rem/.exec(HIDE[0] ?? '')?.[1]);
+    expect(measured).toBeLessThan(15.5);
+    expect(threshold).toBeGreaterThan(measured); // por debajo de este ancho el rótulo ya no cabe
+    expect(threshold).toBeLessThan(measured + 1.5); // y no se oculta mucho antes de hacer falta
+  });
+
+  it('los umbrales estructurales ya NO son @media (no reaccionan al texto agrandado); solo el relleno lateral lo es', () => {
+    const mediaWidth = flatten(HEADER_CSS).filter((r) =>
+      r.conditions.some((c) => /^@media \((min|max)-width/.test(c)),
+    );
+    expect(mediaWidth.length).toBeGreaterThan(0);
+    for (const r of mediaWidth) {
+      expect(r.selectors, r.conditions.join(' ')).toEqual(['.header']);
+      expect([...declarations(r.body).keys()].sort(), r.conditions.join(' ')).toEqual([
+        'gap',
+        'padding-inline',
+      ]);
+    }
+    expect(LOCALE_CSS).not.toMatch(/@media \((min|max)-width/);
+    // …y sí son consultas de contenedor
+    const containers = flatten(HEADER_CSS).flatMap((r) =>
+      r.conditions.filter((c) => c.startsWith('@container')),
+    );
+    expect(new Set(containers)).toEqual(
+      new Set([
+        '@container (max-width: 27.99rem)',
+        '@container (max-width: 15.99rem)',
+        '@container (min-width: 46rem)',
+        CONTAINER_NARROW,
+      ]),
+    );
+  });
+
+  it('control: con el rótulo en `@media` o con `overflow-wrap: anywhere` las comprobaciones SÍ fallan', () => {
+    const asMedia = HEADER_CSS.replace(
+      '@container (max-width: 15.99rem)',
+      '@media (max-width: 15.99rem)',
+    );
+    expect(asMedia).not.toBe(HEADER_CSS);
+    expect(() => rule(asMedia, '.wordmark', HIDE)).toThrow(/falta la regla/);
+    const anywhere = HEADER_CSS.replace('overflow-wrap: normal;', 'overflow-wrap: anywhere;');
+    expect(anywhere).not.toBe(HEADER_CSS);
+    expect(rule(anywhere, '.wordmark').get('overflow-wrap')).not.toBe('normal');
+  });
+});
+
+describe('selector de idioma: el nombre se oculta sin quitarlo del árbol de accesibilidad', () => {
   it('el selector de idioma oculta el nombre SIN quitarlo del árbol de accesibilidad', () => {
-    const hidden = rule(LOCALE_CSS, '.summary > [lang]', ['@media (max-width: 35.99rem)']);
+    const hidden = rule(LOCALE_CSS, '.summary > [lang]', ['@container (max-width: 33.99rem)']);
     expect(hidden.get('position')).toBe('absolute');
     expect(hidden.get('clip-path')).toBe('inset(50%)');
     for (const forbidden of ['display', 'visibility', 'content-visibility']) {
@@ -362,6 +475,27 @@ describe('colores: los pares realmente usados cumplen WCAG en los tres ámbitos'
 
   it('control: el azul de foco del tema claro sobre Azul Profundo NO llega a 3:1 (por eso el pie lo redefine)', () => {
     expect(contrast(themes.light['focus'] ?? '', themes.light['brand-deep'] ?? '')).toBeLessThan(3);
+  });
+});
+
+describe('pie: la silueta del país va sobre una PLACA clara (r1:V-12)', () => {
+  it('la imagen decorativa tiene placa de Arena con relleno y radio de token (sus zonas azules se perdían sobre Azul Profundo)', () => {
+    const mark = rule(FOOTER_CSS, '.mark');
+    expect(mark.get('background')).toBe('var(--color-brand-sand)');
+    expect(mark.get('padding')).toBe('var(--space-2) var(--space-3)');
+    expect(mark.get('border-radius')).toBe('var(--radius-m)');
+    // La placa se ve (componente gráfico, 3:1) sobre el fondo del pie en los tres ámbitos
+    for (const scope of [themes.light, themes.dark, themes.immersive]) {
+      expect(
+        contrast(scope['brand-sand'] ?? '#ff00ff', scope['brand-deep'] ?? '#ff00ff'),
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('control: sin la placa el azul de la silueta contra el Azul Profundo del pie NO alcanza 3:1 (por eso se perdía)', () => {
+    expect(
+      contrast(themes.light['brand-blue'] ?? '', themes.light['brand-deep'] ?? ''),
+    ).toBeLessThan(3);
   });
 });
 

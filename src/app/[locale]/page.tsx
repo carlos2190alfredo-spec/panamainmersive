@@ -36,10 +36,13 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 export const viewport: Viewport = { colorScheme: 'dark', themeColor: THEME_COLORS.dark };
 
 /**
- * `sizes` de la marca del héroe (ver page.module.css `.mark`): compacta en columna estrecha, grande en dos columnas.
- * Con ellos el navegador elige 160, 320 o 640 px de ancho según el tamaño real y la densidad de pantalla.
+ * `sizes` de la marca del héroe (ver page.module.css `.mark`): grande en dos columnas (≥ 64rem), compacta en una columna
+ * (≥ 40rem) y OCULTA en teléfonos (< 40rem: la marca ya está en la cabecera y la tarjeta empujaba la llamada principal
+ * fuera del primer pliegue; r1:V-04). Con `1px` el navegador pide el archivo más pequeño (160 px) para la imagen que no se ve:
+ * no se puede evitar la petición de una imagen `eager` oculta con CSS, pero sí que sea la mínima.
  */
-const MARK_SIZES = '(min-width: 48rem) clamp(8.5rem, 19vw, 15.2rem), clamp(5.2rem, 20.8vw, 6.6rem)';
+const MARK_SIZES =
+  '(min-width: 64rem) clamp(8.5rem, 19vw, 15.2rem), (min-width: 40rem) clamp(5.2rem, 20.8vw, 6.6rem), 1px';
 
 /**
  * Portada. ESTÁTICA a propósito: no calcula nada que dependa del día (sin getTodayIsoDate ni insignias de cobertura).
@@ -75,11 +78,9 @@ export default async function HomePage({ params }: LocaleParams) {
             <h1 id="home-title" className={styles.title}>
               {t('title')}
             </h1>
-            <p className="lead">{t('lead')}</p>
-            {/* Solo los textos del buscador viajan al cliente, y solo en la portada (no se amplía CLIENT_NAMESPACES). */}
-            <NextIntlClientProvider messages={{ Search: messages.Search }}>
-              <DestinationSearch index={searchIndex} kindLabels={kindLabels} />
-            </NextIntlClientProvider>
+            <p className={`lead ${styles.lead ?? ''}`}>{t('lead')}</p>
+            {/* Los botones van ANTES del buscador (orden del DOM = orden visual = orden de tabulación): la llamada principal
+                «Abrir el mapa» tiene que verse sin desplazarse en un teléfono de 640 px de alto (r1:V-04). */}
             <div className={styles.actions}>
               <ButtonLink href="/explore" variant="cta">
                 {t('ctaExplore')}
@@ -88,6 +89,10 @@ export default async function HomePage({ params }: LocaleParams) {
                 {t('ctaDestinations')}
               </ButtonLink>
             </div>
+            {/* Solo los textos del buscador viajan al cliente, y solo en la portada (no se amplía CLIENT_NAMESPACES). */}
+            <NextIntlClientProvider messages={{ Search: messages.Search }}>
+              <DestinationSearch index={searchIndex} kindLabels={kindLabels} />
+            </NextIntlClientProvider>
           </div>
 
           <div className={styles.brand}>
@@ -103,7 +108,7 @@ export default async function HomePage({ params }: LocaleParams) {
         </div>
       </section>
 
-      <section aria-labelledby="principles-title" className={styles.section}>
+      <section aria-labelledby="principles-title" className={`${styles.section} hyphenate`}>
         <div className={styles.wrap}>
           <h2 id="principles-title">{t('principlesHeading')}</h2>
           <ul className={styles.principleList}>
@@ -133,7 +138,7 @@ export default async function HomePage({ params }: LocaleParams) {
         </div>
       </section>
 
-      <section aria-labelledby="destinations-title" className={styles.section}>
+      <section aria-labelledby="destinations-title" className={`${styles.section} hyphenate`}>
         <div className={styles.wrap}>
           <h2 id="destinations-title">{destinations('indexTitle')}</h2>
           <p className="lead">{destinations('indexLead')}</p>
@@ -141,7 +146,7 @@ export default async function HomePage({ params }: LocaleParams) {
         </div>
       </section>
 
-      <section aria-labelledby="status-title" className={styles.section}>
+      <section aria-labelledby="status-title" className={`${styles.section} hyphenate`}>
         <div className={styles.wrap}>
           <h2 id="status-title">{t('statusHeading')}</h2>
           <Notice>

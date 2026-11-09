@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { TEXT_SPACING_CSS, applyCss, clippedText, hiddenFocus } from './a11y-probes';
+import {
+  TEXT_SPACING_CSS,
+  applyCss,
+  clippedText,
+  focusRingClippedSideways,
+  hiddenFocus,
+} from './a11y-probes';
 import { LOCALES, PATHS } from './helpers';
 import {
   MAP_DATA_PRESENT,
@@ -95,7 +101,9 @@ test.describe('hoja inferior: estructura y manejo', () => {
     await loadHud(page);
     const handle = sheetHandle(page);
     await expect(handle).toHaveAttribute('aria-expanded', 'false');
-    await expect(handle).toHaveAccessibleName('Abrir la información del mapa');
+    await expect(handle).toHaveAccessibleName('Explorar Panamá: abrir la información del mapa');
+    // WCAG 2.5.3: el nombre contiene el rótulo VISIBLE de la cabecera (el título), no solo la acción (r2:N2)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Explorar Panamá');
     const bodyId = await sheetBody(page).getAttribute('id');
     expect(bodyId).toBeTruthy();
     await expect(handle).toHaveAttribute('aria-controls', bodyId ?? '');
@@ -122,7 +130,9 @@ test.describe('hoja inferior: estructura y manejo', () => {
     const closed = (await sheetBox(page)).height;
     await sheetHandle(page).tap();
     await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
-    await expect(sheetHandle(page)).toHaveAccessibleName('Cerrar la información del mapa');
+    await expect(sheetHandle(page)).toHaveAccessibleName(
+      'Explorar Panamá: cerrar la información del mapa',
+    );
     await expect(sheetBody(page)).toBeVisible();
     await expect(sheetBody(page)).not.toHaveAttribute('inert', /.*/);
     await settled(sheetBody(page));
@@ -753,5 +763,181 @@ test.describe('hoja inferior con el mapa', () => {
       );
     }
     await expect(mapCanvas(page)).toBeVisible();
+  });
+});
+
+test.describe('hoja inferior: el anillo de foco de los chips del filtro no se recorta (r2:N5, misma familia)', () => {
+  test('la fila de tipos desplaza en horizontal: el anillo (8 px) del primero y del último cabe en su caja', async ({
+    page,
+  }) => {
+    await loadHud(page);
+    await openSheet(page);
+    const chips = page.locator('[data-kind-filter]');
+    for (const index of [0, (await chips.count()) - 1]) {
+      const chip = chips.nth(index);
+      await chip.scrollIntoViewIfNeeded();
+      await chip.focus();
+      expect(await focusRingClippedSideways(chip), `chip ${String(index)}`).toEqual([]);
+    }
+  });
+
+  test('control: con la fila sin su relleno (el defecto original) el detector SÍ ve el anillo del primer chip recortado', async ({
+    page,
+  }) => {
+    await loadHud(page);
+    await openSheet(page);
+    await applyCss(
+      page,
+      'ul:has(> li > [data-kind-filter]) { padding: 0 !important; margin: 0 !important; }',
+    );
+    const first = page.locator('[data-kind-filter]').first();
+    await first.focus();
+    expect((await focusRingClippedSideways(first)).length).toBeGreaterThan(0);
+  });
+});
+
+test.describe('hoja inferior: a 320×256 (zoom del 400 %) el cuerpo abierto no mide 0 (r2:F4)', () => {
+  test('la hoja abierta tiene un cuerpo utilizable y el foco no cae en controles tapados', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 256 });
+    await loadHud(page);
+    await openSheet(page);
+    const body = await sheetBody(page).evaluate((el) => ({
+      height: el.getBoundingClientRect().height,
+      scroll: el.scrollHeight,
+      inert: el.hasAttribute('inert'),
+    }));
+    expect(body.inert).toBe(false);
+    // Antes 0 px: buscador, filtro, ficha, lista y panel inalcanzables
+    expect(body.height).toBeGreaterThanOrEqual(64);
+    expect(body.scroll).toBeGreaterThan(body.height);
+    // El primer control del cuerpo (el buscador) se ve entero y Tab no cae en nada tapado por la hoja o por el asa
+    const search = page.getByRole('searchbox');
+    await search.focus();
+    const visible = await search.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const bodyRect = document.querySelector('[data-sheet-body]')?.getBoundingClientRect();
+      return !!bodyRect && r.top >= bodyRect.top - 1 && r.bottom <= bodyRect.bottom + 1;
+    });
+    expect(visible, 'el buscador cabe en el cuerpo abierto').toBe(true);
+    const { checked, hidden } = await hiddenFocus(page, 12);
+    expect(checked).toBeGreaterThan(5);
+    expect(hidden).toEqual([]);
+  });
+
+  test('control: la fórmula de antes (sin el suelo) deja el cuerpo en 0 px a esa altura', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 256 });
+    await loadHud(page);
+    await openSheet(page);
+    await applyCss(
+      page,
+      '[data-sheet-body] { block-size: min(calc(60dvh - 5.5rem), calc(100dvh - var(--header-height) - 14rem)) !important; }',
+    );
+    // El alto se anima (240 ms): se espera a que llegue
+    await expect
+      .poll(() => sheetBody(page).evaluate((el) => el.getBoundingClientRect().height))
+      .toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('hoja inferior con el mapa: marcadores parcialmente tapados y créditos (r2:F9, r1:V-18)', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
+
+  test('con un destino elegido y la hoja abierta, ningún marcador activo queda con menos de 24 px a la vista (axe target-size) y los inactivos son inertes', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await openMap(page, `${EXPLORE}?d=boquete`);
+    await openSheet(page);
+    await expect
+      .poll(() =>
+        page
+          .locator('div:has(> button[data-destination="volcan-baru"])')
+          .evaluate((el: HTMLElement) => el.inert),
+      )
+      .toBe(true);
+    // Especificación independiente: un marcador ACTIVO tiene ≥ 24 px de ancho y de alto a la vista, medido con una rejilla más fina (1 px de paso hasta 1/44)
+    const issues = await page.evaluate(() => {
+      const out: string[] = [];
+      for (const b of document.querySelectorAll<HTMLElement>(
+        'button[data-destination], button[data-cluster]',
+      )) {
+        if (b.parentElement?.inert) continue;
+        const r = b.getBoundingClientRect();
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        for (let x = Math.ceil(r.left); x < r.right; x += 1) {
+          for (let y = Math.ceil(r.top); y < r.bottom; y += 1) {
+            if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
+            const top = document.elementFromPoint(x, y);
+            if (top?.closest('[data-map-status]')) {
+              minX = Math.min(minX, x);
+              maxX = Math.max(maxX, x);
+              minY = Math.min(minY, y);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+        if (maxX - minX < 23 || maxY - minY < 23) {
+          out.push(
+            `${b.getAttribute('data-destination') ?? b.getAttribute('data-cluster') ?? '?'}: ${String(maxX - minX + 1)}×${String(maxY - minY + 1)} px a la vista`,
+          );
+        }
+      }
+      return out;
+    });
+    expect(issues).toEqual([]);
+    const results = await new AxeBuilder({ page }).withRules(['target-size']).analyze();
+    expect(
+      results.violations.map(
+        (v) =>
+          `${v.id}: ${v.nodes
+            .slice(0, 2)
+            .map((n) => n.target.join(' '))
+            .join(' | ')}`,
+      ),
+    ).toEqual([]);
+  });
+
+  test('a 320 px con la hoja abierta la pastilla «i» de los créditos no tapa ningún marcador ni grupo (el hueco libre reserva su franja)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await openMap(page, EXPLORE);
+    await openSheet(page);
+    const overlaps = await page.evaluate(() => {
+      const credits = document.querySelector('.maplibregl-ctrl-attrib')?.getBoundingClientRect();
+      if (!credits) return ['sin créditos'];
+      const out: string[] = [];
+      for (const b of document.querySelectorAll<HTMLElement>(
+        'button[data-destination], button[data-cluster]',
+      )) {
+        if (b.parentElement?.inert) continue;
+        const r = b.getBoundingClientRect();
+        const ox = Math.min(r.right, credits.right) - Math.max(r.left, credits.left);
+        const oy = Math.min(r.bottom, credits.bottom) - Math.max(r.top, credits.top);
+        if (ox > 1 && oy > 1)
+          out.push(b.getAttribute('data-destination') ?? b.getAttribute('data-cluster') ?? '?');
+      }
+      return out;
+    });
+    expect(overlaps).toEqual([]);
+  });
+  test('el anillo de foco de los botones de área (a todo el ancho) no se recorta a izquierda y derecha dentro de la hoja (r2:N5)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openMap(page, EXPLORE);
+    await openSheet(page);
+    const buttons = page.locator('[data-area-id]');
+    await expect(buttons.first()).toBeAttached({ timeout: 20_000 });
+    await buttons.first().scrollIntoViewIfNeeded();
+    await buttons.first().focus();
+    expect(await focusRingClippedSideways(buttons.first())).toEqual([]);
   });
 });

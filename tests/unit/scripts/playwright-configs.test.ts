@@ -50,6 +50,16 @@ describe('configuraciones de Playwright', () => {
     expect(reporters(await load(CONFIGS[0][1], undefined)).map(([name]) => name)).toEqual(['list']);
   });
 
+  it('la traza de la principal se conserva solo si falla y NO lleva la cinta de capturas salvo que se pida (con WebGL por software le quitaba la CPU al mapa: M-11)', async () => {
+    const trace = async (flag: string | undefined) => {
+      vi.stubEnv('E2E_TRACE_SCREENSHOTS', flag ?? '');
+      const config = await load(CONFIGS[0][1], 'true');
+      return (config.use as { trace: unknown }).trace;
+    };
+    expect(await trace(undefined)).toEqual({ mode: 'retain-on-failure', screenshots: false });
+    expect(await trace('1')).toEqual({ mode: 'retain-on-failure', screenshots: true });
+  });
+
   it('el reintento de la configuración principal sigue existiendo en CI (para distinguir «flaky» de «roto»)', async () => {
     const config = await load(CONFIGS[0][1], 'true');
     expect(config.retries).toBe(1);

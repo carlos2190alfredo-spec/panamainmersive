@@ -18,8 +18,8 @@ export async function SiteFooter() {
     <footer className={styles.footer}>
       <div className={styles.inner}>
         <div className={styles.brand}>
-          {/* Decorativa: el lema que la acompaña es el texto. `sizes` coincide con el alto de BrandMark en CSS (3rem). */}
-          <BrandMark variant="map" className={styles.mark ?? ''} sizes="97px" />
+          {/* Decorativa: el lema que la acompaña es el texto. `sizes` coincide con el ancho de la imagen dentro de su placa en CSS (2,5rem de alto × 2,01). */}
+          <BrandMark variant="map" className={styles.mark ?? ''} sizes="80px" />
           <p className={styles.tagline}>{brand('tagline')}</p>
         </div>
         <nav aria-label={nav('footer')}>

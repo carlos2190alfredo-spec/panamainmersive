@@ -18,7 +18,7 @@ test.describe('cabeceras de seguridad (ADR-0010)', () => {
     expect(h['x-content-type-options']).toBe('nosniff');
     expect(h['x-frame-options']).toBe('DENY');
     expect(h['referrer-policy']).toBe('strict-origin-when-cross-origin');
-    expect(h['permissions-policy']).toMatch(/geolocation=\(self\)/);
+    expect(h['permissions-policy']).toMatch(/geolocation=\(\)/); // cerrada: el producto no pide la ubicación (r3:N-03)
     expect(h['permissions-policy']).toMatch(/camera=\(\)/);
     expect(h['cross-origin-opener-policy']).toBe('same-origin');
     expect(h['x-powered-by']).toBeUndefined();

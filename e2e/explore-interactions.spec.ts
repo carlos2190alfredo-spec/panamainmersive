@@ -5,9 +5,11 @@ import {
   MAP_DATA_SKIP_REASON,
   TERRAIN_HOST,
   mapState,
+  markerInSafeArea,
   openLayers,
   openMap,
   routeTerrain,
+  watchFraming,
 } from './map-helpers';
 
 /**
@@ -33,7 +35,9 @@ async function openHud(page: Page, path: string = EXPLORE): Promise<void> {
     route.fulfill({ status: 404, body: 'sin mapa base en esta prueba' }),
   );
   await page.goto(path);
-  await expect(page.locator('[data-hud-island]')).toHaveCount(4);
+  // Las cuatro islas llegan tras hidratar y React hidrata por turnos: con la CPU ocupada (tres trabajadores, WebGL por
+  // software) la cuarta llegó más de 5 s tarde (3 de 4, dos intentos seguidos). No es un defecto del HUD: es el plazo.
+  await expect(page.locator('[data-hud-island]')).toHaveCount(4, { timeout: 30_000 });
   await expect(page.locator('li[data-destination] button')).toHaveCount(9);
 }
 
@@ -48,6 +52,8 @@ const announcer = (page: Page) => page.locator('[data-hud-island="status"] [role
 const echo = (page: Page) => page.locator('[data-filter-echo]');
 const tools = (page: Page) => page.getByRole('group', { name: 'Herramientas del mapa' });
 const threeD = (page: Page) => page.getByRole('button', { name: 'Relieve en 3D' });
+/** Plazo (ms) para que `data-pitch` refleje la inclinación: lo fija `idle`, lento con WebGL por software (ver la prueba de «Relieve en 3D»). */
+const PITCH_SETTLE_MS = 45_000;
 const layersTool = (page: Page) => page.getByRole('button', { name: 'Capas y leyenda' });
 const search = (page: Page) => new URL(page.url()).search;
 
@@ -539,9 +545,11 @@ test.describe('herramientas del mapa: «Relieve en 3D» con el mapa dibujado', (
     // La casilla «Relieve en 3D» y la de sombreado reflejan lo mismo (una sola fuente: la URL)
     await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).toBeChecked();
-    // El mapa se inclina (≈ 55°)
+    // El mapa se inclina (≈ 55°). `data-pitch` se actualiza en `idle`, que con WebGL por software y relieve tarda ≈ 9–11 s en
+    // una máquina en reposo (medido, 12 pulsaciones intercaladas contra el build anterior: misma latencia; no es un efecto del
+    // HUD). 20 s dejaba un margen de 2× que bajo carga (otra tarea en marcha) se agotaba: el `pitch` «seguía en 0».
     await expect
-      .poll(async () => (await mapState(page)).pitch, { timeout: 20_000 })
+      .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
       .toBeGreaterThan(45);
     await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
 
@@ -552,7 +560,7 @@ test.describe('herramientas del mapa: «Relieve en 3D» con el mapa dibujado', (
     await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).not.toBeChecked();
     await expect(notice).toHaveCount(0);
     await expect
-      .poll(async () => (await mapState(page)).pitch, { timeout: 20_000 })
+      .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
       .toBeLessThan(5);
     expect(await watch.violations()).toEqual([]);
     expect(watch.errors).toEqual([]);
@@ -573,12 +581,13 @@ test.describe('herramientas del mapa: «Relieve en 3D» con el mapa dibujado', (
   test('con movimiento reducido el cabeceo es inmediato (sin animación) y también llega a ≈ 55°', async ({
     page,
   }) => {
+    test.setTimeout(90_000); // el plazo de `data-pitch` (PITCH_SETTLE_MS) es mayor que el de 30 s por defecto
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await routeTerrain(page, 'ok');
     await openMap(page, EXPLORE);
     await threeD(page).click();
     await expect
-      .poll(async () => (await mapState(page)).pitch, { timeout: 15_000 })
+      .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
       .toBeGreaterThan(45);
   });
 
@@ -702,5 +711,121 @@ test.describe('sin JavaScript', () => {
     // Las zonas vacías no dejan huecos fantasma: el grupo del filtro y la zona del buscador se retiran
     await expect(page.locator('[data-hud-group="filter"]')).toBeHidden();
     await expect(page.locator('[data-hud-zone="search"]')).toBeHidden();
+  });
+});
+
+test.describe('el mapa muestra los resultados del filtro y de la búsqueda (r1:V-05; con el mapa)', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
+
+  /** ¿El marcador (o el grupo que lo contiene) está dentro del hueco libre del HUD? */
+  const inSafeArea = (page: Page, key: string) =>
+    page.evaluate((destination) => {
+      const safe = document.querySelector('[data-hud-safe]')?.getBoundingClientRect();
+      const button = document.querySelector<HTMLElement>(
+        `button[data-destination="${destination}"], button[data-cluster*="${destination}"]`,
+      );
+      const r = button?.getBoundingClientRect();
+      if (!safe || !r) return false;
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      return x >= safe.left && x <= safe.right && y >= safe.top && y <= safe.bottom;
+    }, key);
+
+  test('elegir «Volcán» vuela hasta el volcán y su marcador queda DENTRO del hueco libre (antes el mapa no se movía y el único marcador que quedaba estaba bajo el carril)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openMap(page, EXPLORE);
+    expect(await inSafeArea(page, 'volcan-baru'), 'de partida está bajo el carril').toBe(false);
+    await chip(page, /^Volcán 1 destino$/).click();
+    await expect.poll(() => inSafeArea(page, 'volcan-baru'), { timeout: 15_000 }).toBe(true);
+    await expect(page.locator('button[data-destination="volcan-baru"]')).toHaveCount(1);
+    // El filtro es estado local: la URL sigue sin `d` (no seleccionó nada) aunque la cámara se haya movido
+    await expect.poll(() => new URL(page.url()).searchParams.get('d')).toBeNull();
+  });
+
+  test('«Todos» devuelve la vista de conjunto; una búsqueda SIN resultados no mueve la cámara', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openMap(page, EXPLORE);
+    const framings = await watchFraming(page);
+    const overview = await mapState(page);
+    await chip(page, /^Isla 1 destino$/).click();
+    await expect
+      .poll(async () => (await mapState(page)).zoom, { timeout: 15_000 })
+      .toBeGreaterThan(overview.zoom + 0.5);
+    await chip(page, /^Todos 9 destinos$/).click();
+    await expect
+      .poll(async () => Math.abs((await mapState(page)).zoom - overview.zoom), { timeout: 15_000 })
+      .toBeLessThan(0.1);
+    // CONTROL: el filtro y «Todos» SÍ piden encuadres (el canal síncrono de `watchFraming` los ve)
+    expect(await framings(), 'el filtro y «Todos» encuadran').toBeGreaterThanOrEqual(2);
+    // Sin resultados la cámara se queda donde está: ningún encuadre pedido (no depende de `idle`, que con WebGL por software
+    // llega tarde) y, ya asentada, la misma cámara
+    const before = await mapState(page);
+    const framed = await framings();
+    await searchBox(page).fill('zzzq');
+    await expect(echo(page)).toHaveText('Ningún destino coincide con la búsqueda.');
+    await page.waitForTimeout(1200);
+    expect(await framings(), 'una búsqueda sin resultados NO pide ningún encuadre').toBe(framed);
+    expect(await mapState(page)).toEqual(before);
+  });
+
+  test('con un destino elegido, quitar el filtro devuelve la cámara a ESE destino (no al conjunto)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openMap(page, `${EXPLORE}?d=boquete`);
+    await expect.poll(() => markerInSafeArea(page, 'boquete'), { timeout: 15_000 }).toBe(true);
+    const framed = await mapState(page);
+    // «Isla» deja Coiba (y el destino elegido, que nunca se oculta): la cámara vuela a lo que queda a la vista
+    await chip(page, /^Isla 1 destino$/).click();
+    await expect
+      .poll(async () => (await mapState(page)).center[0], { timeout: 15_000 })
+      .not.toBeCloseTo(framed.center[0], 1);
+    // «Todos»: vuelve a Boquete, que sigue elegido (no al conjunto del país)
+    await chip(page, /^Todos 9 destinos$/).click();
+    await expect.poll(() => markerInSafeArea(page, 'boquete'), { timeout: 15_000 }).toBe(true);
+    await expect
+      .poll(async () => Math.abs((await mapState(page)).zoom - framed.zoom), { timeout: 15_000 })
+      .toBeLessThan(0.2);
+  });
+});
+
+test.describe('el eco del filtro tiene su sitio y no mueve el carrusel (r1:V-06; no necesita el mapa)', () => {
+  test('con un destino elegido, escribir en el buscador no cambia la altura del carrusel y el eco cabe en dos líneas SIN guiones', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openHud(page, `${EXPLORE}?d=casco-antiguo`);
+    // Sin mapa base el HUD crece UNA línea cuando se sabe que el mapa no está: el carrusel añade «El mapa no está disponible…»
+    // (≈ 3 s tras cargar, cuando falla la cabecera del PMTiles). Medir antes de eso hacía que, con la máquina ocupada y el
+    // `fill` tardando, la altura «cambiara con la búsqueda» (602 → 580 px) siendo el aviso del mapa. Se espera a él primero.
+    await expect(page.locator('#destinations-map-unavailable')).toBeVisible({ timeout: 30_000 });
+    const dockTop = () =>
+      page
+        .locator('[data-hud-zone="carousel"]')
+        .evaluate((el) => Math.round(el.getBoundingClientRect().top));
+    const before = await dockTop();
+    for (const query of ['bo', 'zzzq']) {
+      await searchBox(page).fill(query);
+      await expect(echo(page)).toBeVisible();
+      const geometry = await echo(page).evaluate((el) => {
+        const style = getComputedStyle(el);
+        const lineHeight = Number.parseFloat(style.lineHeight);
+        return {
+          lines: Math.round(el.getBoundingClientRect().height / lineHeight),
+          hyphens: style.hyphens,
+          text: el.textContent ?? '',
+        };
+      });
+      expect(geometry.lines, `«${geometry.text}» en líneas`).toBeLessThanOrEqual(2);
+      expect(geometry.hyphens).toBe('manual');
+      expect(await dockTop(), `el carrusel no cambia de alto con «${query}»`).toBe(before);
+    }
   });
 });

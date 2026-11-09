@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Guardas TEXTUALES de `.github/workflows/ci.yml`. No ejecutan el flujo (eso solo ocurre en GitHub: ESTADO IMPLEMENTED,
- * no VERIFIED) ni parsean YAML (el proyecto no tiene un analizador): reconocen los bloques por indentación. Fijan lo que
+ * Guardas TEXTUALES de `.github/workflows/ci.yml`. No ejecutan el flujo (eso solo ocurre en GitHub, donde corrió en verde el
+ * 2026-10-24 sobre lo anterior a 5j: E-98) ni parsean YAML (el proyecto no tiene un analizador): reconocen los bloques por indentación. Fijan lo que
  * una revisión independiente encontró mal (la SINTAXIS YAML la valida `pnpm format`: Prettier analiza el archivo y
  * rechazó un `: ` sin comillas en un nombre de job que estas guardas textuales no podían ver):
  *  · sin `timeout-minutes` un job colgado consume 6 h;

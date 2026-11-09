@@ -1,6 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { PROTECTED_LABEL_HALO_WIDTH } from '@/domains/geography/layers';
+import {
+  PALETTE_KEYS,
+  buildMapStyle,
+  paletteCssVariable,
+  type MapPalette,
+} from '@/domains/geography/map-style';
+import { MAP_LAYER_IDS } from '@/domains/geography/map-url-state';
 import {
   SCOPE_SELECTORS,
   mutateAfter,
@@ -124,6 +132,72 @@ describe.each(ALL_THEMES)('tema %s', (_name, theme) => {
   it('el anillo de foco contrasta con su halo', () => {
     expect(ratio(theme, 'focus', 'focus-halo')).toBeGreaterThanOrEqual(3);
   });
+});
+
+/**
+ * Etiquetas del mapa (r2:N1). El texto del LIENZO no es DOM: axe no lo mide. Las etiquetas de áreas protegidas son verdes
+ * (`map-protected-line`) y muchas son MARINAS, es decir, se dibujan sobre el agua: ese par mide 2,16:1 en los temas oscuros.
+ * Lo que las hace legibles es el halo oscuro que las rodea; esta prueba exige, para TODA etiqueta del estilo real, que si su
+ * color no llega a 3:1 con el agua lleve un halo de al menos 2 px (con 1,6 px el agua se colaba entre los trazos finos).
+ */
+describe.each(ALL_THEMES)('tema %s: etiquetas del mapa sobre el agua', (_name, theme) => {
+  const palette = Object.fromEntries(
+    PALETTE_KEYS.map((key) => {
+      const token = paletteCssVariable(key).replace(/^--color-/, '');
+      const value = theme[token];
+      if (value === undefined) throw new Error(`falta --color-${token}`);
+      return [key, value];
+    }),
+  ) as unknown as MapPalette;
+  const style = buildMapStyle({
+    language: 'es',
+    palette,
+    basemapUrl: '/data/panama-basemap.pmtiles',
+    glyphsUrl: '/map-assets/glyphs/{fontstack}/{range}.pbf',
+    terrainTilesUrl: 'https://tiles.example/terrarium/{z}/{x}/{y}.png',
+    layers: [...MAP_LAYER_IDS],
+  });
+  const labels = style.layers.filter((l) => l.type === 'symbol');
+
+  it('el estilo trae etiquetas (la prueba no es vacía) y la de áreas protegidas es una de ellas', () => {
+    expect(labels.length).toBeGreaterThan(3);
+    expect(labels.map((l) => l.id)).toContain('protected-label');
+  });
+
+  it.each(labels.map((l) => [l.id, l] as const))(
+    '%s: si su color no llega a 3:1 con el agua, lleva un halo de ≥ 2 px',
+    (_id, layer) => {
+      const paint = (layer as { paint?: Record<string, unknown> }).paint ?? {};
+      const color = paint['text-color'];
+      if (typeof color !== 'string') throw new Error(`${layer.id}: color de texto no literal`);
+      const water = theme['map-water'];
+      if (water === undefined) throw new Error('falta --color-map-water');
+      if (contrast(color, water) < 3) {
+        expect(
+          Number(paint['text-halo-width']),
+          `${layer.id} sobre el agua`,
+        ).toBeGreaterThanOrEqual(2);
+      }
+    },
+  );
+});
+
+describe('etiquetas de áreas protegidas sobre el agua (r2:N1)', () => {
+  it.each([
+    ['oscuro', themes.dark],
+    ['inmersivo', themes.immersive],
+  ] as const)(
+    'control, tema %s: el verde de la etiqueta NO llega a 3:1 con el agua (por eso el halo importa) y con su halo sí',
+    (_name, theme) => {
+      const green = theme['map-protected-line'];
+      const water = theme['map-water'];
+      const halo = theme['map-halo'];
+      if (!green || !water || !halo) throw new Error('faltan tokens del mapa');
+      expect(contrast(green, water)).toBeLessThan(3);
+      expect(contrast(green, halo)).toBeGreaterThanOrEqual(4.5);
+      expect(PROTECTED_LABEL_HALO_WIDTH).toBeGreaterThanOrEqual(2);
+    },
+  );
 });
 
 describe('ningún token de color queda fuera del alcance de la prueba', () => {

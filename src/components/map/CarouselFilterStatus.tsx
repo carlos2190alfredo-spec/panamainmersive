@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import {
   isFiltering,
   matchingKeys,
@@ -19,9 +19,34 @@ import { useMapUrlState } from './use-map-url-state';
  *  - Oculta (`hidden`) las tarjetas que no coinciden. El destino SELECCIONADO nunca se oculta (sin él, la ficha se
  *    quedaría sin tarjeta ni marcador). Sin filtro no toca nada: el DOM es el de siempre (las nueve).
  *  - Región `aria-live` (solo para lectores de pantalla) con el recuento tras cada cambio, y su eco visible mientras hay
- *    filtro. Existe SIEMPRE (vacía) para que el cambio se anuncie.
+ *    filtro. Existe SIEMPRE (vacía) para que el cambio se anuncie. Al ESCRIBIR, el anuncio espera a que se deje de teclear
+ *    (`SEARCH_ANNOUNCE_DELAY_MS`): sin esa espera un lector de pantalla recitaba un recuento por cada letra («3 destinos…»,
+ *    «2 destinos…», «1 destino…»; r2:N3). El eco visible NO espera: cambia con cada pulsación (y es `aria-hidden`).
+ *    El tipo de destino, que es un solo gesto, se anuncia al momento.
  *  - Al salir de la pantalla borra el filtro: es estado local de la visita, no un ajuste guardado.
  */
+/** Cuánto se espera sin teclear antes de anunciar el recuento de una búsqueda (el habla de un lector tarda ≈ 1 s por frase). */
+export const SEARCH_ANNOUNCE_DELAY_MS = 500;
+
+/**
+ * El mensaje que se anuncia: `message` tras `delayMs` sin cambios (cada cambio reinicia la espera, también una pulsación que
+ * no cambia el recuento: `restart` es lo que se ha tecleado). Con `delayMs` 0 es el propio mensaje, sin esperar. El estado se actualiza SIEMPRE desde un temporizador (también con 0): así, al pasar de un gesto
+ * inmediato (el tipo) a otro con espera (teclear), el valor retenido es el último que se dijo y no uno viejo.
+ */
+function useSettledMessage(message: string, delayMs: number, restart: string): string {
+  const [settled, setSettled] = useState(message);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSettled(message);
+    }, delayMs);
+    return () => {
+      window.clearTimeout(timer);
+    };
+    // `restart` no se lee: solo reinicia la espera con cada pulsación, aunque el mensaje no cambie.
+  }, [message, delayMs, restart]);
+  return delayMs === 0 ? message : settled;
+}
+
 function Status({ items }: { items: readonly FilterItem[] }) {
   const t = useTranslations('Map');
   const filter = useExploreFilter();
@@ -61,10 +86,16 @@ function Status({ items }: { items: readonly FilterItem[] }) {
           : t('search.count', { count: matching })
         : t('filter.announce', { count: matching });
 
+  const announced = useSettledMessage(
+    message,
+    filter.lastChange === 'search' ? SEARCH_ANNOUNCE_DELAY_MS : 0,
+    query,
+  );
+
   return (
     <span ref={anchor} className={styles.status} data-hud-island="status">
       <span role="status" className="visually-hidden">
-        {message}
+        {announced}
       </span>
       {isFiltering(filter) ? (
         <span className={styles.echo} aria-hidden="true" data-filter-echo>

@@ -11,8 +11,11 @@
   display: flex;
   gap: var(--space-2);
   min-inline-size: 0;
-  margin: 0;
-  padding: 0 0 var(--space-1);
+  /* La fila desplaza (`overflow-x: auto` ⇒ también el vertical): su caja recortaba el anillo de foco (contorno + halo, ≈ 8 px)
+     del primer y del último chip y el filo de arriba (r2:N5, misma familia que los botones de área). El relleno le da sitio y
+     el margen negativo deja la fila donde estaba (abajo conserva el 1 espacio de antes: 4 px + 8 px − 8 px). */
+  margin: calc(-1 * var(--space-2));
+  padding: var(--space-2) var(--space-2) calc(var(--space-1) + var(--space-2));
   list-style: none;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
@@ -94,6 +97,8 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);
+    /* En escritorio no desplaza (`overflow-x: visible`): nada recorta el anillo y no hace falta el relleno de la fila móvil. */
+    margin: 0;
     padding: 0;
     overflow-x: visible;
   }

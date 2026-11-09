@@ -2,10 +2,12 @@
  * Portada inmersiva (ADR-0025). Todo el árbol va dentro de `data-immersive`, así que los tokens semánticos son los del
  * ámbito oscuro de marca aunque el sistema esté en claro. Reglas de diseño que se vigilan (tests/unit/design/home-css.test.ts,
  * e2e/home.spec.ts y e2e/a11y):
- *  - el TEXTO va sobre una superficie SÓLIDA (la columna de texto, el rótulo, las tarjetas), NUNCA sobre el degradado ni sobre
- *    vidrio translúcido; el único vidrio (--surface-glass, opacidad ≥ 0,85) es el marco de la imagen de la marca. Los adornos del héroe son dos capas `aria-hidden` SIN texto (.decor y .contours) detrás del contenido, sobre un color de fondo sólido
+ *  - el TEXTO va sobre una superficie SÓLIDA (la columna de texto, la tarjeta de la marca, las tarjetas), NUNCA sobre el degradado
+ *    ni sobre vidrio translúcido (axe no puede medirlo): la portada no usa vidrio (r1:V-11: el marco de la marca era vidrio y
+ *    el rótulo llevaba una «chapa» sólida encima, una caja dentro de otra; ahora es UNA sola superficie sólida). El vidrio
+ *    es del HUD de Explorar. Los adornos del héroe son dos capas `aria-hidden` SIN texto (.decor y .contours) detrás del contenido, sobre un color de fondo sólido
  *    (axe no mide el contraste de un texto dentro de un ANTEPASADO con pseudo-elementos absolutos: por eso no son `::before`/`::after`);
- *  - el desenfoque (`backdrop-filter`) solo como mejora progresiva (≥ 56rem, puntero fino, con soporte); en móvil, relleno sólido;
+ *  - si hubiera `backdrop-filter` (hoy no), solo como mejora progresiva (≥ 56rem, puntero fino, con soporte); en móvil, relleno sólido;
  *  - movimiento solo con `prefers-reduced-motion: no-preference`, FINITO (≤ 1 s la entrada; el resto atado al scroll o al
  *    cursor) y sin animar `opacity` en elementos con texto (axe mediría el contraste a mitad de animación);
  *  - nada con altura fija y `overflow` recortado con texto dentro (WCAG 1.4.12); reflow a 320 px; objetivos ≥ 44 px.
@@ -21,9 +23,16 @@
 .hero {
   position: relative;
   isolation: isolate;
-  /* Color SÓLIDO de reserva: lo que ve axe bajo el vidrio, y lo que queda si no hay degradados (colores forzados). */
+  /* Color SÓLIDO de reserva: lo que ve axe bajo las capas decorativas, y lo que queda si no hay degradados (colores forzados). */
   background-color: var(--color-brand-deep);
-  padding-block: var(--space-6) var(--space-7);
+  /* Teléfonos: menos aire arriba y abajo, para que título, texto y botones entren en el primer pliegue (r1:V-04). */
+  padding-block: var(--space-4) var(--space-6);
+}
+
+@media (min-width: 40rem) {
+  .hero {
+    padding-block: var(--space-6) var(--space-7);
+  }
 }
 
 /*
@@ -90,7 +99,7 @@
     );
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     .decor {
       background:
         radial-gradient(
@@ -139,7 +148,8 @@
   align-items: center;
 }
 
-@media (min-width: 48rem) {
+/* Dos columnas solo desde 64rem: a 768 px la tarjeta de la marca ocupaba una segunda columna y apretaba el formulario (r1:V-10). */
+@media (min-width: 64rem) {
   .heroInner {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: var(--space-6);
@@ -149,9 +159,11 @@
 /* ---------- Superficies: la columna de texto (sólida) y el marco de la marca (vidrio) ---------- */
 
 /*
- * Columna de texto: SÓLIDA (--color-glass-base, opaca). axe no puede medir el contraste de un texto cuya superficie es
- * translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría. Sobre una superficie opaca sí lo mide
- * (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo posible).
+ * Columna de texto y tarjeta de la marca: SÓLIDAS (--color-glass-base, opaca) y de UNA sola pieza. axe no puede medir el
+ * contraste de un texto cuya superficie es translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría.
+ * Sobre una superficie opaca sí lo mide (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo
+ * posible). La tarjeta de la marca fue vidrio con una «chapa» sólida detrás del rótulo (una caja dentro de otra, r1:V-11):
+ * ahora el rótulo va directamente sobre la tarjeta, sin fondo propio.
  */
 .copy,
 .frame {
@@ -159,16 +171,6 @@
   border: var(--glass-border);
   border-radius: var(--radius-glass);
   box-shadow: var(--shadow-depth-3);
-}
-
-/* Marco de la marca: vidrio, solo como mejora progresiva (≥ 56rem, puntero fino, con soporte). */
-@media (min-width: 56rem) and (hover: hover) and (pointer: fine) {
-  @supports (backdrop-filter: blur(1px)) {
-    .frame {
-      background: var(--surface-glass);
-      backdrop-filter: blur(var(--glass-blur));
-    }
-  }
 }
 
 .copy {
@@ -186,6 +188,9 @@
 
 .eyebrow {
   hyphens: none;
+  /* Con el texto agrandado una palabra larga («ENTWICKLUNGSVERSION») es más ancha que la tarjeta: se parte antes que desbordar
+     la página (r2:F7; a 390 px y 200 % medía 446 px en una caja de 262). */
+  overflow-wrap: anywhere;
   align-self: flex-start;
   margin-block-end: var(--space-3);
   padding: var(--space-1) var(--space-3);
@@ -208,10 +213,25 @@
   text-transform: uppercase;
 }
 
-/* Un solo <h1>. Más pequeño que el global (--text-2xl): comparte la fila con la marca y el buscador. */
+/*
+ * Un solo <h1>. Más pequeño que el global (--text-2xl): comparte la fila con la marca y el buscador. El mínimo (1,65rem) es lo
+ * que deja «Panamá, explorada» en UNA línea en 320 px (con 1,9rem eran cinco líneas y la llamada principal quedaba bajo el
+ * primer pliegue; r1:V-04). Sin guionado (base.css): baja de línea por los espacios.
+ */
 .title {
-  font-size: clamp(1.9rem, 1.3rem + 2.6vw, 3.1rem);
+  font-size: clamp(1.65rem, 1.15rem + 2.6vw, 3.1rem);
   margin-block-end: var(--space-4);
+}
+
+/* Teléfonos: el texto de apoyo a 1rem (en vez de 1,125–1,3rem) para que la llamada principal entre en el primer pliegue. */
+.lead {
+  font-size: var(--text-m);
+}
+
+@media (min-width: 30rem) {
+  .lead {
+    font-size: var(--text-l);
+  }
 }
 
 .actions {
@@ -220,16 +240,28 @@
   gap: var(--space-3);
 }
 
-/* ---------- Marca en marco de vidrio ---------- */
+/* ---------- Tarjeta de la marca ---------- */
 
-/* En una columna la marca va ARRIBA (compacta); el DOM lleva antes el texto, que es lo que lee un lector de pantalla. */
+/*
+ * La marca ya está en la cabecera y en el pie: la tarjeta del héroe no se muestra en teléfonos (< 40rem), donde empujaba la
+ * llamada principal fuera del primer pliegue (r1:V-04). De 40 a 64rem va ARRIBA, compacta y en una fila (el DOM lleva antes el
+ * texto, que es lo que lee un lector de pantalla); desde 64rem es la segunda columna.
+ */
 .brand {
+  display: none;
   order: -1;
+}
+
+@media (min-width: 40rem) {
+  .brand {
+    display: block;
+  }
 }
 
 .frame {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-4);
   padding: var(--space-4);
 }
@@ -238,14 +270,11 @@
   block-size: clamp(5.2rem, 22vw, 6.6rem);
 }
 
-/* El rótulo va sobre una píldora SÓLIDA (como la columna de texto): su contraste se mide, no se supone sobre el vidrio. */
+/* El rótulo es texto vivo directamente sobre la tarjeta sólida: sin fondo propio (r1:V-11). */
 .wordmark {
   display: grid;
   gap: var(--space-1);
   margin: 0;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-glass-base);
-  border-radius: var(--radius-s);
 }
 
 .wordmarkMain {
@@ -255,6 +284,8 @@
   line-height: var(--leading-tight);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  /* Un nombre propio no se parte con guion (r2:F7). */
+  hyphens: none;
 }
 
 .wordmarkSub {
@@ -263,9 +294,10 @@
   font-weight: 700;
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
+  hyphens: none;
 }
 
-@media (min-width: 48rem) {
+@media (min-width: 64rem) {
   .brand {
     order: 0;
   }

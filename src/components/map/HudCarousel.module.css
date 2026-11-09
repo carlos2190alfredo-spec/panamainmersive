@@ -40,6 +40,11 @@
   margin-inline-start: auto;
 }
 
+.arrows {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .body {
   composes: scroll from '../../styles/glass.module.css';
 
@@ -47,6 +52,8 @@
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   scroll-snap-type: x proximity;
+  /* Una tarjeta que se ajusta al borde deja ≈ 8 px de aire: el anillo de foco de sus botones no queda recortado. */
+  scroll-padding-inline: var(--space-2);
 }
 
 /* Botones de la cabecera: objetivos de 44 px, contorno de componente (≥ 3:1) sobre el vidrio. */
@@ -109,6 +116,59 @@
 .toggle[aria-expanded='false'] .chevron {
   transform: rotate(-135deg);
   translate: 0 0.1rem;
+}
+
+/*
+ * Carrusel ESTRECHO (la ficha del destino ocupa la otra mitad del dock, y por debajo de 80rem siempre): el título, el eco del
+ * filtro y los botones no caben en una fila. El eco visible («2 destinos coinciden con la búsqueda.») se apretaba en tres
+ * líneas con guiones entre el título y los botones y la cabecera crecía al escribir (r1:V-06). Aquí la cabecera es una
+ * rejilla de DOS filas que no cambian de alto: título y «Ocultar los destinos» arriba; el eco (hasta dos líneas) y las
+ * flechas debajo. Las posiciones son explícitas (el HUD no usa `order`: el DOM sigue siendo el orden de tabulación y el eco
+ * es `aria-hidden`). Solo desde 56rem: en la hoja móvil no hay botones en la cabecera y el eco cabe junto al título.
+ */
+@media (min-width: 56rem) {
+  @container (max-width: 40rem) {
+    .head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'title toggle'
+        'echo arrows';
+      grid-template-rows: var(--target-min) minmax(var(--target-min), auto);
+      align-items: center;
+      min-block-size: 0;
+    }
+
+    .head > :first-child {
+      grid-area: title;
+    }
+
+    /* Los botones salen de su contenedor flex: cada uno va a su celda. (`.head >`: el `.controls { display: flex }` de abajo,
+       desde 56rem, va DESPUÉS en el archivo y a igual especificidad le ganaría.) */
+    .head > .controls {
+      display: contents;
+    }
+
+    .arrows {
+      grid-area: arrows;
+      justify-self: end;
+    }
+
+    .toggle {
+      grid-area: toggle;
+      justify-self: end;
+    }
+
+    /* El eco cuelga de un `<span>` con `display: contents` (la isla): descendiente, no hijo directo. */
+    .head [data-filter-echo] {
+      grid-area: echo;
+    }
+
+    /* Plegado solo queda la cabecera (el botón «Mostrar los destinos»): sin flechas, la segunda fila es solo del eco. */
+    .carousel[data-state='closed'] .head {
+      grid-template-rows: var(--target-min) auto;
+    }
+  }
 }
 
 @media (min-width: 56rem) {

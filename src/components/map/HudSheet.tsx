@@ -83,11 +83,18 @@ function Summary({
  */
 export function HudSheet({
   title,
+  titleText,
   items,
   children,
 }: {
   /** El `<h1>` de la pantalla (lo pinta el servidor: en escritorio es el título del carril). */
   title: ReactNode;
+  /**
+   * El MISMO texto que el `<h1>`, como cadena: el nombre accesible del asa lo CONTIENE (WCAG 2.5.3 «etiqueta en el nombre»).
+   * El área de pulsación del asa es toda la cabecera, así que el rótulo que la persona ve y diría («Explorar Panamá») es el del
+   * título; antes el nombre era solo «Abrir la información del mapa» y «pulsar Explorar Panamá» no lo encontraba (r2:N2).
+   */
+  titleText: string;
   items: readonly SheetSummaryItem[];
   children: ReactNode;
 }) {
@@ -190,7 +197,7 @@ export function HudSheet({
             data-sheet-handle
             aria-expanded={open}
             aria-controls={bodyId}
-            aria-label={open ? t('sheet.close') : t('sheet.open')}
+            aria-label={t(open ? 'sheet.close' : 'sheet.open', { title: titleText })}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerEnd}

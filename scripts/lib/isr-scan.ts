@@ -2,7 +2,7 @@
  * Verificación del `revalidate` de las páginas cuyo contenido depende del DÍA (caducidad de lo verificado).
  *
  * `export const revalidate = 3600` debe ser un literal en cada archivo (Next lo analiza estáticamente; no admite una
- * constante importada), así que el valor vive duplicado en la ficha y en `sitemap.ts`. Nada falla si falta o se
+ * constante importada), así que el valor vive duplicado en la ficha, en Explorar y en `sitemap.ts`. Nada falla si falta o se
  * escribe mal: la página queda congelada en la fecha del build. Esta comprobación lee el resultado REAL del build
  * (`.next/prerender-manifest.json`) y es lo que mantiene los literales de acuerdo (`pnpm check:bundle`).
  */
@@ -23,6 +23,12 @@ export const ISR_EXPECTATIONS: readonly IsrExpectation[] = [
   {
     label: 'ficha de destino',
     matches: (_route, entry) => entry.srcRoute === '/[locale]/destinations/[slug]',
+    seconds: REVALIDATE_SECONDS,
+  },
+  {
+    // Las insignias de cobertura del carrusel y de la ficha de Explorar salen de `effectiveStatus(…, hoy)` (r0:F-07).
+    label: 'Explorar',
+    matches: (_route, entry) => entry.srcRoute === '/[locale]/explore',
     seconds: REVALIDATE_SECONDS,
   },
   {

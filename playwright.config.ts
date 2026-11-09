@@ -22,7 +22,13 @@ export default defineConfig({
     : [['list']],
   use: {
     baseURL,
-    trace: 'retain-on-failure',
+    // La traza se graba siempre y solo se conserva si la prueba falla, pero SIN la cinta de capturas: grabarla obliga al
+    // navegador a producir y leer cada cuadro, y con WebGL por software (SwiftShader: el Chromium de aquí y del CI) eso le
+    // quita la CPU al mapa. `map.spec` «cambiar de idioma…» (dos cargas del mapa), una trabajadora, mismo árbol, alternando:
+    // 18,3–20,1 s con las capturas frente a 9,8–13,7 s sin ellas; con las capturas vencía los 30 s en la suite completa.
+    // La traza sigue llevando las instantáneas del DOM, la consola y la red; lo que no ve es el lienzo del mapa (para eso,
+    // `E2E_TRACE_SCREENSHOTS=1`). docs/performance.md M-11.
+    trace: { mode: 'retain-on-failure', screenshots: process.env.E2E_TRACE_SCREENSHOTS === '1' },
     launchOptions,
   },
   projects: [

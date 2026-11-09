@@ -230,3 +230,201 @@ export function reachFrame(input: ReachInput): ReachResult | null {
   }
   return null;
 }
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* Encuadre de MEJOR ESFUERZO: cuando varios puntos no caben a la vez en el hueco libre, el que deja más a la vista.     */
+/* ------------------------------------------------------------------------------------------------------------------ */
+
+/** Entrada de {@link bestEffortFrame}; el tamaño y el relleno son los del lienzo en píxeles CSS. */
+export interface BestFrameInput {
+  /** Los puntos que se quieren ver (los marcadores). */
+  readonly points: readonly { readonly lon: number; readonly lat: number }[];
+  readonly size: { readonly width: number; readonly height: number };
+  /** Relleno del HUD (`framePadding`): solo cuentan los puntos que caen DENTRO del rectángulo libre que deja. */
+  readonly padding: FramePadding;
+  /** `maxBounds` del mapa. */
+  readonly limits: GeoBox;
+  /** Zoom MÍNIMO con el que MapLibre deja el mapa dentro de `maxBounds` (`map.getMinZoom(true)`): de ahí se empieza a buscar. */
+  readonly minZoom: number;
+  readonly maxZoom: number;
+  /** Margen (px) entre un punto y el borde del hueco: el marcador mide 44 px. */
+  readonly inset?: number;
+  /** Cuánto por encima de `minZoom` se busca (por defecto 1,2 niveles). */
+  readonly zoomSpan?: number;
+  /**
+   * Cuántos puntos más debe dejar a la vista un encuadre para preferirlo a la vista de siempre (por defecto 2). Mover el
+   * mapa y acercarlo para ganar UN punto a costa de perder contexto no compensa (y a veces cambia uno por otro: lo que el
+   * carril tapaba pasa a verse y lo que se veía junto al borde queda bajo el dock).
+   */
+  readonly minGain?: number;
+  /**
+   * Encuadre de RESULTADOS concretos (el filtro y la búsqueda de Explorar), no vista de conjunto (r0:F-05 / X2). Cambia tres
+   * cosas: (1) además de la rejilla se prueban centros que ponen los propios puntos (cada uno, su centroide y el centro de su
+   * caja) en el centro del hueco libre, porque a zoom alto la rejilla de 41 × 41 sobre TODA la caja de trabajo salta cientos
+   * de píxeles entre muestras y no acertaba con dos destinos a 6 km (la búsqueda «Panamá» dejaba el mapa en el océano, con los
+   * dos resultados a 9 000 px); (2) a igual número de puntos a la vista gana el zoom MÁS ALTO (el encuadre más cercano que los
+   * deja ver), no el más bajo; (3) devuelve siempre el mejor encuadre (`moved` verdadero): aquí no hay «vista de siempre» a la
+   * que volver, el mapa tiene que ir a los resultados.
+   */
+  readonly aim?: boolean;
+}
+
+export interface BestFrameResult {
+  readonly zoom: number;
+  readonly center: { readonly lon: number; readonly lat: number };
+  /** Cuántos de los puntos quedan dentro del hueco libre con ese encuadre. */
+  readonly inside: number;
+  readonly total: number;
+  /** `false` = la vista de siempre (zoom mínimo y centro de `limits`, ya restringido): ningún otro encuadre gana lo bastante. */
+  readonly moved: boolean;
+}
+
+/** Un encuadre candidato: zoom, centro en píxeles del mundo a ese zoom (`s`), puntos dentro del hueco y distancia al centro de siempre. */
+interface BestCandidate {
+  readonly zoom: number;
+  readonly cx: number;
+  readonly cy: number;
+  readonly inside: number;
+  readonly distance: number;
+  readonly s: number;
+}
+
+const BEST_SAMPLES_PER_AXIS = 41;
+const BEST_ZOOM_SPAN = 1.2;
+const BEST_MIN_GAIN = 2;
+
+/**
+ * `maxBounds` impide, con la vista más alta que la caja de trabajo, que ningún encuadre deje TODOS los puntos dentro del hueco
+ * libre (Panamá es una franja de 2,9° de alto y el carril y el dock tapan justo el oeste y el sur: ver `reachFrame`, que sube
+ * el zoom hasta lograrlo para UNO o para un grupo pequeño). Esta función resuelve el caso general: entre todos los encuadres
+ * que MapLibre admite (zoom desde el mínimo, centro dentro de lo que `maxBounds` permite a ese zoom), elige el que deja DENTRO
+ * del hueco libre el MAYOR NÚMERO de puntos; a igualdad, el de MENOR zoom (más país a la vista) y, a igualdad, el centro más
+ * cercano al de `limits` (la vista de siempre: no se mueve nada que no gane un punto). Giro 0, como la vista inicial.
+ *
+ * Solo se aparta de la vista de siempre si gana al menos `minGain` puntos (`moved`). Devuelve `null` si la entrada es inválida
+ * (lienzo o hueco de tamaño no positivo, sin puntos) y se deja el ajuste de la librería.
+ */
+export function bestEffortFrame(input: BestFrameInput): BestFrameResult | null {
+  const { points, size, padding, limits, minZoom, maxZoom } = input;
+  const { width: w, height: h } = size;
+  const availW = w - padding.left - padding.right;
+  const availH = h - padding.top - padding.bottom;
+  const numbers = [minZoom, maxZoom, w, h, availW, availH, padding.top, padding.left];
+  if (!numbers.every(Number.isFinite) || w <= 0 || h <= 0 || availW <= 0 || availH <= 0) {
+    return null;
+  }
+  if (points.length === 0 || maxZoom < minZoom) return null;
+  const inset = Math.min(Math.max(0, input.inset ?? 0), availW / 2, availH / 2);
+  const span = Math.max(0, input.zoomSpan ?? BEST_ZOOM_SPAN);
+  const world = points.map((p) => ({ x: worldX(p.lon), y: worldY(p.lat) }));
+  const preferred = {
+    x: (worldX(limits.west) + worldX(limits.east)) / 2,
+    y: (worldY(limits.south) + worldY(limits.north)) / 2,
+  };
+
+  const countInside = (s: number, cx: number, cy: number): number => {
+    let inside = 0;
+    for (const p of world) {
+      const sx = w / 2 + (p.x * s - cx);
+      const sy = h / 2 + (p.y * s - cy);
+      if (
+        sx >= padding.left + inset &&
+        sx <= w - padding.right - inset &&
+        sy >= padding.top + inset &&
+        sy <= h - padding.bottom - inset
+      ) {
+        inside += 1;
+      }
+    }
+    return inside;
+  };
+
+  // Dónde se quiere un punto en pantalla: el centro del hueco libre, medido desde el centro del lienzo (como `reachFrame`).
+  const dx = w / 2 - (padding.left + availW / 2);
+  const dy = h / 2 - (padding.top + availH / 2);
+  const worldBox = {
+    west: Math.min(...world.map((p) => p.x)),
+    east: Math.max(...world.map((p) => p.x)),
+    north: Math.min(...world.map((p) => p.y)),
+    south: Math.max(...world.map((p) => p.y)),
+  };
+  const aims = [
+    {
+      x: world.reduce((sum, p) => sum + p.x, 0) / world.length,
+      y: world.reduce((sum, p) => sum + p.y, 0) / world.length,
+    },
+    { x: (worldBox.west + worldBox.east) / 2, y: (worldBox.north + worldBox.south) / 2 },
+    ...world,
+  ];
+  /** A qué distancia (px) del centro del hueco cae el centroide de los puntos con ese centro de cámara. */
+  const centroidOffset = (s: number, cx: number, cy: number): number => {
+    const [centroid] = aims;
+    if (!centroid) return 0;
+    return Math.hypot(centroid.x * s - cx - dx, centroid.y * s - cy - dy);
+  };
+
+  let best: BestCandidate | null = null;
+  let natural: BestCandidate | null = null;
+  const consider = (z: number, s: number, cx: number, cy: number): void => {
+    const inside = countInside(s, cx, cy);
+    const distance = input.aim
+      ? centroidOffset(s, cx, cy)
+      : Math.hypot(cx - preferred.x * s, cy - preferred.y * s);
+    const better =
+      best === null ||
+      inside > best.inside ||
+      (inside === best.inside && (input.aim ? z > best.zoom + 1e-9 : z < best.zoom - 1e-9)) ||
+      (inside === best.inside && Math.abs(z - best.zoom) < 1e-9 && distance < best.distance);
+    if (better) best = { zoom: z, cx, cy, inside, distance, s };
+    // La vista de siempre: el zoom mínimo y, a ese zoom, el centro admisible más cercano al de `limits`.
+    const home = Math.hypot(cx - preferred.x * s, cy - preferred.y * s);
+    if (natural === null || (z === minZoom && home < natural.distance)) {
+      natural = { zoom: z, cx, cy, inside, distance: home, s };
+    }
+  };
+  const top = Math.min(maxZoom, minZoom + span);
+  for (let z = minZoom; z <= top + 1e-9; z += ZOOM_STEP) {
+    const s = worldSize(z);
+    const minX = worldX(limits.west) * s;
+    const maxX = worldX(limits.east) * s;
+    const minY = worldY(limits.north) * s;
+    const maxY = worldY(limits.south) * s;
+    // Por debajo del zoom mínimo MapLibre lo sube por su cuenta: ese zoom no existe (con medio píxel de tolerancia).
+    if (maxX - minX < w - 0.5 || maxY - minY < h - 0.5) continue;
+    const loX = minX + w / 2;
+    const hiX = Math.max(loX, maxX - w / 2);
+    const loY = minY + h / 2;
+    const hiY = Math.max(loY, maxY - h / 2);
+    const clamp = (value: number, lo: number, hi: number): number =>
+      Math.min(Math.max(value, lo), hi);
+    if (input.aim) {
+      for (const aimAt of aims) {
+        consider(z, s, clamp(aimAt.x * s + dx, loX, hiX), clamp(aimAt.y * s + dy, loY, hiY));
+      }
+      continue;
+    }
+    const stepsX = hiX - loX < 0.5 ? 1 : BEST_SAMPLES_PER_AXIS;
+    const stepsY = hiY - loY < 0.5 ? 1 : BEST_SAMPLES_PER_AXIS;
+    for (let i = 0; i < stepsX; i++) {
+      const cx = stepsX === 1 ? (loX + hiX) / 2 : loX + ((hiX - loX) * i) / (stepsX - 1);
+      for (let j = 0; j < stepsY; j++) {
+        const cy = stepsY === 1 ? (loY + hiY) / 2 : loY + ((hiY - loY) * j) / (stepsY - 1);
+        consider(z, s, cx, cy);
+      }
+    }
+  }
+  if (best === null || natural === null) return null;
+  const minGain = Math.max(1, input.minGain ?? BEST_MIN_GAIN);
+  const chosen: BestCandidate = input.aim
+    ? best
+    : (best as BestCandidate).inside >= (natural as BestCandidate).inside + minGain
+      ? best
+      : natural;
+  return {
+    zoom: chosen.zoom,
+    center: { lon: lonAt(chosen.cx / chosen.s), lat: latAt(chosen.cy / chosen.s) },
+    inside: chosen.inside,
+    total: points.length,
+    moved: chosen === best,
+  };
+}

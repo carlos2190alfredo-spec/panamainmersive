@@ -36,6 +36,7 @@ const MANIFEST = {
       initialRevalidateSeconds: 3600,
       srcRoute: '/[locale]/destinations/[slug]',
     },
+    '/es/explore': { initialRevalidateSeconds: 3600, srcRoute: '/[locale]/explore' },
     '/sitemap.xml': { initialRevalidateSeconds: 3600, srcRoute: '/sitemap.xml' },
   },
 };
@@ -218,6 +219,31 @@ describe('check-bundle (script completo)', () => {
     const result = await run(materialize(tree));
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('sitemap.xml');
+  });
+
+  it('Explorar sin regeneración (revalidate) FALLA: sus insignias de cobertura se congelarían en el build (r0:F-07)', async () => {
+    const tree = healthyTree();
+    tree['.next/prerender-manifest.json'] = JSON.stringify({
+      routes: {
+        ...MANIFEST.routes,
+        '/es/explore': { initialRevalidateSeconds: false, srcRoute: '/[locale]/explore' },
+      },
+    });
+    const result = await run(materialize(tree));
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Explorar');
+    expect(result.stderr).toContain('/es/explore');
+  });
+
+  it('un manifiesto sin ninguna ruta de Explorar FALLA (no se da por buena)', async () => {
+    const tree = healthyTree();
+    const rest = Object.fromEntries(
+      Object.entries(MANIFEST.routes).filter(([route]) => route !== '/es/explore'),
+    );
+    tree['.next/prerender-manifest.json'] = JSON.stringify({ routes: rest });
+    const result = await run(materialize(tree));
+    expect(result.code).toBe(1);
+    expect(result.stderr).toMatch(/Explorar: el build no contiene ninguna ruta/);
   });
 
   it('sin .next/prerender-manifest.json FALLA', async () => {

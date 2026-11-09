@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useId, useRef } from 'react';
 import { matchingKeys } from '@/domains/tourism/explore-filter';
-import type { SearchIndexEntry } from '@/domains/tourism/search';
+import { SEARCH_QUERY_MAX_LENGTH, type SearchIndexEntry } from '@/domains/tourism/search';
 import { setSearchQuery, useExploreFilter } from './explore-filter-store';
 import styles from './SearchBox.module.css';
 import { selectDestination } from './use-map-url-state';
@@ -66,6 +66,9 @@ export function SearchBox({ index }: { index: readonly SearchIndexEntry[] }) {
         placeholder={t('search.placeholder')}
         autoComplete="off"
         spellCheck={false}
+        // Misma cota que el buscador de la portada: sin ella se podía pegar un texto sin límite en un campo que se compara
+        // contra cada nombre en cada pulsación (r3:N-02). `matchDestinations` recorta además la consulta por si acaso.
+        maxLength={SEARCH_QUERY_MAX_LENGTH}
         enterKeyHint="search"
         onChange={(event) => {
           setSearchQuery(event.currentTarget.value, index);

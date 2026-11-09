@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider, createTranslator } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CarouselFilterStatus } from '@/components/map/CarouselFilterStatus';
+import {
+  CarouselFilterStatus,
+  SEARCH_ANNOUNCE_DELAY_MS,
+} from '@/components/map/CarouselFilterStatus';
 import { FilterChips } from '@/components/map/FilterChips';
 import { MapTools } from '@/components/map/MapTools';
 import { SearchBox } from '@/components/map/SearchBox';
@@ -13,7 +18,7 @@ import { publishMapStatus, resetHudStore, useHudStore } from '@/components/map/h
 import { isSheetOpen, resetSheetStore, setSheetOpen } from '@/components/map/sheet-store';
 import { DESTINATIONS } from '@/domains/tourism/destinations';
 import { kindOptions } from '@/domains/tourism/explore-filter';
-import { buildSearchIndex } from '@/domains/tourism/search';
+import { SEARCH_QUERY_MAX_LENGTH, buildSearchIndex } from '@/domains/tourism/search';
 import { LOCALES, type Locale } from '@/i18n/locales';
 import { MESSAGES } from './messages-fixture';
 
@@ -97,6 +102,24 @@ describe('SearchBox', () => {
       expect(screen.queryByRole('button')).toBeNull(); // sin texto no hay botón de borrar
     },
   );
+
+  it('el campo limita la longitud igual que el de la portada (r3:N-02) y recorta lo que se pega', async () => {
+    const { user, input } = setup();
+    expect(input).toHaveAttribute('maxlength', String(SEARCH_QUERY_MAX_LENGTH));
+    expect(SEARCH_QUERY_MAX_LENGTH).toBe(80);
+    await user.click(input);
+    await user.paste(`canal ${'x'.repeat(500)}`);
+    expect((input as HTMLInputElement).value.length).toBeLessThanOrEqual(SEARCH_QUERY_MAX_LENGTH);
+  });
+
+  it('«Valle Antón» (sin «de») ya filtra el carrusel por clave, en el campo real (r0:F-05)', async () => {
+    const { user, input } = setup();
+    await user.type(input, 'Valle Antón');
+    expect(getExploreFilter().matches).toEqual(['el-valle-de-anton']);
+    await user.clear(input);
+    await user.type(input, 'Casco Viejo');
+    expect(getExploreFilter().matches).toEqual([]); // homónimo documentado: no se relaciona por nombre
+  });
 
   it('escribir calcula las coincidencias POR CLAVE (sin acentos ni mayúsculas) y no toca la URL', async () => {
     const { user, input } = setup();
@@ -244,6 +267,12 @@ describe('CarouselFilterStatus', () => {
       await Promise.resolve();
     });
   };
+  /** Deja pasar la espera del anuncio de una búsqueda (el temporizador es real en estas pruebas). */
+  const settle = async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, SEARCH_ANNOUNCE_DELAY_MS + 80));
+    });
+  };
 
   it('sin filtro no toca nada: nueve tarjetas, ninguna oculta, anuncio vacío y sin eco', () => {
     render(<Carousel />);
@@ -293,17 +322,96 @@ describe('CarouselFilterStatus', () => {
     await act2(() => {
       setSearchQuery('baru', index);
     });
+    await settle();
     expect(announcer()).toHaveTextContent('1 destino coincide con la búsqueda.');
     await act2(() => {
       setSearchQuery('zzz', index);
     });
     expect(shown()).toEqual([]);
+    await settle();
     expect(announcer()).toHaveTextContent('Ningún destino coincide con la búsqueda.');
     await act2(() => {
       setSearchQuery('¡¡', index);
     });
     expect(shown()).toHaveLength(9);
     expect(document.querySelector('[data-filter-echo]')).toBeNull();
+  });
+
+  describe('el anuncio del recuento al escribir espera a que se deje de teclear (r2:N3)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('una ráfaga de pulsaciones se anuncia UNA vez, con el recuento final, tras SEARCH_ANNOUNCE_DELAY_MS', async () => {
+      const { setSearchQuery } = await import('@/components/map/explore-filter-store');
+      render(<Carousel />);
+      const spoken: string[] = [];
+      const watcher = new MutationObserver(() => {
+        spoken.push(announcer().textContent);
+      });
+      watcher.observe(announcer(), { childList: true, characterData: true, subtree: true });
+      // «c», «ca», «can», «cana», «canal»: cada una cambia el recuento (6, 4, 2, 1, 1…)
+      for (const text of ['c', 'ca', 'can', 'cana', 'canal']) {
+        await act2(() => {
+          setSearchQuery(text, index);
+        });
+        await act2(() => {
+          vi.advanceTimersByTime(SEARCH_ANNOUNCE_DELAY_MS - 100); // menos que la espera: se sigue tecleando
+        });
+        expect(announcer()).toHaveTextContent('');
+      }
+      expect(spoken).toEqual([]); // ni una palabra a mitad de la ráfaga
+      // el eco VISIBLE sí sigue cada pulsación (es aria-hidden: no se lee)
+      expect(document.querySelector('[data-filter-echo]')).toHaveTextContent(/destino/);
+      await act2(() => {
+        vi.advanceTimersByTime(150);
+      });
+      expect(announcer()).toHaveTextContent('1 destino coincide con la búsqueda.');
+      expect(spoken.at(-1)).toBe('1 destino coincide con la búsqueda.');
+      watcher.disconnect();
+    });
+
+    it('el tipo de destino (un solo gesto) se anuncia AL MOMENTO, sin esperar', async () => {
+      const { setKindFilter } = await import('@/components/map/explore-filter-store');
+      render(<Carousel />);
+      await act2(() => {
+        setKindFilter('locality');
+      });
+      await act2(() => {
+        vi.advanceTimersByTime(1); // el temporizador de 0 ms
+      });
+      expect(announcer()).toHaveTextContent('Se muestran 3 destinos.');
+    });
+
+    it('tras un tipo, teclear NO recita el recuento viejo mientras se espera', async () => {
+      const { setKindFilter, setSearchQuery } =
+        await import('@/components/map/explore-filter-store');
+      render(<Carousel />);
+      await act2(() => {
+        setKindFilter('locality');
+      });
+      await act2(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(announcer()).toHaveTextContent('Se muestran 3 destinos.');
+      await act2(() => {
+        setSearchQuery('b', index);
+      });
+      // lo último que se dijo se mantiene (no se vacía ni se anuncia una cifra intermedia)
+      expect(announcer()).toHaveTextContent('Se muestran 3 destinos.');
+      await act2(() => {
+        vi.advanceTimersByTime(SEARCH_ANNOUNCE_DELAY_MS);
+      });
+      expect(announcer()).toHaveTextContent(/destino[s]? (coincide|coinciden) con la búsqueda\./);
+    });
+
+    it('la constante es un valor razonable: más que el intervalo entre teclas y menos de un segundo', () => {
+      expect(SEARCH_ANNOUNCE_DELAY_MS).toBeGreaterThanOrEqual(400);
+      expect(SEARCH_ANNOUNCE_DELAY_MS).toBeLessThanOrEqual(600);
+    });
   });
 
   it('en cada idioma el anuncio sale de los mensajes (nunca la clave)', async () => {
@@ -409,6 +517,106 @@ describe('MapTools', () => {
     },
   );
 
+  describe('aviso PREVIO de privacidad del 3D (r3:F-01)', () => {
+    const notice = () => document.querySelector<HTMLElement>('[data-tool-notice="threeD"]')!;
+
+    it.each(LOCALES)(
+      '(%s) el botón se DESCRIBE con el aviso de que la IP llega a Amazon Web Services, ANTES de pulsar',
+      (locale) => {
+        const { t } = setup({ locale });
+        const button = threeD(t);
+        expect(notice()).toBeInTheDocument();
+        expect(notice().textContent).toBe(t('tools.threeDNotice'));
+        expect(notice().textContent).toContain('Amazon Web Services');
+        expect(notice()).toHaveAttribute('role', 'tooltip');
+        expect(button).toHaveAccessibleDescription(t('tools.threeDNotice'));
+        expect(button.getAttribute('aria-describedby')?.split(' ')).toContain(notice().id);
+        // no hay petición ni cambio de URL por el mero hecho de mostrarlo
+        expect(window.location.search).toBe('');
+        expect(pitchRequest()).toEqual({ pitch: null, nonce: 0 });
+      },
+    );
+
+    it('el aviso NO está oculto para la tecnología de apoyo (sin aria-hidden, sin display:none) y no se repite en el DOM', () => {
+      const { t } = setup();
+      expect(notice().closest('[aria-hidden="true"]')).toBeNull();
+      expect(document.querySelectorAll('[data-tool-notice]')).toHaveLength(1);
+      expect(threeD(t)).toHaveAccessibleDescription(msg('es')('tools.threeDNotice'));
+    });
+
+    it('encendido, el aviso previo deja de describir al botón (lo dice ya el aviso de estado) y vuelve al apagarlo', async () => {
+      const { user, t } = setup();
+      await user.click(threeD(t));
+      expect(threeD(t).getAttribute('aria-describedby') ?? '').not.toContain(notice().id);
+      await user.click(threeD(t));
+      expect(threeD(t).getAttribute('aria-describedby') ?? '').toContain(notice().id);
+    });
+
+    it('desactivado (derechos bloqueados o sin mapa) NO lleva el aviso previo —pulsarlo no envía nada a nadie— y se describe SOLO con su motivo', () => {
+      const { t } = setup({ terrainAllowed: false });
+      expect(threeD(t)).toBeDisabled();
+      expect(threeD(t).getAttribute('aria-describedby')).toBe('layer-hint-terrain3d');
+      expect(threeD(t)).not.toHaveAccessibleDescription(t('tools.threeDNotice'));
+      cleanup();
+      resetHudStore();
+      const unavailable = setup({ status: 'unavailable' });
+      expect(threeD(unavailable.t)).toBeDisabled();
+      expect(threeD(unavailable.t).getAttribute('aria-describedby')).toBe(
+        'destinations-map-unavailable',
+      );
+    });
+
+    it('el CSS no muestra el aviso previo sobre un botón desactivado (el cursor sobre un botón que no hace nada no avisa de nada)', () => {
+      const css = readFileSync(
+        join(process.cwd(), 'src/components/map/MapTools.module.css'),
+        'utf8',
+      );
+      expect(css).toMatch(
+        /\.threeD:is\(:hover, :focus-visible, :focus\):not\(\[aria-pressed='true'\], :disabled\)/,
+      );
+      expect(css).toMatch(/\.threeD:not\(\[aria-pressed='true'\], :disabled\)\) \.notice:hover/);
+    });
+
+    it('Escape lo descarta mientras dura el foco (1.4.13) y enfocar de nuevo lo rearma', async () => {
+      const { user, t } = setup();
+      const button = threeD(t);
+      expect(notice()).not.toHaveAttribute('data-dismissed');
+      await user.click(button); // el clic enciende el 3D: para esta prueba solo importa el foco
+      await user.click(button); // vuelve a apagarlo
+      act(() => {
+        button.blur();
+        button.focus();
+      });
+      expect(notice()).not.toHaveAttribute('data-dismissed');
+      await user.keyboard('{Escape}');
+      expect(notice()).toHaveAttribute('data-dismissed', 'true');
+      act(() => {
+        button.blur();
+        button.focus();
+      });
+      expect(notice()).not.toHaveAttribute('data-dismissed');
+    });
+
+    it('Escape con el foco en otro sitio (y sin cursor encima) no hace nada', async () => {
+      const { user } = setup();
+      document.body.focus();
+      await user.keyboard('{Escape}');
+      expect(notice()).not.toHaveAttribute('data-dismissed');
+    });
+
+    it('el CSS lo muestra solo con cursor o foco en el botón APAGADO, deja pasar el cursor sobre él y no anima', () => {
+      const css = readFileSync(
+        join(process.cwd(), 'src/components/map/MapTools.module.css'),
+        'utf8',
+      );
+      expect(css).toMatch(/\.notice\s*\{[^}]*visibility:\s*hidden/);
+      expect(css).toMatch(/:is\(:hover, :focus-visible, :focus\):not\(\[aria-pressed='true'\]/);
+      expect(css).toMatch(/\.notice:hover:not\(\[data-dismissed\]\)/);
+      expect(css).toMatch(/\.notice::before/); // puente sobre el hueco hasta el botón (hoverable)
+      expect(css).not.toMatch(/\.notice[^{]*\{[^}]*(transition|animation)/);
+    });
+  });
+
   it('es OPT-IN: sin pulsar la URL no cambia y no hay orden de inclinar; al pulsar escribe `l` con el sombreado y pide 55°', async () => {
     const { user, t } = setup();
     expect(window.location.search).toBe('');
@@ -464,11 +672,16 @@ describe('MapTools', () => {
       expect(button, `${status} ${String(terrainAllowed)}`).toBeDisabled();
       if (!terrainAllowed) {
         expect(button).toHaveAttribute('title', t('layers.rightsPending'));
-        expect(button).toHaveAttribute('aria-describedby', 'layer-hint-terrain3d');
+        expect((button.getAttribute('aria-describedby') ?? '').split(' ')).toContain(
+          'layer-hint-terrain3d',
+        );
       }
       if (status === 'unavailable') {
         expect(button).toHaveAttribute('title', t('hud.mapUnavailable'));
-        expect(button).toHaveAttribute('aria-describedby', 'destinations-map-unavailable');
+        // el motivo describe al botón, junto al aviso previo de privacidad (r3:F-01)
+        expect((button.getAttribute('aria-describedby') ?? '').split(' ')).toContain(
+          'destinations-map-unavailable',
+        );
       }
       await user.click(button);
       expect(window.location.search).toBe('');

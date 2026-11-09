@@ -8,6 +8,8 @@ import {
   type DestinationKey,
 } from '@/domains/tourism/destinations';
 import {
+  SEARCH_QUERY_MAX_LENGTH,
+  SEARCH_STOP_WORDS,
   buildSearchIndex,
   matchDestinations,
   normalizeSearchQuery,
@@ -249,5 +251,156 @@ describe('consultas vacías, sin coincidencia y casos de borde', () => {
   it('la consulta con guiones, comas o puntos se entiende igual', () => {
     expect(keys(index, 'Panama-Stadt')).toEqual(['panama-city']);
     expect(keys(index, 'canal, de. panamá')).toEqual(['panama-canal']);
+  });
+});
+
+describe('consultas de varias palabras (r0:F-05): por palabras, sin artículos ni preposiciones', () => {
+  const index = buildSearchIndex(DESTINATIONS, 'es');
+
+  it('«Valle Antón», «Canal Panamá» y «Bocas Toro» encuentran el nombre aunque falten «de» y «del»', () => {
+    expect(keys(index, 'Valle Antón')).toEqual(['el-valle-de-anton']);
+    expect(keys(index, 'valle anton')).toEqual(['el-valle-de-anton']);
+    expect(keys(index, 'Canal Panamá')).toEqual(['panama-canal']);
+    expect(keys(index, 'Bocas Toro')).toEqual(['bocas-del-toro']);
+    expect(keys(index, 'Ciudad Panamá')).toEqual(['panama-city']);
+  });
+
+  it('el artículo o la preposición sobrantes tampoco estorban: «el boquete», «de coiba», «the canal»', () => {
+    expect(keys(index, 'el Boquete')).toEqual(['boquete']);
+    expect(keys(index, 'de Coiba')).toEqual(['coiba']);
+    expect(keys(index, 'del volcan baru')).toEqual(['volcan-baru']);
+    expect(keys(index, 'the Panama Canal')).toEqual(['panama-canal']);
+  });
+
+  it('el orden de las palabras no importa: «Panamá Canal», «Baru Volcan», «Toro Bocas»', () => {
+    expect(keys(index, 'Panamá Canal')).toEqual(['panama-canal']);
+    expect(keys(index, 'Baru Volcan')).toEqual(['volcan-baru']);
+    expect(keys(index, 'Toro Bocas')).toEqual(['bocas-del-toro']);
+  });
+
+  it('mientras se teclea: cada palabra puede estar a medias («val ant», «bocas d», «bocas del t»)', () => {
+    expect(keys(index, 'val ant')).toEqual(['el-valle-de-anton']);
+    expect(keys(index, 'bocas d')).toEqual(['bocas-del-toro']);
+    expect(keys(index, 'bocas del t')).toEqual(['bocas-del-toro']);
+    expect(keys(index, 'el val')).toEqual(['el-valle-de-anton']);
+  });
+
+  it('si TODAS las palabras son artículos se comparan tal cual (quien teclea «El» ve ya «El Valle de Antón»)', () => {
+    expect(keys(index, 'el')[0]).toBe('el-valle-de-anton');
+    expect(keys(index, 'de').length).toBeGreaterThan(0);
+  });
+
+  it.each(LOCALES)(
+    'con la interfaz en %s: el nombre de CADA idioma, sin sus artículos ni preposiciones, devuelve ese destino primero',
+    (ui) => {
+      const ix = buildSearchIndex(DESTINATIONS, ui);
+      for (const d of DESTINATIONS) {
+        for (const l of LOCALES) {
+          const name = destinationName(d, l);
+          const bare = name
+            .split(/[\s-]+/)
+            .map((w) => normalizeSearchQuery(w))
+            .filter((w) => w !== '' && !SEARCH_STOP_WORDS.has(w))
+            .join(' ');
+          expect(bare, `${d.key}/${l}`).not.toBe('');
+          expect(keys(ix, bare)[0], `${ui}: «${bare}» (${d.key}/${l})`).toBe(d.key);
+        }
+      }
+    },
+  );
+
+  it('ninguna palabra de ningún nombre ni slug del registro es un artículo (la lista no puede esconder un nombre real)', () => {
+    for (const d of DESTINATIONS) {
+      for (const l of LOCALES) {
+        for (const text of [destinationName(d, l), destinationSlug(d, l), ...d.slugs[l].aliases]) {
+          const kept = normalizeSearchQuery(text)
+            .split('-')
+            .filter((w) => !SEARCH_STOP_WORDS.has(w));
+          expect(kept.length, `${d.key}/${l}: «${text}»`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('HOMONIMIAS: «Barú» y «Santa Catalina» siguen resolviéndose por clave, con o sin artículos', () => {
+    expect(keys(index, 'Barú')).toEqual(['volcan-baru']);
+    expect(keys(index, 'el Barú')).toEqual(['volcan-baru']);
+    expect(keys(index, 'Volcán de Barú')).toEqual(['volcan-baru']);
+    expect(keys(index, 'Vulkan Baru')).toEqual(['volcan-baru']);
+    expect(keys(index, 'Catalina')).toEqual(['santa-catalina']);
+    expect(keys(index, 'Santa Catalina')).toEqual(['santa-catalina']);
+    expect(keys(index, 'Santa-Catalina')).toEqual(['santa-catalina']);
+    // «Santa» nunca arrastra a otro destino por parecerse a «Catalina»
+    expect(keys(index, 'Santa Cruz')).toEqual([]);
+    // dos destinos con el mismo nombre siguen siendo DOS resultados aunque la consulta lleve un artículo
+    const twin = buildSearchIndex(
+      [synthetic('boquete', 'Santa Catalina'), synthetic('santa-catalina', 'Santa Catalina')],
+      'es',
+    );
+    expect(keys(twin, 'la santa catalina')).toEqual(['boquete', 'santa-catalina']);
+    expect(keys(twin, 'catalina santa')).toEqual(['boquete', 'santa-catalina']);
+  });
+
+  it('una palabra que no está en ese nombre descarta el destino aunque las demás sí estén', () => {
+    expect(keys(index, 'Canal Boquete')).toEqual([]);
+    expect(keys(index, 'Valle Panamá')).toEqual([]);
+    expect(keys(index, 'Bocas Coiba')).toEqual([]);
+  });
+
+  it('«Casco Viejo» NO encuentra «Casco Antiguo» (el registro dice que ese «Casco Viejo» es OTRO lugar, en Veraguas)', () => {
+    // E-41 / `homonymCascoViejo`: relacionar los dos por nombre es lo que este módulo se niega a hacer. Si algún día se
+    // acepta un alias de búsqueda, será un campo propio con su fuente y esta prueba cambiará a propósito.
+    expect(keys(index, 'Casco Viejo')).toEqual([]);
+    expect(keys(index, 'viejo')).toEqual([]);
+    expect(keys(index, 'Casco Antiguo')).toEqual(['casco-antiguo']);
+    expect(keys(index, 'casco')).toEqual(['casco-antiguo']);
+    expect(keys(index, 'antiguo')).toEqual(['casco-antiguo']);
+    const casco = DESTINATIONS.find((d) => d.key === 'casco-antiguo');
+    expect(casco?.noteKeys).toContain('homonymCascoViejo');
+    for (const l of LOCALES) expect(casco?.slugs[l].aliases).not.toContain('casco-viejo');
+  });
+});
+
+describe('orden de relevancia con varias palabras', () => {
+  it('nombre exacto antes que comienzo del nombre antes que palabras sueltas antes que subcadena', () => {
+    const index = buildSearchIndex(
+      [
+        synthetic('boquete', 'Playa Isla Coiba Norte'), // palabras sueltas (en otro orden)
+        synthetic('bocas-del-toro', 'Xisla Coiba'), // subcadena
+        synthetic('santa-catalina', 'Isla Coiba Norte'), // comienzo del nombre
+        synthetic('coiba', 'Isla Coiba'), // exacto
+      ],
+      'es',
+    );
+    expect(keys(index, 'isla coiba')).toEqual([
+      'coiba',
+      'santa-catalina',
+      'boquete',
+      'bocas-del-toro',
+    ]);
+  });
+
+  it('un artículo en el nombre cuenta como el nombre exacto: «valle anton» antes que «valle de anton norte»', () => {
+    const index = buildSearchIndex(
+      [
+        synthetic('boquete', 'Valle de Antón Norte'),
+        synthetic('el-valle-de-anton', 'El Valle de Antón'),
+      ],
+      'es',
+    );
+    expect(keys(index, 'valle anton')).toEqual(['el-valle-de-anton', 'boquete']);
+  });
+});
+
+describe('longitud de la consulta', () => {
+  it('se recorta a SEARCH_QUERY_MAX_LENGTH: lo que pasa de ahí no cambia el resultado ni alarga el trabajo', () => {
+    expect(SEARCH_QUERY_MAX_LENGTH).toBe(80);
+    const index = buildSearchIndex(DESTINATIONS, 'es');
+    const padded = `canal de panama${' '.repeat(65)}zzzzzz`;
+    expect(padded.length).toBeGreaterThan(SEARCH_QUERY_MAX_LENGTH);
+    expect(keys(index, padded)).toEqual(['panama-canal']);
+    const huge = `canal ${'x'.repeat(100_000)}`;
+    expect(normalizeSearchQuery(huge).length).toBeLessThanOrEqual(SEARCH_QUERY_MAX_LENGTH);
+    expect(keys(index, huge)).toEqual([]);
   });
 });

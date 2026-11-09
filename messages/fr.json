@@ -2,7 +2,7 @@
   "Meta": {
     "home": {
       "title": "{siteName}\u00a0: explorez le Panama avec des données ouvertes et vérifiables",
-      "description": "Carte, relief et sources dont la provenance est visible pour découvrir et organiser des voyages au Panama. Version de développement."
+      "description": "Carte, relief et sources dont la provenance est visible pour découvrir et comprendre le Panama à partir de données ouvertes et vérifiables. Version de développement."
     },
     "explore": {
       "title": "Explorer le Panama",
@@ -57,12 +57,12 @@
     "label": "Langue",
     "menu": "Choisir la langue",
     "current": "Langue actuelle\u00a0: {name}",
-    "help": "Changer de langue conserve la destination, la carte et les filtres."
+    "help": "Changer de langue conserve la destination, la vue de la carte et les couches actives."
   },
   "Home": {
     "eyebrow": "Version de développement",
     "title": "Le Panama, exploré avec des cartes et des données vérifiables",
-    "lead": "Une plateforme pour découvrir, comprendre et organiser des voyages au Panama. Elle s’appuie sur des sources ouvertes et montre toujours d’où vient chaque donnée.",
+    "lead": "Une plateforme pour découvrir et comprendre le Panama à partir de sources ouvertes et vérifiables. Chaque donnée montre d’où elle vient.",
     "ctaExplore": "Ouvrir la carte",
     "ctaDestinations": "Voir les neuf destinations",
     "principlesHeading": "Notre façon de travailler",
@@ -77,7 +77,7 @@
       },
       "languages": {
         "title": "Cinq langues",
-        "body": "Espagnol, anglais, portugais, français et allemand. Changer de langue conserve ce que vous regardiez."
+        "body": "Espagnol, anglais, portugais, français et allemand. Changer de langue conserve la destination et les couches de la carte."
       }
     },
     "statusHeading": "État actuel",
@@ -85,9 +85,9 @@
   },
   "Search": {
     "label": "Rechercher une destination",
-    "placeholder": "Cherchez parmi les {count} destinations…",
+    "placeholder": "Nom de la destination",
     "submit": "Rechercher",
-    "scope": "La recherche porte uniquement sur les neuf destinations initiales, par leur nom dans l’une des cinq langues. Elle n’inclut ni attractions, ni hébergements, ni activités.",
+    "scope": "La recherche porte uniquement sur les neuf destinations initiales, par leur nom dans l’une des cinq langues\u00a0; elle ne reconnaît pas les autres noms d’usage courant. Elle n’inclut ni attractions, ni hébergements, ni activités.",
     "resultsLabel": "Résultats de la recherche",
     "results": "{count, plural, =0 {Aucune destination ne correspond à «\u00a0{query}\u00a0».} one {# destination correspond à «\u00a0{query}\u00a0».} other {# destinations correspondent à «\u00a0{query}\u00a0».}}",
     "viewOnMap": "Voir sur la carte",
@@ -177,7 +177,7 @@
       "waterways": "Rivière ou canal",
       "places": "Localité (point)"
     },
-    "attribution": "Fond de carte\u00a0: © OpenStreetMap contributors, Overture Maps Foundation (version {release}). Cartographie de référence\u00a0: ne contient aucune limite officielle.",
+    "attribution": "Fond de carte\u00a0: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (version {release}). Cartographie de référence\u00a0: ne contient aucune limite officielle.",
     "controls": {
       "zoomIn": "Zoom avant",
       "zoomOut": "Zoom arrière",
@@ -268,11 +268,12 @@
       "label": "Outils de la carte",
       "threeD": "Relief en 3D",
       "threeDShort": "3D",
+      "threeDNotice": "Une fois activé, votre navigateur demandera le relief à Amazon Web Services, qui recevra votre adresse IP.",
       "layersOpen": "Couches et légende"
     },
     "sheet": {
-      "open": "Ouvrir les informations de la carte",
-      "close": "Fermer les informations de la carte"
+      "open": "{title}\u00a0: ouvrir les informations de la carte",
+      "close": "{title}\u00a0: fermer les informations de la carte"
     },
     "panel": {
       "toggle": "Afficher ou masquer le panneau d’informations"
@@ -281,7 +282,6 @@
       "railLabel": "Filtres et couches de la carte",
       "searchRegionLabel": "Recherche de destinations",
       "carouselLabel": "Carrousel de destinations",
-      "toolsLabel": "Commandes de la carte",
       "mapUnavailable": "Indisponible\u00a0: la carte n’est pas active."
     }
   },
@@ -333,6 +333,7 @@
       "UNAVAILABLE": "Indisponible",
       "ERROR": "Erreur de vérification"
     },
+    "geometryLabel": "Géométrie",
     "observation": {
       "geoCounty": "Limite de district dérivée d’OpenStreetMap, non officielle.",
       "geoRegionCountyLocality": "Province, district et localité\u00a0: trois entités distinctes, dérivées d’OpenStreetMap.",

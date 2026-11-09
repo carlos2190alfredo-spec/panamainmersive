@@ -14,6 +14,33 @@
   font-weight: 800;
 }
 
+/*
+ * Insignia CON rótulo («Geometría» + «✓ Verificada»): en línea si cabe y, si no, el rótulo ENCIMA de la insignia (el
+ * carrusel de Explorar solo deja ≈ 6,5rem junto al botón «Ver en el mapa»). Dos líneas (≈ 13 + 22 px) caben en la altura
+ * del botón (44 px) que comparte la fila: el rótulo no alarga la tarjeta ni el HUD.
+ */
+.labelled {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.375rem;
+  row-gap: 0;
+}
+
+.label {
+  color: var(--color-ink-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.1;
+  hyphens: none;
+}
+
+/* Con rótulo la insignia cede 4 px de relleno: junto a «Localidad» en la ficha (391 px a 1024 de ancho) rótulo + insignia caben en
+   UNA línea de 173 px; si no, la ficha crece 13 px y empuja el hueco libre del mapa (medido). */
+.labelled .badge {
+  padding-inline: 0.375rem;
+}
+
 .VERIFIED {
   background: var(--color-verified-bg);
   color: var(--color-verified-fg);

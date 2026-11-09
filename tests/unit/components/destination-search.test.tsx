@@ -91,13 +91,14 @@ describe('DestinationSearch: estructura (respaldo sin JavaScript)', () => {
     },
   );
 
-  it('campo con etiqueta VISIBLE, nombre `q`, sin autocompletar y con el alcance como descripción', () => {
+  it('campo con etiqueta VISIBLE, SIN `name`, sin autocompletar y con el alcance como descripción', () => {
     const { input, search } = setup('es');
     expect(input.getAttribute('type')).toBe('search');
-    expect(input.getAttribute('name')).toBe('q');
+    // Sin `name` un envío nativo (sin JavaScript) NO pone lo escrito en la URL (r0:F-09: acababa en `?q=…` y Explorar lo ignoraba)
+    expect(input.hasAttribute('name')).toBe(false);
     expect(input.getAttribute('autocomplete')).toBe('off');
     expect(input.getAttribute('maxlength')).toBe('80');
-    expect(input.getAttribute('placeholder')).toBe(search('placeholder', { count: 9 }));
+    expect(input.getAttribute('placeholder')).toBe(search('placeholder'));
     const label = document.querySelector(`label[for="${input.id}"]`);
     expect(label?.textContent).toBe(search('label'));
     // La etiqueta es VISIBLE (no solo para lectores de pantalla): el placeholder no es una etiqueta.
@@ -109,6 +110,28 @@ describe('DestinationSearch: estructura (respaldo sin JavaScript)', () => {
       'submit',
     );
   });
+
+  it.each(LOCALES)(
+    '%s: el envío nativo (sin JavaScript) abre Explorar y NO lleva la consulta en la URL',
+    (locale) => {
+      setup(locale);
+      const form = screen.getByRole<HTMLFormElement>('search');
+      const input = screen.getByRole<HTMLInputElement>('searchbox');
+      input.value = 'mi casa en Boquete';
+      // Lo que enviaría el navegador: los controles con nombre. Sin `name` no hay ninguno.
+      const sent = [...new FormData(form).entries()];
+      expect(sent).toEqual([]);
+    },
+  );
+
+  it.each(LOCALES)(
+    '%s: el texto de ayuda del campo es corto (cabe en un teléfono) y no depende del recuento',
+    (locale) => {
+      const placeholder = msg(locale, 'Search')('placeholder');
+      expect(placeholder.length).toBeLessThanOrEqual(24);
+      expect(placeholder).not.toMatch(/\d|…|\.\.\./);
+    },
+  );
 
   it('el alcance es honesto: solo los nueve destinos, y no promete atracciones ni alojamientos', () => {
     for (const locale of LOCALES) {

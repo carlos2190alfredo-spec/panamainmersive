@@ -86,6 +86,25 @@ export interface MapState {
   pitch: number;
 }
 
+/**
+ * Cuenta los ENCUADRES que pide el mapa. `frameBox` y `frameOverview` escriben `data-flight-ms` de forma síncrona en cada
+ * encuadre (aunque el valor no cambie, el observador recibe un registro), sin esperar a `idle`: `data-zoom` y `data-center` se
+ * escriben solo en `idle`, que con WebGL por software llega después de cualquier plazo corto. Una aserción de «la cámara NO se
+ * movió» sobre `data-zoom` tras una espera fija pasa también cuando SÍ se movió y `idle` aún no llegó; esta no. Úsese siempre con un
+ * control positivo (una acción que SÍ encuadra debe subir la cuenta) para comprobar que el canal funciona.
+ */
+export async function watchFraming(page: Page): Promise<() => Promise<number>> {
+  await mapCanvas(page).evaluate((el) => {
+    const w = window as typeof window & { __framings?: number };
+    w.__framings = 0;
+    new MutationObserver((records) => {
+      w.__framings = (w.__framings ?? 0) + records.length;
+    }).observe(el, { attributes: true, attributeFilter: ['data-flight-ms'] });
+  });
+  return () =>
+    page.evaluate(() => (window as typeof window & { __framings?: number }).__framings ?? 0);
+}
+
 export async function mapState(page: Page): Promise<MapState> {
   const data = await mapCanvas(page).evaluate((el) => ({
     zoom: el.dataset.zoom ?? '',
@@ -194,8 +213,26 @@ export const sheetHandle = (page: Page): Locator => page.locator('[data-sheet-ha
 /** El cuerpo de la hoja inferior móvil (lo que se pliega: buscador, filtro, capas, carrusel, información del mapa). */
 export const sheetBody = (page: Page): Locator => page.locator('[data-sheet-body]');
 
-/** Espera a que una caja deje de moverse (la hoja se abre y se cierra con una transición de 240 ms). */
+/**
+ * Espera a que una caja deje de moverse (la hoja se abre y se cierra con una transición de 240 ms).
+ *
+ * Antes de medir deja pasar DOS cuadros de animación: tras un cambio de tamaño de la ventana (`setViewportSize`) la transición
+ * del alto no ha EMPEZADO aún y dos lecturas seguidas devuelven la misma caja (la de antes); «quieta» no era «llegó». Con la
+ * máquina cargada (varios trabajadores) esa carrera hacía fallar «teclado en pantalla» (`labelTop` = 44,8 px, bajo la
+ * cabecera): la hoja de antes, más alta que la pantalla nueva, aún no se había encogido. Reproducido también sobre el build
+ * anterior a X1 (4 de 24 ejecuciones con 4 trabajadores y sin mapa base).
+ */
 export async function settled(locator: Locator): Promise<void> {
+  await locator.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      }),
+  );
   let last = '';
   await expect
     .poll(

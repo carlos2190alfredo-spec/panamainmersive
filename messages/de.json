@@ -2,15 +2,15 @@
   "Meta": {
     "home": {
       "title": "{siteName}: Panama mit offenen, überprüfbaren Daten entdecken",
-      "description": "Karte, Relief und Quellen mit sichtbarer Herkunft, um Reisen durch Panama zu entdecken und zu planen. Entwicklungsversion."
+      "description": "Karte, Relief und Quellen mit sichtbarer Herkunft, um Panama anhand offener, überprüfbarer Daten zu entdecken und zu verstehen. Entwicklungsversion."
     },
     "explore": {
       "title": "Panama erkunden",
-      "description": "Karte von Panama mit den neun ersten Reisezielen und der gleichwertigen Textliste."
+      "description": "Karte von Panama mit den ersten neun Reisezielen und der gleichwertigen Textliste."
     },
     "destinations": {
       "title": "Reiseziele",
-      "description": "Die neun ersten Reiseziele von {siteName} und der Stand ihrer Daten."
+      "description": "Die ersten neun Reiseziele von {siteName} und der Stand ihrer Daten."
     },
     "destination": {
       "title": "{name}",
@@ -57,12 +57,12 @@
     "label": "Sprache",
     "menu": "Sprache auswählen",
     "current": "Aktuelle Sprache: {name}",
-    "help": "Beim Wechsel der Sprache bleiben Reiseziel, Karte und Filter erhalten."
+    "help": "Beim Wechsel der Sprache bleiben Reiseziel, Kartenansicht und aktive Ebenen erhalten."
   },
   "Home": {
     "eyebrow": "Entwicklungsversion",
     "title": "Panama, erkundet mit Karten und überprüfbaren Daten",
-    "lead": "Eine Plattform, um Reisen durch Panama zu entdecken, zu verstehen und zu planen. Sie stützt sich auf offene Quellen und zeigt immer, woher jedes Datum stammt.",
+    "lead": "Eine Plattform, um Panama anhand offener, überprüfbarer Quellen zu entdecken und zu verstehen. Jedes Datum zeigt, woher es stammt.",
     "ctaExplore": "Karte öffnen",
     "ctaDestinations": "Die neun Reiseziele ansehen",
     "principlesHeading": "So arbeiten wir",
@@ -77,7 +77,7 @@
       },
       "languages": {
         "title": "Fünf Sprachen",
-        "body": "Spanisch, Englisch, Portugiesisch, Französisch und Deutsch. Beim Sprachwechsel bleibt erhalten, was Sie gerade ansehen."
+        "body": "Spanisch, Englisch, Portugiesisch, Französisch und Deutsch. Beim Sprachwechsel bleiben Reiseziel und Kartenebenen erhalten."
       }
     },
     "statusHeading": "Aktueller Stand",
@@ -85,9 +85,9 @@
   },
   "Search": {
     "label": "Ein Reiseziel suchen",
-    "placeholder": "Unter den {count} Reisezielen suchen …",
+    "placeholder": "Name des Reiseziels",
     "submit": "Suchen",
-    "scope": "Die Suche umfasst nur die neun ersten Reiseziele, über ihren Namen in einer der fünf Sprachen. Sehenswürdigkeiten, Unterkünfte und Aktivitäten sind nicht enthalten.",
+    "scope": "Die Suche umfasst nur die ersten neun Reiseziele, über ihren Namen in einer der fünf Sprachen; andere gebräuchliche Namen erkennt sie nicht. Sehenswürdigkeiten, Unterkünfte und Aktivitäten sind nicht enthalten.",
     "resultsLabel": "Suchergebnisse",
     "results": "{count, plural, =0 {Kein Reiseziel passt zu „{query}“.} one {# Reiseziel passt zu „{query}“.} other {# Reiseziele passen zu „{query}“.}}",
     "viewOnMap": "Auf der Karte zeigen",
@@ -177,7 +177,7 @@
       "waterways": "Fluss oder Kanal",
       "places": "Ort (Punkt)"
     },
-    "attribution": "Basiskarte: © OpenStreetMap contributors, Overture Maps Foundation (Version {release}). Referenzkartografie: enthält keine offiziellen Grenzen.",
+    "attribution": "Basiskarte: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (Version {release}). Referenzkartografie: enthält keine offiziellen Grenzen.",
     "controls": {
       "zoomIn": "Vergrößern",
       "zoomOut": "Verkleinern",
@@ -262,17 +262,18 @@
       "show": "Reiseziele einblenden"
     },
     "featured": {
-      "reframe": "Ansicht erneut auf das Reiseziel ausrichten"
+      "reframe": "Auf das Reiseziel zentrieren"
     },
     "tools": {
       "label": "Kartenwerkzeuge",
       "threeD": "3D-Relief",
       "threeDShort": "3D",
+      "threeDNotice": "Beim Einschalten fordert Ihr Browser das Relief von Amazon Web Services an, das dabei Ihre IP-Adresse erhält.",
       "layersOpen": "Ebenen und Legende"
     },
     "sheet": {
-      "open": "Karteninformationen öffnen",
-      "close": "Karteninformationen schließen"
+      "open": "{title}: Karteninformationen öffnen",
+      "close": "{title}: Karteninformationen schließen"
     },
     "panel": {
       "toggle": "Informationsbereich ein- oder ausblenden"
@@ -281,7 +282,6 @@
       "railLabel": "Kartenfilter und Ebenen",
       "searchRegionLabel": "Reiseziel-Suche",
       "carouselLabel": "Reiseziel-Karussell",
-      "toolsLabel": "Kartensteuerung",
       "mapUnavailable": "Nicht verfügbar: Die Karte ist nicht aktiv."
     }
   },
@@ -333,6 +333,7 @@
       "UNAVAILABLE": "Nicht verfügbar",
       "ERROR": "Fehler bei der Prüfung"
     },
+    "geometryLabel": "Geometrie",
     "observation": {
       "geoCounty": "Distriktgrenze aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoRegionCountyLocality": "Provinz, Distrikt und Ort: drei verschiedene Einheiten, aus OpenStreetMap abgeleitet.",

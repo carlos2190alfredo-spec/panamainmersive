@@ -13,8 +13,12 @@ import styles from './DestinationSearch.module.css';
  *
  * - Sin red: el índice llega del servidor como prop (≈ 2 KB) y se compara en el propio navegador; la consulta no se
  *   guarda ni sale de la página.
- * - Sin JavaScript: es un `<form role="search" method="get">` que va a Explorar (`action` = ruta localizada). Explorar
- *   ignora el parámetro `q`: llega al mapa, sin selección.
+ * - Sin JavaScript no hay búsqueda posible (el emparejamiento es del cliente), y un campo que no busca engaña: el CSS
+ *   oculta el formulario entero con `@media (scripting: none)` (quedan los dos botones del héroe y las nueve tarjetas con
+ *   sus enlaces). Además el campo NO lleva `name`: en un navegador que no conozca esa consulta de medios y envíe el
+ *   formulario sin JavaScript, el navegador solo abre Explorar (`action` = ruta localizada) y lo escrito NO viaja en la URL
+ *   (r0:F-09: con `name="q"` acababa en `?q=…`, en el historial y en los registros del servidor y de la CDN, y Explorar lo
+ *   ignoraba). Con JavaScript el formulario nunca se envía de forma nativa (`preventDefault`).
  * - Con JavaScript: los resultados salen mientras se escribe (enlaces a la ficha y a «Ver en el mapa»), Enter con
  *   resultados abre Explorar con el primero (`?d=<clave>`) y Escape borra la consulta.
  * - Un solo `role="search"` por página (no hay otro en la cabecera). Sin patrón ARIA «combobox»: es un campo con una
@@ -130,13 +134,12 @@ export function DestinationSearch({ index, kindLabels }: DestinationSearchProps)
           id={inputId}
           className={styles.input}
           type="search"
-          name="q"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
           }}
           onKeyDown={onKeyDown}
-          placeholder={t('placeholder', { count: index.length })}
+          placeholder={t('placeholder')}
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, createTranslator } from 'next-intl';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HudSheet } from '@/components/map/HudSheet';
@@ -36,11 +36,24 @@ function stubViewport(layout: 'desktop' | 'mobile'): void {
 
 const messages = (locale: Locale) => ({ Map: MESSAGES[locale].Map as never });
 
+/** El título REAL de Explorar en cada idioma: el que se ve en el `<h1>` y el que el asa debe contener en su nombre. */
+const titleOf = (locale: Locale): string => (MESSAGES[locale].Explore as { title: string }).title;
+
+/** El nombre del asa tal como lo resuelven los mensajes reales (con el título del idioma). */
+const handleName = (locale: Locale, key: 'sheet.open' | 'sheet.close'): string =>
+  (
+    createTranslator({
+      locale,
+      messages: MESSAGES[locale] as never,
+      namespace: 'Map',
+    } as never) as unknown as (key: string, values?: Record<string, unknown>) => string
+  )(key, { title: titleOf(locale) });
+
 function Sheet({ locale = 'es' }: { locale?: Locale }) {
   return (
     <NextIntlClientProvider locale={locale} messages={messages(locale)}>
       <div data-immersive>
-        <HudSheet title={<h1>Explorar Panamá</h1>} items={ITEMS}>
+        <HudSheet title={<h1>{titleOf(locale)}</h1>} titleText={titleOf(locale)} items={ITEMS}>
           <label>
             Buscar
             <input type="search" />
@@ -74,7 +87,7 @@ afterEach(() => {
 describe('HudSheet · antes de hidratar (lo que llega en el HTML)', () => {
   const html = renderToStaticMarkup(
     <NextIntlClientProvider locale="es" messages={messages('es')}>
-      <HudSheet title={<h1>Explorar Panamá</h1>} items={ITEMS}>
+      <HudSheet title={<h1>Explorar Panamá</h1>} titleText="Explorar Panamá" items={ITEMS}>
         <button type="button">Dentro</button>
       </HudSheet>
     </NextIntlClientProvider>,
@@ -105,11 +118,33 @@ describe('HudSheet · móvil', () => {
     '(%s) el asa es un botón con aria-expanded, aria-controls y el nombre del idioma',
     (locale) => {
       render(<Sheet locale={locale} />);
-      const t = MESSAGES[locale].Map as { sheet: { open: string; close: string } };
       expect(handle()).toHaveAttribute('aria-expanded', 'false');
       expect(handle()).toHaveAttribute('aria-controls', body().id);
-      expect(handle()).toHaveAccessibleName(t.sheet.open);
+      expect(handle()).toHaveAccessibleName(handleName(locale, 'sheet.open'));
       expect(handle()).toHaveAttribute('type', 'button');
+    },
+  );
+
+  it.each(LOCALES)(
+    '(%s) el nombre accesible del asa CONTIENE el rótulo visible «%s» (WCAG 2.5.3), cerrada y abierta (r2:N2)',
+    async (locale) => {
+      const user = userEvent.setup();
+      render(<Sheet locale={locale} />);
+      const visible = screen.getByRole('heading', { level: 1 }).textContent;
+      expect(visible).toBe(titleOf(locale));
+      const norm = (text: string) =>
+        text
+          .normalize('NFC')
+          .replace(/\u00a0/g, ' ')
+          .toLowerCase();
+      expect(norm(handle().getAttribute('aria-label') ?? '')).toContain(norm(visible));
+      // …y empieza por él: quien dicta «pulsar Explorar Panamá» lo encuentra a la primera
+      expect(norm(handle().getAttribute('aria-label') ?? '').startsWith(norm(visible))).toBe(true);
+      await user.click(handle());
+      expect(norm(handle().getAttribute('aria-label') ?? '')).toContain(norm(visible));
+      expect(handle()).toHaveAccessibleName(handleName(locale, 'sheet.close'));
+      // Y sigue diciendo QUÉ hace (no se queda en el título)
+      expect(handleName(locale, 'sheet.open')).not.toBe(handleName(locale, 'sheet.close'));
     },
   );
 
@@ -124,9 +159,7 @@ describe('HudSheet · móvil', () => {
     render(<Sheet />);
     await user.click(handle());
     expect(handle()).toHaveAttribute('aria-expanded', 'true');
-    expect(handle()).toHaveAccessibleName(
-      (MESSAGES.es.Map as { sheet: { close: string } }).sheet.close,
-    );
+    expect(handle()).toHaveAccessibleName(handleName('es', 'sheet.close'));
     expect(root()).toHaveAttribute('data-state', 'open');
     expect(body()).not.toHaveAttribute('inert');
     await user.click(handle());

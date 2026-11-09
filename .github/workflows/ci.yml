@@ -1,16 +1,24 @@
-# CI de Panamá Immersive. ESTADO: IMPLEMENTED, no VERIFIED: este flujo no se ha podido ejecutar fuera
-# del entorno de desarrollo. Los MISMOS comandos sí se ejecutan en local (ver docs/testing.md) y la estructura de este
-# archivo está vigilada por `tests/unit/scripts/ci-workflow.test.ts` (guardas textuales, no una ejecución).
+# CI de Panamá Immersive. ESTADO: VERIFIED en GitHub, pero solo sobre lo ANTERIOR a la entrega 5j: corrió en verde el
+# 2026-10-24 (push a `main`, `a0f9fd5`, y PR #6, `6193226`; docs/deploy.md §7, E-98). Los commits de 5j y de su revisión
+# independiente no estaban en `origin` cuando se escribió esto: ese CI no los ha visto. Los MISMOS comandos se ejecutan
+# en local (ver docs/testing.md) y la estructura de este archivo está vigilada por `tests/unit/scripts/ci-workflow.test.ts`
+# (guardas textuales, no una ejecución).
 #
 # LIMITACIONES CONOCIDAS (honestas, no ocultas en el nombre de un job verde):
 #  · Este CI NO genera el mapa base (`public/data/panama-basemap.pmtiles`: Python + tippecanoe + red hacia Overture,
 #    ≈ 5 min). Sin él, las pruebas E2E que necesitan el mapa dibujado se OMITEN diciéndolo. Medido en local ocultando el
-#    fichero, 2026-10-26: 255 pasan, 81 omitidas (todas por esa causa), 0 fallan (antes 254 y 80, 225 y 75; 2026-10-25: 184 y 66; 2026-10-24: 138 y 57; entre
+#    fichero, 2026-10-27 (revisión X1 de 5j, `--workers=3`): 272 pasan, 101 omitidas (todas por esa causa), 1 falla y 1 intermitente, las dos ANTERIORES a X1 y solo bajo carga (la que fallaba, «teclado en pantalla» de la hoja móvil, era una carrera de `settled()` y ya está corregida: 24 de 24 con 4 trabajadores, antes 5 de 24 y 4 de 24 sobre el build anterior; la intermitente son las flechas del carrusel: ver docs/progress.md, «X1»); con el mapa, 375 pasan y 0 fallan; antes 255 y 81 (2026-10-26), 254 y 80, 225 y 75; 2026-10-25: 184 y 66; 2026-10-24: 138 y 57; entre
 #    medias entraron las pruebas del HUD de Explorar, las de la portada, las de sus interacciones —filtro, buscador y 3D— y las de la hoja móvil). `pnpm check:e2e-skips` limita las
-#    omitidas a ese número: otra omisión nueva ya no pasa desapercibida. El mapa real solo se verifica en local (F3-14).
+#    omitidas a ese número: otra omisión nueva ya no pasa desapercibida.
+#    X2 (revisión de 5j, 2026-11-03): +8 pruebas que necesitan el mapa (6 de escritorio y 2 de móvil: aviso previo del 3D, apagado del 3D,
+#    nombres de los marcadores, Escape, vuelo de la búsqueda y créditos de MapLibre) → techo 101 → 109; medido solo sobre sus dos archivos (8 omitidas de 19), no con la suite entera sin mapa.
 #    ACTUALIZACIÓN 2026-10-24: el fichero ahora SÍ está versionado (staging de Vercel, docs/deploy.md §4), así que este CI
-#    lo encontrará en el checkout y EJECUTARÁ esas pruebas (el límite de omitidas sigue siendo un máximo, no un mínimo).
-#    Esas pruebas con WebGL en el runner de GitHub no se han ejecutado nunca: un fallo ahí es información, no una regresión.
+#    lo encuentra en el checkout y EJECUTA esas pruebas (el límite de omitidas es un máximo, no un mínimo).
+#    OBSERVADO en GitHub (2026-10-24, run 40131580748 sobre `6193226`, ubuntu-24.04, Chromium 156.0.8078.4): 195 pasan,
+#    0 omitidas, 0 fallan, 0 intermitentes: las pruebas con WebGL SÍ corren en el runner. Por eso el techo de abajo solo
+#    describe un clon SIN el fichero, y el NOMBRE de este job («mapa base NO generado en CI…») quedó desactualizado:
+#    sigue diciendo que el CI no lo genera (cierto: lo trae el checkout) y que sus pruebas se omiten (hoy: ninguna). No
+#    se renombró porque `scripts/mutation/ci.py` (Y12) cita el nombre literalmente.
 #  · `pnpm test:e2e:db` NO está en este flujo: necesita artefactos de datos gitignorados (`pnpm data:build` y
 #    `pnpm data:ingest`) que el CI no genera, y en CI «faltan datos» es un FALLO (un verde que no ejecutó nada es peor
 #    que un rojo), así que añadirlo sin generarlos lo dejaría siempre en rojo. Se ejecuta en local (docs/testing.md).
@@ -118,11 +126,12 @@ jobs:
         env:
           CI: 'true'
           SITE_ENV: development
-      # 81 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO: si algún día el CI genera el mapa, bájalo.
+      # 109 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO para un clon sin el fichero, no el valor
+      # esperado: con el mapa versionado el CI mide 0 omitidas.
       - name: Presupuesto de pruebas omitidas
         run: pnpm check:e2e-skips
         env:
-          E2E_MAX_SKIPPED: '81'
+          E2E_MAX_SKIPPED: '109'
       - name: Trazas de Playwright (solo si falla)
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
