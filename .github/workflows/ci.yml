@@ -12,6 +12,8 @@
 #    omitidas a ese número: otra omisión nueva ya no pasa desapercibida.
 #    X2 (revisión de 5j, 2026-11-03): +8 pruebas que necesitan el mapa (6 de escritorio y 2 de móvil: aviso previo del 3D, apagado del 3D,
 #    nombres de los marcadores, Escape, vuelo de la búsqueda y créditos de MapLibre) → techo 101 → 109; medido solo sobre sus dos archivos (8 omitidas de 19), no con la suite entera sin mapa.
+#    X5 (revisión de CSS y accesibilidad de 5j, 2026-11-11): +5 pruebas que necesitan el mapa (2 de escritorio: aviso del mapa frente al panel abierto y tipografía de los marcadores; 3 de móvil: el aviso
+#    previo del 3D a 320 px, con «Sombreado» y en tableta táctil) → techo 109 → 114; medido solo sobre esas cinco con el fichero oculto (5 omitidas de 5), no con la suite entera sin mapa.
 #    ACTUALIZACIÓN 2026-10-24: el fichero ahora SÍ está versionado (staging de Vercel, docs/deploy.md §4), así que este CI
 #    lo encuentra en el checkout y EJECUTA esas pruebas (el límite de omitidas es un máximo, no un mínimo).
 #    OBSERVADO en GitHub (2026-10-24, run 40131580748 sobre `6193226`, ubuntu-24.04, Chromium 156.0.8078.4): 195 pasan,
@@ -126,12 +128,12 @@ jobs:
         env:
           CI: 'true'
           SITE_ENV: development
-      # 109 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO para un clon sin el fichero, no el valor
+      # 114 = las pruebas que necesitan el mapa base (ver arriba). Es un TECHO para un clon sin el fichero, no el valor
       # esperado: con el mapa versionado el CI mide 0 omitidas.
       - name: Presupuesto de pruebas omitidas
         run: pnpm check:e2e-skips
         env:
-          E2E_MAX_SKIPPED: '109'
+          E2E_MAX_SKIPPED: '114'
       - name: Trazas de Playwright (solo si falla)
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -330,7 +330,7 @@ test.describe('hoja inferior: estructura y manejo', () => {
   }) => {
     // Medido en Chromium (macOS, toque emulado por CDP): hasta 14 px de movimiento el navegador genera `click` en el asa y desde
     // 16 px NO. Con el umbral de arrastre en 24 px, entre los dos había una franja muerta (16–23 px) en la que el gesto no hacía
-    // nada si se delegaba en el `click`. En Linux la holgura es menor y la franja, más ancha.
+    // nada si se delegaba en el `click`. (En Linux no se ha medido.)
     await loadHud(page);
     const wobble = async (dy: number): Promise<void> => {
       await settled(sheetHandle(page));

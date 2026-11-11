@@ -170,9 +170,10 @@ export function HudSheet({
     drag.current = null;
     if (event.type === 'pointercancel') return;
     const result = decideSheetDrag(current.dy);
-    // El ratón siempre genera su `click`: lo resuelve el botón. Un dedo que se movió más que la holgura del navegador (≈ 5 px en
-    // Linux, ≈ 8 en Android) pero menos que el umbral NO genera `click`: el toque se perdería (lo vio el CI de Linux con un
-    // temblor de 8 px). Se resuelve aquí, y el `click` que sí llegue se descarta (uno solo en cualquier caso).
+    // El ratón siempre genera su `click`: lo resuelve el botón. Un dedo que se movió más que la holgura de toque del navegador pero
+    // menos que el umbral de arrastre (24 px) no genera `click` y el gesto se perdería. Medido en Chromium (macOS, toque emulado):
+    // hay `click` hasta 14 px de movimiento y no desde 16 px, así que entre 16 y 23 px había una franja muerta (Android usa ≈ 8 dp;
+    // en Linux no se ha medido). Se resuelve aquí, y el `click` que sí llegue se descarta (uno solo en cualquier caso).
     if (result === 'tap' && event.pointerType === 'mouse') return;
     setSheetOpen(result === 'tap' ? !open : result === 'open');
     decidedAt.current = event.timeStamp;
