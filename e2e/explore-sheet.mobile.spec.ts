@@ -277,9 +277,50 @@ test.describe('hoja inferior: estructura y manejo', () => {
       { x, y: open.y + open.height / 2 + 160 },
     );
     await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'false');
+    // El asa vuelve a su sitio con la animación del cuerpo (se cierra): el dedo tiene que caer donde está YA, no donde estaba al
+    // principio. El CI de Linux lo reprodujo (la traza: el nuevo gesto empezaba 17 ms después de que `aria-expanded` cambiara,
+    // con el asa aún a medio camino, y caía fuera de ella; en macOS el cambio llega más tarde y no se veía)
+    await settled(sheetHandle(page));
+    const closed = await sheetHandle(page).boundingBox();
+    if (!closed) throw new Error('sin asa cerrada');
+    const closedY = closed.y + closed.height / 2;
     // Un arrastre corto (un temblor del dedo, menos de 24 px) es un TOQUE: lo resuelve el botón y alterna, sin dejarla a medias
-    await touchDrag(page, { x, y }, { x, y: y - 8 });
-    await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
+    // Diagnóstico para el CI (solo cuesta si falla): qué eventos recibe el documento durante este gesto y qué hay bajo el dedo
+    const under = await page.evaluate(
+      ({ px, py }) => {
+        const w = window as typeof window & { __gestureLog?: string[] };
+        const log: string[] = [];
+        w.__gestureLog = log;
+        for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'click']) {
+          document.addEventListener(
+            type,
+            (event) => {
+              const target = event.target instanceof Element ? event.target : null;
+              const mark = target?.closest('[data-sheet-handle]')
+                ? 'ASA'
+                : (target?.tagName ?? '?');
+              log.push(`${type}@${String(Math.round(event.timeStamp))} ${mark}`);
+            },
+            true,
+          );
+        }
+        const el = document.elementFromPoint(px, py);
+        return el ? `${el.tagName}.${el.className}` : 'nada';
+      },
+      { px: x, py: closedY },
+    );
+    await touchDrag(page, { x, y: closedY }, { x, y: closedY - 8 });
+    try {
+      await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
+    } catch (error) {
+      const log = await page.evaluate(
+        () => (window as typeof window & { __gestureLog?: string[] }).__gestureLog ?? [],
+      );
+      throw new Error(
+        `${error instanceof Error ? error.message : String(error)}\nBajo el dedo (${String(Math.round(x))}, ${String(Math.round(closedY))}): ${under}\nEventos del gesto: ${log.join(' | ')}`,
+        { cause: error },
+      );
+    }
     // La página no se desplazó por arrastrar el asa
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
