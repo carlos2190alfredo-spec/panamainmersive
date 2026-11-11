@@ -8,6 +8,7 @@ import {
   allowedLayers,
   type MapLayerId,
 } from '@/domains/geography/map-url-state';
+import { usesTerrain } from '@/domains/geography/map-style';
 import { CAROUSEL_UNAVAILABLE_ID, requestPitch, useHudStore } from './hud-store';
 import { LAYERS_GROUP_ID, LEGEND_GROUP_ID } from './hud-ids';
 import styles from './MapTools.module.css';
@@ -92,6 +93,10 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
 
   const active = allowedLayers(state.layers ?? DEFAULT_MAP_LAYERS, terrainAllowed);
   const threeD = active.includes('terrain3d');
+  // ¿Ya se está pidiendo el relieve de AWS? Con el 3D encendido, pero también con solo «Sombreado» (usa la misma fuente): entonces
+  // el aviso de estado del mapa ya lo dice y pulsar el 3D no suma ningún tercero. El aviso previo («al activarlo…») no tiene
+  // sentido y, visible a la vez que el de estado, lo tapaba.
+  const reliefInUse = threeD || usesTerrain(active);
   const unavailable = mapStatus === 'unavailable';
   // Sin mapa listo no hay nada que inclinar; sin derechos tampoco. El motivo va como descripción y como `title`.
   const reason = !terrainAllowed
@@ -157,7 +162,7 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
   // lo dice, y desactivado no enviará nada a nadie) y, si lo hay, el motivo por el que no se puede usar.
   const reasonId =
     reason === null ? null : !terrainAllowed ? 'layer-hint-terrain3d' : CAROUSEL_UNAVAILABLE_ID;
-  const describedBy = [threeD || threeDDisabled ? null : noticeId, reasonId]
+  const describedBy = [reliefInUse || threeDDisabled ? null : noticeId, reasonId]
     .filter(Boolean)
     .join(' ');
 
@@ -174,6 +179,7 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
           type="button"
           className={`${styles.tool} ${styles.threeD}`}
           aria-pressed={threeD}
+          data-relief-in-use={reliefInUse ? 'true' : undefined}
           // El nombre accesible CONTIENE el texto visible («3D», WCAG 2.5.3).
           aria-label={t('tools.threeD')}
           aria-describedby={describedBy === '' ? undefined : describedBy}

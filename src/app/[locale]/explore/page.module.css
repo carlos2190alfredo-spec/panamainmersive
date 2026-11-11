@@ -336,7 +336,8 @@
     inline-size: max-content;
   }
 
-  .hud:has([data-hud-zone='panel'][data-state='open']) {
+  /* En `.shell` (no en `.hud`): los avisos del mapa (`MapStage`, hermano del HUD) también necesitan saber si el panel está abierto. */
+  .shell:has([data-hud-zone='panel'][data-state='open']) {
     --hud-panel-col: var(--hud-panel-w);
   }
 

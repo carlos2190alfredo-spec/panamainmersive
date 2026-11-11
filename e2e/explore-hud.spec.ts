@@ -1340,6 +1340,93 @@ test.describe('HUD de Explorar: panel, carril y avisos con el mapa (r1:V-07, V-0
     expect(Math.abs((box?.width ?? 0) - (search?.width ?? 0))).toBeLessThanOrEqual(2);
     expect(box?.height ?? 0, 'dos líneas: ≈ 62 px, no tres (≈ 98 px)').toBeLessThan(80);
   });
+
+  test('el aviso del relieve (AWS) no se pinta sobre el panel de información abierto: cede su sitio y, plegado el panel, vuelve al ancho del buscador', async ({
+    page,
+  }) => {
+    // Con poca altura el panel abierto llega hasta el borde superior de su fila, justo donde caen los avisos (van por encima del HUD)
+    await page.setViewportSize({ width: 1024, height: 640 });
+    await routeTerrain(page, 'ok');
+    await openMap(page, EXPLORE);
+    await page.getByRole('button', { name: 'Relieve en 3D' }).click();
+    const notice = page.locator('[role="status"]', { hasText: 'Amazon Web Services' });
+    await expect(notice).toBeVisible();
+    const search = page.locator('[data-hud-zone="search"]');
+    const panel = page.locator('[data-hud-zone="panel"]');
+    const box = async (locator: typeof notice) => {
+      const b = await locator.boundingBox();
+      if (!b) throw new Error('sin caja');
+      return b;
+    };
+    const overlap = (a: Awaited<ReturnType<typeof box>>, b: Awaited<ReturnType<typeof box>>) =>
+      a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    // plegado: la columna y el ancho del buscador (la prueba de arriba, a otro tamaño)
+    expect(Math.abs((await box(notice)).x - (await box(search)).x)).toBeLessThanOrEqual(2);
+    await openAreasPanel(page);
+    await expect(panel).toHaveAttribute('data-state', 'open');
+    const open = { notice: await box(notice), panel: await box(panel) };
+    expect(overlap(open.notice, open.panel), 'el aviso no toca el panel abierto').toBe(false);
+    expect(open.notice.x + open.notice.width, 'y termina antes de su borde izquierdo').toBeLessThan(
+      open.panel.x,
+    );
+    // al plegar el panel, el aviso vuelve a la columna del buscador
+    await panelToggle(page).click();
+    await expect(panel).toHaveAttribute('data-state', 'closed');
+    await expect
+      .poll(async () => Math.abs((await box(notice)).x - (await box(search)).x))
+      .toBeLessThanOrEqual(2);
+    await openAreasPanel(page);
+    await expect(panel).toHaveAttribute('data-state', 'open');
+    // control: con el ancho de antes (sin ceder el sitio) SÍ lo tapaba a este tamaño
+    await notice.evaluate((el) => {
+      el.parentElement?.setAttribute('data-test-notices', '');
+    });
+    await applyCss(
+      page,
+      '[data-test-notices]{inset-inline:calc(var(--hud-rail-w,0px) + var(--hud-gap) * 2) calc(var(--hud-tools-w,var(--target-min)) + var(--hud-gap) * 2) !important}',
+    );
+    expect(
+      overlap(await box(notice), await box(panel)),
+      'control: antes lo tapaba (la comprobación puede fallar)',
+    ).toBe(true);
+  });
+});
+
+test.describe('HUD de Explorar: tipografía de los marcadores (con el mapa)', () => {
+  test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
+
+  test('los marcadores y los grupos usan la tipografía de la interfaz (Montserrat), no la que MapLibre da a su contenedor (Helvetica)', async ({
+    page,
+  }) => {
+    // Una ventana pequeña (pero con la rejilla de escritorio) agrupa destinos: así hay también grupos que medir
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openMap(page, EXPLORE);
+    await expect(page.locator('button[data-destination]').first()).toBeAttached();
+    const measure = () =>
+      page.evaluate(() => {
+        const family = (el: Element) => getComputedStyle(el).fontFamily;
+        return {
+          body: family(document.body),
+          labels: [...document.querySelectorAll('button[data-destination] > span:last-child')].map(
+            family,
+          ),
+          clusters: [...document.querySelectorAll('button[data-cluster]')].map(family),
+        };
+      });
+    const fonts = await measure();
+    expect(fonts.body, 'la interfaz va en Montserrat').toContain('Montserrat');
+    expect(fonts.labels.length, 'hay etiquetas que medir').toBeGreaterThan(0);
+    expect(fonts.clusters.length, 'hay grupos que medir').toBeGreaterThan(0);
+    for (const family of [...fonts.labels, ...fonts.clusters]) expect(family).toBe(fonts.body);
+    // control: con la herencia de antes (la fuente del contenedor de MapLibre) la comprobación lo ve
+    await applyCss(
+      page,
+      'button[data-destination],button[data-cluster]{font-family:inherit !important}',
+    );
+    const before = await measure();
+    expect(before.labels.every((f) => f === before.body)).toBe(false);
+    expect(before.clusters.every((f) => f === before.body)).toBe(false);
+  });
 });
 
 test.describe('HUD de Explorar: anillo de foco de los botones de área (r2:N5; con el mapa)', () => {

@@ -14,6 +14,9 @@ import { flatten, valueOf, type FlatRule } from './css-flat';
  * Cada comprobación lleva su CONTROL: se alimenta con un CSS malo y debe detectarlo.
  */
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8');
+/** Un valor sin los blancos que Prettier mete tras `(` y antes de `)` al partir una línea larga. */
+const compact = (value: string | undefined): string =>
+  (value ?? '').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
 
 const HUD_FILES = {
   glass: 'src/styles/glass.module.css',
@@ -382,9 +385,14 @@ describe('zona de herramientas, panel y dock con poca altura o texto agrandado (
     expect(decl('.hud', 'grid-template-columns', DESKTOP)).toBe(
       'var(--hud-rail-w) minmax(0, 1fr) var(--hud-panel-col) var(--hud-tools-w)',
     );
+    // Abierto, la variable se redefine en `.shell` y no en `.hud`: los avisos del mapa (`MapStage`) son HERMANOS del HUD y también
+    // necesitan saber si el panel está abierto (los avisos, por encima del HUD, tapaban la cabecera del panel abierto)
+    expect(
+      decl(".shell:has([data-hud-zone='panel'][data-state='open'])", '--hud-panel-col', DESKTOP),
+    ).toBe('var(--hud-panel-w)');
     expect(
       decl(".hud:has([data-hud-zone='panel'][data-state='open'])", '--hud-panel-col', DESKTOP),
-    ).toBe('var(--hud-panel-w)');
+    ).toBeUndefined();
     // El panel abierto mide lo mismo que su columna (el ancho de HudPanel.module.css es `--hud-panel-w`)
     expect(valueOf(panelCss, '.panel', 'inline-size', DESKTOP)).toBe('var(--hud-panel-w)');
     // 16rem entre 56rem y 80rem (a 1024 px uno más ancho tapaba la etiqueta del destino: r1:V-16) y 18rem desde 80rem
@@ -574,9 +582,14 @@ describe('piel de los controles nativos y de los marcadores', () => {
 
   it('los avisos del mapa usan la MISMA columna y el mismo ancho que el buscador y el lenguaje del vidrio (r1:V-09)', () => {
     const wide = 'min-width: 56rem';
-    expect(valueOf(stage, '.notices', 'inline-size', wide)).toBe('min(32rem, 100%)');
-    expect(valueOf(stage, '.notices', 'inset-inline', wide)).toBe(
-      'calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2) calc(var(--hud-tools-w, var(--target-min)) + var(--hud-gap) * 2)',
+    // Ancho automático entre los dos márgenes, con tope y centrado: un `min(32rem, 100%)` medía el mapa entero, no el hueco, y con el
+    // panel abierto el aviso desbordaba por la derecha y lo tapaba
+    expect(valueOf(stage, '.notices', 'inline-size', wide)).toBe('auto');
+    expect(valueOf(stage, '.notices', 'max-inline-size', wide)).toBe('32rem');
+    // Plegado el panel (`--hud-panel-col: 0px`) es la columna del buscador; abierto, el aviso termina una separación ANTES del
+    // panel (`min(gap, columna)` vale 0 plegado y `gap` abierto) en lugar de pintarse sobre su cabecera (los avisos van sobre el HUD)
+    expect(compact(valueOf(stage, '.notices', 'inset-inline', wide))).toBe(
+      'calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2) calc(var(--hud-tools-w, var(--target-min)) + var(--hud-gap) * 2 + var(--hud-panel-col, 0px) + min(var(--hud-gap), var(--hud-panel-col, 0px)))',
     );
     expect(valueOf(stage, '.notices', 'margin-inline', wide)).toBe('auto');
     expect(valueOf(stage, '.notices > div', 'border-radius', wide)).toBe('var(--radius-glass)');
@@ -692,7 +705,11 @@ describe('sin estilos en línea', () => {
 });
 
 describe('aviso previo de «Relieve en 3D» en pantalla táctil (privacidad)', () => {
-  const NOTICE = ".root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice";
+  const NOTICE =
+    ".root:has(.threeD:not([aria-pressed='true'], [data-relief-in-use], :disabled)) .notice";
+  const TABLET = '(min-width: 56rem) and ((hover: none) or (any-pointer: coarse))';
+  const PANEL_OPEN =
+    ":global([data-immersive]):has([data-hud-zone='panel'][data-state='open']) .root .notice";
 
   it('sin cursor (hover: none) el aviso se VE sin pasar ni enfocar, y no captura toques: el toque dispara hover, foco y clic en la misma tarea y pediría el relieve a AWS antes de poder leerlo', () => {
     const tools = flatten(read(HUD_FILES.tools));
@@ -708,6 +725,82 @@ describe('aviso previo de «Relieve en 3D» en pantalla táctil (privacidad)', (
     const mutated = read(HUD_FILES.tools).replace('@media (hover: none)', '@media (hover: hover)');
     expect(mutated).not.toBe(read(HUD_FILES.tools));
     expect(valueOf(flatten(mutated), NOTICE, 'visibility', '(hover: none)')).toBeUndefined();
+  });
+
+  /** Selectores de las reglas que HACEN VISIBLE el aviso (hover, foco y «siempre visible sin cursor»). */
+  const showing = (css: string): string[] =>
+    flatten(css)
+      .filter(
+        (r) =>
+          r.selector.includes('.notice') &&
+          r.declarations.some((d) => d.prop === 'visibility' && d.value === 'visible'),
+      )
+      .map((r) => r.selector);
+
+  it('con el relieve YA en uso (3D encendido o solo «Sombreado», que usa la misma fuente) ninguna regla enseña el aviso previo: lo dice el aviso de estado y los dos juntos se tapaban', () => {
+    const selectors = showing(read(HUD_FILES.tools));
+    // hover/foco (dos selectores en una regla) y «siempre visible sin cursor»: tres selectores en total
+    expect(selectors.join(' ').match(/\.root:has\(/g)?.length).toBe(3);
+    for (const selector of selectors.flatMap((s) => s.split(/,\s*(?=\.root:has\()/))) {
+      expect(selector, selector).toContain("[aria-pressed='true']");
+      expect(selector, selector).toContain('[data-relief-in-use]');
+      expect(selector, selector).toContain(':disabled');
+    }
+  });
+
+  it('control: sin `[data-relief-in-use]` en alguna regla, la comprobación lo ve', () => {
+    const source = read(HUD_FILES.tools);
+    const mutated = source.replace(
+      ".root:has(.threeD:not([aria-pressed='true'], [data-relief-in-use], :disabled)) .notice {",
+      ".root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice {",
+    );
+    expect(mutated).not.toBe(source);
+    expect(showing(mutated).some((s) => !s.includes('[data-relief-in-use]'))).toBe(true);
+  });
+
+  it('el aviso no llega a la columna nativa de zoom y brújula: su ancho descuenta tres separaciones del HUD y un botón (a 320 px, 17rem la tapaban en 30 de 46 px)', () => {
+    const tools = flatten(read(HUD_FILES.tools));
+    expect(compact(valueOf(tools, '.notice', 'inline-size'))).toBe(
+      'min(17rem, calc(100vw - 3 * var(--hud-gap, var(--space-3)) - var(--target-min)))',
+    );
+  });
+
+  it('en tableta o portátil táctil (≥ 56rem) el aviso siempre visible espera mientras el panel de información está abierto: ocupan la misma columna y el aviso lo tapaba', () => {
+    const tools = flatten(read(HUD_FILES.tools));
+    expect(valueOf(tools, PANEL_OPEN, 'visibility', TABLET)).toBe('hidden');
+  });
+
+  it('control: sin la condición de ancho o de puntero, la lectura no encuentra la regla del panel abierto', () => {
+    const source = read(HUD_FILES.tools);
+    for (const [from, to] of [
+      ['(min-width: 56rem) and ((hover: none)', '(min-width: 40rem) and ((hover: none)'],
+      ['((hover: none) or (any-pointer: coarse))', '((hover: hover) or (any-pointer: fine))'],
+    ] as const) {
+      const mutated = source.replace(from, to);
+      expect(mutated, from).not.toBe(source);
+      expect(valueOf(flatten(mutated), PANEL_OPEN, 'visibility', TABLET), from).toBeUndefined();
+    }
+  });
+});
+
+describe('marcadores y grupos del mapa: la tipografía de la interfaz, no la de MapLibre', () => {
+  // Los marcadores son botones HTML dentro del contenedor del lienzo, al que MapLibre da `font: 12px/20px Helvetica Neue, Arial`:
+  // `font: inherit` solo recogía esa. Los créditos y la escala ya fijaban `var(--font-text)`.
+  const stage = flatten(read(HUD_FILES.stage));
+
+  it('`.marker` y `.cluster` fijan `font-family: var(--font-text)`, y `.label` (dentro del marcador) no la pisa', () => {
+    expect(valueOf(stage, '.marker', 'font-family')).toBe('var(--font-text)');
+    expect(valueOf(stage, '.cluster', 'font-family')).toBe('var(--font-text)');
+    expect(valueOf(stage, '.label', 'font-family')).toBeUndefined();
+    expect(valueOf(stage, '.label', 'font')).toBeUndefined();
+  });
+
+  it('control: sin la declaración, la lectura no la encuentra', () => {
+    const source = read(HUD_FILES.stage);
+    const mutated = source.replaceAll('font-family: var(--font-text);', 'font-family: inherit;');
+    expect(mutated).not.toBe(source);
+    expect(valueOf(flatten(mutated), '.marker', 'font-family')).not.toBe('var(--font-text)');
+    expect(valueOf(flatten(mutated), '.cluster', 'font-family')).not.toBe('var(--font-text)');
   });
 });
 

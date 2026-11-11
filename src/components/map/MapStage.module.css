@@ -200,10 +200,16 @@
 @media (min-width: 56rem) {
   .notices {
     inset-inline: calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2)
-      calc(var(--hud-tools-w, var(--target-min)) + var(--hud-gap) * 2);
+      calc(
+        var(--hud-tools-w, var(--target-min)) + var(--hud-gap) * 2 + var(--hud-panel-col, 0px) +
+          min(var(--hud-gap), var(--hud-panel-col, 0px))
+      );
+    /* Ancho AUTOMÁTICO (el que dejan los dos márgenes de arriba) con un tope de 32rem, centrado: `min(32rem, 100%)` medía el 100 %
+       del mapa entero (el bloque contenedor de un elemento absoluto), no el hueco entre los márgenes, y con el panel abierto
+       (hueco de ≈ 380 px a 1024) desbordaba por la derecha y volvía a tapar el panel. */
     margin-inline: auto;
-    inline-size: min(32rem, 100%);
-    max-inline-size: none;
+    inline-size: auto;
+    max-inline-size: 32rem;
     inset-block-start: calc(var(--hud-gap) + var(--hud-search-h, var(--target-min)));
     z-index: calc(var(--z-hud) + 1);
   }
@@ -242,6 +248,9 @@
   border: 0;
   cursor: pointer;
   font: inherit;
+  /* `font: inherit` recoge la fuente de MapLibre (Helvetica Neue/Arial, 12px/20px: `.maplibregl-map` es el contenedor de los
+     marcadores), no la de la interfaz: los créditos y la escala ya fijan la suya. */
+  font-family: var(--font-text);
 }
 
 /*
@@ -354,6 +363,7 @@
     0 0 0 2px var(--color-paper),
     var(--shadow-depth-1);
   font: inherit;
+  font-family: var(--font-text);
   font-weight: 800;
   cursor: pointer;
 }

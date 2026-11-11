@@ -113,7 +113,9 @@
 
   position: absolute;
   z-index: calc(var(--z-hud) + 2);
-  inline-size: min(17rem, calc(100vw - 2 * var(--hud-gap, var(--space-3))));
+  /* Sin llegar a la columna nativa de zoom y brújula (arriba a la derecha: un botón de `--target-min` y el margen del HUD a cada
+     lado): a 320 px, 17rem la tapaban en 30 de sus 46 px (el aviso va por encima de los controles de MapLibre). */
+  inline-size: min(17rem, calc(100vw - 3 * var(--hud-gap, var(--space-3)) - var(--target-min)));
   margin: 0;
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-s);
@@ -150,9 +152,16 @@
   }
 }
 
-.root:has(.threeD:is(:hover, :focus-visible, :focus):not([aria-pressed='true'], :disabled))
+.root:has(
+    .threeD:is(:hover, :focus-visible, :focus):not(
+        [aria-pressed='true'],
+        [data-relief-in-use],
+        :disabled
+      )
+  )
   .notice:not([data-dismissed]),
-.root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice:hover:not([data-dismissed]) {
+.root:has(.threeD:not([aria-pressed='true'], [data-relief-in-use], :disabled))
+  .notice:hover:not([data-dismissed]) {
   visibility: visible;
   pointer-events: auto;
 }
@@ -165,8 +174,21 @@
  * táctil y trackpad lo tiene con `hover`, y un toque directo hace lo mismo; por eso también `any-pointer: coarse`.
  */
 @media (hover: none), (any-pointer: coarse) {
-  .root:has(.threeD:not([aria-pressed='true'], :disabled)) .notice {
+  .root:has(.threeD:not([aria-pressed='true'], [data-relief-in-use], :disabled)) .notice {
     visibility: visible;
+  }
+}
+
+/*
+ * Tableta o portátil táctil con la rejilla de escritorio (≥ 56rem): el aviso va a la izquierda del botón, que es la columna del panel
+ * de información cuando está abierto (a 1024 px, el aviso en x ∈ [W−340, W−68] y el panel en [W−332, W−76]): lo tapaba con una
+ * tarjeta opaca y, con `pointer-events: none`, sus botones seguían recibiendo toques sin verse. Mientras el panel está abierto el
+ * aviso espera (sigue siendo la descripción accesible del botón) y vuelve al plegarlo. Solo la regla de «siempre visible sin
+ * cursor»: al pasar el cursor o enfocar, el aviso lo pide la persona y gana (más especificidad).
+ */
+@media (min-width: 56rem) and ((hover: none) or (any-pointer: coarse)) {
+  :global([data-immersive]):has([data-hud-zone='panel'][data-state='open']) .root .notice {
+    visibility: hidden;
   }
 }
 

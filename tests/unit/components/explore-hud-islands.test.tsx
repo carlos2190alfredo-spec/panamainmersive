@@ -552,6 +552,29 @@ describe('MapTools', () => {
       expect(threeD(t).getAttribute('aria-describedby') ?? '').toContain(notice().id);
     });
 
+    it('con el relieve ya en uso solo por «Sombreado» (3D apagado) el botón no se describe con el aviso previo y lo marca: lo dice el aviso de estado del mapa y pulsar el 3D no suma ningún tercero', async () => {
+      window.history.replaceState(null, '', '/es/explorar?l=protectedAreas,hillshade');
+      const { user, t } = setup();
+      const button = threeD(t);
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      expect(button).toHaveAttribute('data-relief-in-use', 'true');
+      expect(button.getAttribute('aria-describedby') ?? '').not.toContain(notice().id);
+      expect(button).not.toHaveAccessibleDescription(t('tools.threeDNotice'));
+      // …y sigue siendo utilizable: pulsarlo enciende el 3D sin pedir nada más
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-pressed', 'true');
+      expect(button).toHaveAttribute('data-relief-in-use', 'true');
+    });
+
+    it('control: sin capas de relieve el botón se describe con el aviso previo y no lleva `data-relief-in-use`; con el 3D encendido, sí la lleva', async () => {
+      window.history.replaceState(null, '', '/es/explorar?l=protectedAreas');
+      const { user, t } = setup();
+      expect(threeD(t)).not.toHaveAttribute('data-relief-in-use');
+      expect(threeD(t).getAttribute('aria-describedby') ?? '').toContain(notice().id);
+      await user.click(threeD(t));
+      expect(threeD(t)).toHaveAttribute('data-relief-in-use', 'true');
+    });
+
     it('desactivado (derechos bloqueados o sin mapa) NO lleva el aviso previo —pulsarlo no envía nada a nadie— y se describe SOLO con su motivo', () => {
       const { t } = setup({ terrainAllowed: false });
       expect(threeD(t)).toBeDisabled();
@@ -566,15 +589,21 @@ describe('MapTools', () => {
       );
     });
 
-    it('el CSS no muestra el aviso previo sobre un botón desactivado (el cursor sobre un botón que no hace nada no avisa de nada)', () => {
+    it('el CSS no muestra el aviso previo sobre un botón desactivado ni con el relieve ya en uso (el cursor sobre un botón que no hace nada, o que no suma ningún tercero, no avisa de nada)', () => {
+      // Prettier parte los selectores largos en varias líneas: se leen sin los blancos sobrantes
       const css = readFileSync(
         join(process.cwd(), 'src/components/map/MapTools.module.css'),
         'utf8',
+      )
+        .replace(/\s+/g, ' ')
+        .replace(/\(\s+/g, '(')
+        .replace(/\s+\)/g, ')');
+      expect(css).toContain(
+        ".threeD:is(:hover, :focus-visible, :focus):not([aria-pressed='true'], [data-relief-in-use], :disabled)",
       );
-      expect(css).toMatch(
-        /\.threeD:is\(:hover, :focus-visible, :focus\):not\(\[aria-pressed='true'\], :disabled\)/,
+      expect(css).toContain(
+        ".threeD:not([aria-pressed='true'], [data-relief-in-use], :disabled)) .notice:hover",
       );
-      expect(css).toMatch(/\.threeD:not\(\[aria-pressed='true'\], :disabled\)\) \.notice:hover/);
     });
 
     it('Escape lo descarta mientras dura el foco (1.4.13) y enfocar de nuevo lo rearma', async () => {
@@ -608,7 +637,10 @@ describe('MapTools', () => {
       const css = readFileSync(
         join(process.cwd(), 'src/components/map/MapTools.module.css'),
         'utf8',
-      );
+      )
+        .replace(/\s+/g, ' ')
+        .replace(/\(\s+/g, '(')
+        .replace(/\s+\)/g, ')');
       expect(css).toMatch(/\.notice\s*\{[^}]*visibility:\s*hidden/);
       expect(css).toMatch(/:is\(:hover, :focus-visible, :focus\):not\(\[aria-pressed='true'\]/);
       expect(css).toMatch(/\.notice:hover:not\(\[data-dismissed\]\)/);
