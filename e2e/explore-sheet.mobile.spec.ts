@@ -325,6 +325,28 @@ test.describe('hoja inferior: estructura y manejo', () => {
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 
+  test('un temblor de 18 px (más que la holgura de toque del navegador, menos que el umbral de arrastre) alterna la hoja: el gesto no se pierde', async ({
+    page,
+  }) => {
+    // Medido en Chromium (macOS, toque emulado por CDP): hasta 14 px de movimiento el navegador genera `click` en el asa y desde
+    // 16 px NO. Con el umbral de arrastre en 24 px, entre los dos había una franja muerta (16–23 px) en la que el gesto no hacía
+    // nada si se delegaba en el `click`. En Linux la holgura es menor y la franja, más ancha.
+    await loadHud(page);
+    const wobble = async (dy: number): Promise<void> => {
+      await settled(sheetHandle(page));
+      const box = await sheetHandle(page).boundingBox();
+      if (!box) throw new Error('sin asa');
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height / 2;
+      await touchDrag(page, { x, y }, { x, y: y + dy });
+    };
+    await wobble(-18);
+    await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
+    await settled(sheetBody(page));
+    await wobble(18);
+    await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('el asa y todo lo que hay en la hoja mide al menos 44 px de alto (objetivo táctil del proyecto)', async ({
     page,
   }) => {
