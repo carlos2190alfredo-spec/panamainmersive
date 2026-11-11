@@ -287,6 +287,45 @@ test.describe('menú y selector de idioma abiertos: el foco no queda tapado (r2:
     await expect(button).toBeFocused();
   });
 
+  /**
+   * La cabecera es del diseño `[locale]` y NO se vuelve a montar al navegar dentro de un idioma. La API Popover solo cierra con
+   * Escape, un clic fuera, otro popover o `hidePopover()`: sin esto el menú seguía abierto sobre la página nueva (en Explorar,
+   * tapando el carril y las herramientas del mapa) hasta tocar fuera. Una carga COMPLETA también deja el menú cerrado, así que
+   * cada prueba marca la cabecera y comprueba que la marca sobrevive: es lo que dice que la navegación fue del cliente.
+   */
+  const markHeader = (page: Page): Promise<void> =>
+    page.evaluate(() => {
+      document.querySelector('header')?.setAttribute('data-persisted', 'yes');
+    });
+  const headerPersisted = (page: Page): Promise<boolean> =>
+    page.evaluate(() => document.querySelector('header')?.getAttribute('data-persisted') === 'yes');
+
+  test('menú: activar uno de sus enlaces lo cierra (navegación del cliente: la cabecera no se recrea)', async ({
+    page,
+  }) => {
+    await markHeader(page);
+    await page.getByRole('button', { name: /men/i }).click();
+    expect(await menuOpen(page), 'control: el menú está abierto antes de pulsar').toBe(true);
+    await page.locator('#site-menu').getByRole('link', { name: 'Fuentes' }).click();
+    await expect(page).toHaveURL(new RegExp(`${PATHS.sources.es}$`));
+    expect(await headerPersisted(page), 'la navegación fue del cliente').toBe(true);
+    await expect.poll(() => menuOpen(page)).toBe(false);
+  });
+
+  test('menú: «Atrás» del navegador con el menú abierto también lo cierra', async ({ page }) => {
+    await markHeader(page);
+    const button = page.getByRole('button', { name: /men/i });
+    await button.click();
+    await page.locator('#site-menu').getByRole('link', { name: 'Fuentes' }).click();
+    await expect(page).toHaveURL(new RegExp(`${PATHS.sources.es}$`));
+    await button.click();
+    expect(await menuOpen(page), 'control: el menú está abierto antes de volver').toBe(true);
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`${PATHS.destination.es}$`));
+    expect(await headerPersisted(page), 'la navegación fue del cliente').toBe(true);
+    await expect.poll(() => menuOpen(page)).toBe(false);
+  });
+
   test('selector de idioma: al salir con Tab de la última opción se cierra y lo enfocado se ve', async ({
     page,
   }) => {
