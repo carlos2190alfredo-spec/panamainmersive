@@ -43,7 +43,8 @@ const HEIGHT = Number(isthmus.viewBox.split(' ')[3]);
 /**
  * Desde qué altura relativa (0 arriba, 1 abajo) un punto cuenta como «bajo»: en el teléfono el panel sube 3rem sobre el
  * localizador (≈ el 20 % inferior del dibujo) y la separación de planos lo baja hasta 1,5rem más; con 0,7 el punto de
- * Santa Catalina (0,61) quedaba a 4 px del panel con movimiento (r2:H-12). Hoy: Coiba y Santa Catalina.
+ * Santa Catalina (0,61, con el ancla equivocada de La Mesa) quedaba a 4 px del panel con movimiento (r2:H-12). Hoy: Coiba
+ * (0,87) y Santa Catalina (0,81 desde E-106).
  */
 export const LOW_POINT = 0.55;
 

@@ -24,7 +24,9 @@ ROOT = Path(__file__).resolve().parents[2]
 CONFIG = json.loads((ROOT / "pipelines/anchors/anchors.config.json").read_text(encoding="utf-8"))
 OUT = ROOT / "data/anchors/destination-anchors.json"
 
-COLUMNS = ["id", "names", "subtype", "class", "region", "country", "wikidata", "geometry", "division_id"]
+# `parent_division_id` permite exigir en `expect` el padre de una `division` (por ID): dos localidades homónimas de la
+# misma región (las dos «Santa Catalina» de Veraguas, E-106) solo se distinguen por él, no por nombre, subtipo o región.
+COLUMNS = ["id", "names", "subtype", "class", "region", "country", "wikidata", "geometry", "division_id", "parent_division_id"]
 
 
 def primary(row: ov.Row) -> str | None:

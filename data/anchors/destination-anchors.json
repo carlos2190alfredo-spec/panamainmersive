@@ -349,39 +349,22 @@
     },
     "santa-catalina": {
       "anchor": {
-        "lat": 8.13977,
-        "lon": -81.26411,
-        "method": "division_point"
+        "lat": 7.6342,
+        "lon": -81.25461,
+        "method": "point"
       },
-      "bounds": [
-        -81.267,
-        8.1366,
-        -81.2563,
-        8.1417
-      ],
+      "bounds": null,
       "corroboration": [],
       "defaultZoom": 14,
-      "note": "Existen otras tres «Santa Catalina» y un distrito con ese nombre; esta es la localidad de Veraguas (PA-9).",
+      "note": "Hay DOS localidades «Santa Catalina» en Veraguas (PA-9): esta es la del distrito de Soná (padre: corregimiento Hicaco, `parent_division_id`), el pueblo costero; la del distrito de La Mesa (8,14 N, con polígono) es otra y fue el ancla por error hasta E-106. Hay además otra en Ngäbe-Buglé, un distrito «Santa Catalina o Calovébora» y un barrio en David. Overture solo trae un punto (sin `division_area`): sin encuadre.",
       "sources": [
         {
-          "geometryType": "Polygon",
-          "id": "fd200297-522e-43df-a29b-4c2722f96e85",
+          "geometryType": "Point",
+          "id": "153d9f85-b62c-4e54-861b-192e188c2337",
           "name": "Santa Catalina",
           "region": "PA-9",
           "release": "2026-09-23.1",
           "role": "anchor",
-          "subtype": "locality",
-          "theme": "divisions",
-          "type": "division_area",
-          "wikidata": null
-        },
-        {
-          "geometryType": "Point",
-          "id": "f35acf1f-9c85-44df-8f82-4cbd39ec1aa6",
-          "name": "Santa Catalina",
-          "region": "PA-9",
-          "release": "2026-09-23.1",
-          "role": "anchor_point",
           "subtype": "locality",
           "theme": "divisions",
           "type": "division",

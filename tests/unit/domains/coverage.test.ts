@@ -62,7 +62,7 @@ describe('evidencia de cobertura', () => {
     for (const key of DESTINATION_KEYS) {
       for (const c of COVERAGE[key]) {
         expect(c.evidence.length, `${key}/${c.capability}`).toBeGreaterThan(0);
-        for (const id of c.evidence) expect(id).toMatch(/^E-\d{2}[a-z]?$/);
+        for (const id of c.evidence) expect(id).toMatch(/^E-\d{2,3}[a-z]?$/);
       }
     }
   });

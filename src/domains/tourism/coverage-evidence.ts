@@ -28,7 +28,7 @@ export type Capability = (typeof CAPABILITIES)[number];
 export type ObservationKey =
   | 'geoCounty'
   | 'geoRegionCountyLocality'
-  | 'geoLocality'
+  | 'geoLocalityPoint'
   | 'geoProtectedArea'
   | 'geoProtectedIsland'
   | 'geoCanalLines'
@@ -114,8 +114,10 @@ export const COVERAGE: Readonly<Record<DestinationKey, readonly CoverageEvidence
     ...unverifiedExternal(),
   ],
   'santa-catalina': [
-    row('geometry', 'PARTIAL', 'geoLocality', ['E-23c']),
-    row('terrain', 'VERIFIED', 'terrainLand', ['E-25']),
+    // E-106: el ancla era el homónimo de La Mesa; el pueblo de Soná solo tiene punto en Overture y su terreno se
+    // reobservó el 2026-11-11 (conserva la fecha y la caducidad de la evaluación inicial: no se alarga su validez)
+    row('geometry', 'PARTIAL', 'geoLocalityPoint', ['E-23c', 'E-106']),
+    row('terrain', 'VERIFIED', 'terrainLand', ['E-25', 'E-106']),
     ...unverifiedExternal(),
   ],
   coiba: [

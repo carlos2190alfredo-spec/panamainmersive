@@ -326,7 +326,7 @@
     "notesHeading": "Avant de continuer",
     "notes": {
       "homonymBaru": "Ce n’est pas le district de Barú\u00a0: ce sont des entités distinctes.",
-      "homonymSantaCatalina": "D’autres localités et un district portent ce nom. Ici, il s’agit de la localité côtière de Veraguas.",
+      "homonymSantaCatalina": "D’autres localités et un district portent ce nom, dont l’une se trouve aussi dans la province de Veraguas. Ici, il s’agit du village côtier du district de Soná (Veraguas).",
       "bocasAmbiguous": "«\u00a0Bocas del Toro\u00a0» désigne à la fois une province, un district et une localité. La portée exacte de la destination reste à définir par la rédaction.",
       "cascoNoBoundary": "La limite officielle du quartier historique n’a pas pu être consultée (source inaccessible depuis l’environnement de travail). La carte ne signale qu’un point de repère dérivé d’OpenStreetMap\u00a0; elle ne trace aucune limite.",
       "homonymElValle": "Il existe un autre «\u00a0El Valle\u00a0» (un quartier du Chiriquí). Il s’agit ici de la localité de la province de Coclé.",
@@ -363,7 +363,7 @@
     "observation": {
       "geoCounty": "Limite de district dérivée d’OpenStreetMap, non officielle.",
       "geoRegionCountyLocality": "Province, district et localité\u00a0: trois entités distinctes, dérivées d’OpenStreetMap.",
-      "geoLocality": "Limite de localité dérivée d’OpenStreetMap, non officielle.",
+      "geoLocalityPoint": "Il n’existe qu’un point de localité dérivé d’OpenStreetMap, sans limite\u00a0; il n’est pas officiel.",
       "geoProtectedArea": "Polygone d’aire protégée dérivé d’OpenStreetMap, non officiel.",
       "geoProtectedIsland": "Polygones d’île et de parc dérivés d’OpenStreetMap, non officiels.",
       "geoCanalLines": "Lignes et polygones d’eau (canal, lac, écluses) dérivés d’OpenStreetMap\u00a0; il n’existe pas de zone officielle du Canal.",

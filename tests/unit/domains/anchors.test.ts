@@ -48,6 +48,8 @@ describe('anclas de destino', () => {
    * Guarda de homonimias: coordenadas APROXIMADAS de referencia (conocimiento general, las mismas del sondeo
    * `pipelines/spikes/terrain_probe.py`, solo para esta comprobación gruesa). Si un ancla apuntase al
    * «Barú» equivocado, a otra «Santa Catalina» o a otra «El Valle», quedaría a decenas de km.
+   * Santa Catalina NO sale del conocimiento general: el de antes era el del homónimo de La Mesa (E-106) y esta
+   * referencia lo validaba. Es el lugar «Playa Santa Catalina» de Overture Places (otro tema, E-106).
    */
   const REFERENCE: Record<
     DestinationKey,
@@ -60,7 +62,7 @@ describe('anclas de destino', () => {
     boquete: [-82.437, 8.78, 3],
     'volcan-baru': [-82.543, 8.808, 3],
     'bocas-del-toro': [-82.24, 9.34, 3],
-    'santa-catalina': [-81.267, 8.14, 1],
+    'santa-catalina': [-81.2467, 7.628, 2],
     coiba: [-81.75, 7.45, 10],
   };
 
@@ -73,15 +75,21 @@ describe('anclas de destino', () => {
     },
   );
 
-  it('Santa Catalina coincide con la localidad de Veraguas de E-23c y no con las otras tres', () => {
+  it('Santa Catalina es el pueblo de Soná (Veraguas) de E-23c y no las otras dos localidades homónimas (E-106)', () => {
     const a = DESTINATION_ANCHORS.anchors['santa-catalina'];
-    expect(haversineKm([a.lon, a.lat], [-81.2641, 8.1398])).toBeLessThan(0.2);
+    expect(haversineKm([a.lon, a.lat], [-81.2546, 7.6342])).toBeLessThan(0.2);
     for (const other of [
-      [-81.2546, 7.6342],
-      [-81.3101, 8.783],
+      [-81.2641, 8.1398], // La Mesa (Veraguas): el ancla equivocada hasta E-106, a 56 km
+      [-81.3101, 8.783], // Ngäbe-Buglé
     ] as const) {
       expect(haversineKm([a.lon, a.lat], other)).toBeGreaterThan(30);
     }
+    // Por ID, y sin encuadre: Overture solo trae el punto (no hay `division_area` que lo enlace)
+    const sources = raw.destinations['santa-catalina']?.sources as { role: string; id?: string }[];
+    expect(sources.map((s) => [s.role, s.id])).toEqual([
+      ['anchor', '153d9f85-b62c-4e54-861b-192e188c2337'],
+    ]);
+    expect(a.bounds).toBeNull();
   });
 
   it('el marcador de un polígono multiparte NO es su punto representativo cuando hay punto de división enlazado', () => {

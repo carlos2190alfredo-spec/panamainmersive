@@ -326,7 +326,7 @@
     "notesHeading": "Antes de seguir",
     "notes": {
       "homonymBaru": "No es el distrito de Barú: son entidades distintas.",
-      "homonymSantaCatalina": "Existen otras localidades y un distrito con este nombre. Aquí nos referimos a la localidad costera de Veraguas.",
+      "homonymSantaCatalina": "Existen otras localidades y un distrito con este nombre, una de ellas también en Veraguas. Aquí nos referimos al pueblo costero del distrito de Soná (Veraguas).",
       "bocasAmbiguous": "«Bocas del Toro» designa a la vez una provincia, un distrito y una localidad. El alcance exacto del destino está pendiente de definición editorial.",
       "cascoNoBoundary": "No se pudo consultar el límite oficial del distrito histórico (fuente inaccesible desde el entorno de trabajo). El mapa solo señala un punto de referencia derivado de OpenStreetMap; no dibuja un límite.",
       "homonymElValle": "Existe otra «El Valle» (un barrio en Chiriquí). Aquí nos referimos a la localidad de la provincia de Coclé.",
@@ -363,7 +363,7 @@
     "observation": {
       "geoCounty": "Límite de distrito derivado de OpenStreetMap, no oficial.",
       "geoRegionCountyLocality": "Provincia, distrito y localidad: tres entidades distintas, derivadas de OpenStreetMap.",
-      "geoLocality": "Límite de localidad derivado de OpenStreetMap, no oficial.",
+      "geoLocalityPoint": "Solo hay un punto de localidad derivado de OpenStreetMap, sin límite; no es oficial.",
       "geoProtectedArea": "Polígono de área protegida derivado de OpenStreetMap, no oficial.",
       "geoProtectedIsland": "Polígonos de isla y de parque derivados de OpenStreetMap, no oficiales.",
       "geoCanalLines": "Líneas y polígonos de agua (canal, lago, esclusas) derivados de OpenStreetMap; no hay zona oficial del Canal.",

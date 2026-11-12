@@ -465,7 +465,9 @@ describe('encuadre de mejor esfuerzo (bestEffortFrame): la vista inicial de Expl
     },
   );
 
-  it('a 1920×1080 acerca un poco y desplaza el centro al oeste: Bocas del Toro y Boquete dejan de quedar bajo el carril (5 → 7 destinos)', () => {
+  // Con el ancla de Santa Catalina corregida (E-106: el pueblo de Soná, 56 km al sur del homónimo de La Mesa) Santa
+  // Catalina queda bajo el dock como Coiba en las cuatro pantallas: era 5 → 7 y ahora es 4 → 6.
+  it('a 1920×1080 acerca un poco y desplaza el centro al oeste: Bocas del Toro y Boquete dejan de quedar bajo el carril (4 → 6 destinos)', () => {
     const screen = SCREENS[0];
     const { size, padding, minZoom } = setup(screen);
     const baseline = countInside(NATURAL_CENTER, minZoom, size, padding);
@@ -478,9 +480,9 @@ describe('encuadre de mejor esfuerzo (bestEffortFrame): la vista inicial de Expl
       maxZoom: 18,
       inset: INSET,
     });
-    expect(baseline).toBe(5);
+    expect(baseline).toBe(4);
     expect(result?.moved).toBe(true);
-    expect(result?.inside).toBe(7);
+    expect(result?.inside).toBe(6);
     expect(result?.center.lon).toBeLessThan(NATURAL_CENTER.lon - 0.5);
     expect(result?.zoom).toBeGreaterThan(minZoom);
     // Los dos que antes tapaba el carril ahora caen en el hueco (comprobado con el oráculo, punto por punto)
@@ -528,7 +530,7 @@ describe('encuadre de mejor esfuerzo (bestEffortFrame): la vista inicial de Expl
       minGain: 1,
     });
     expect(eager?.moved).toBe(true);
-    expect(eager?.inside).toBe(6);
+    expect(eager?.inside).toBe(5);
   });
 
   it('es óptimo frente a una búsqueda más fina del oráculo (no se deja un destino a la vista sin recoger)', () => {

@@ -326,7 +326,7 @@
     "notesHeading": "Bevor Sie weitergehen",
     "notes": {
       "homonymBaru": "Dies ist nicht der Distrikt Barú: Es sind verschiedene Einheiten.",
-      "homonymSantaCatalina": "Mehrere andere Orte und ein Distrikt tragen diesen Namen. Gemeint ist hier der Küstenort in Veraguas.",
+      "homonymSantaCatalina": "Mehrere andere Orte und ein Distrikt tragen diesen Namen, einer davon ebenfalls in Veraguas. Gemeint ist hier das Küstendorf im Distrikt Soná (Veraguas).",
       "bocasAmbiguous": "„Bocas del Toro“ bezeichnet zugleich eine Provinz, einen Distrikt und einen Ort. Der genaue Umfang des Reiseziels muss noch redaktionell festgelegt werden.",
       "cascoNoBoundary": "Die offizielle Grenze des historischen Viertels konnte nicht abgefragt werden (Quelle aus der Arbeitsumgebung nicht erreichbar). Die Karte markiert nur einen aus OpenStreetMap abgeleiteten Referenzpunkt und zeichnet keine Grenze.",
       "homonymElValle": "Es gibt ein weiteres „El Valle“ (ein Stadtviertel in Chiriquí). Gemeint ist hier der Ort in der Provinz Coclé.",
@@ -363,7 +363,7 @@
     "observation": {
       "geoCounty": "Distriktgrenze aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoRegionCountyLocality": "Provinz, Distrikt und Ort: drei verschiedene Einheiten, aus OpenStreetMap abgeleitet.",
-      "geoLocality": "Ortsgrenze aus OpenStreetMap abgeleitet, nicht offiziell.",
+      "geoLocalityPoint": "Es gibt nur einen aus OpenStreetMap abgeleiteten Ortspunkt, ohne Grenze; er ist nicht offiziell.",
       "geoProtectedArea": "Polygon eines Schutzgebiets aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoProtectedIsland": "Polygone von Insel und Nationalpark aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoCanalLines": "Wasserlinien und -polygone (Kanal, See, Schleusen) aus OpenStreetMap abgeleitet; eine offizielle Kanalzone gibt es nicht.",

@@ -299,6 +299,8 @@
         ]
       },
       "panama-city": {
+        "placeDistanceM": 0.4,
+        "placeName": "Panamá",
         "z12": [
           "boundaries",
           "land",
@@ -322,21 +324,25 @@
         ]
       },
       "santa-catalina": {
-        "placeDistanceM": 0.5,
+        "placeDistanceM": 0.8,
         "placeName": "Santa Catalina",
         "z12": [
           "boundaries",
           "land",
           "landcover",
           "landcover_detail",
+          "ocean",
           "places",
-          "water_detail",
+          "protected",
           "waterway",
           "waterway_detail"
         ],
         "z14": [
           "boundaries",
           "land",
+          "landcover",
+          "landcover_detail",
+          "ocean",
           "places",
           "waterway",
           "waterway_detail"
