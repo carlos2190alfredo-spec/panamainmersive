@@ -2,7 +2,7 @@
 
 Plataforma turística geoespacial, multilingüe y honesta con sus datos, para explorar Panamá con mapas, relieve y fuentes verificables. Nombre **provisional** (centralizado en `src/config/site.ts`).
 
-> **Estado:** Fases 0 (Discovery), 1 (Foundation), 2 (mapa real de Panamá) y 3 (GIS: ingesta controlada de áreas, API espacial, capas/leyenda declarativas y selección de áreas) completadas en local. **Fase 4 (Destinos) en curso**: está hecho el **modelo de contenido** (afirmaciones con evidencia, estado derivado, puertas de verificación en BD y dominio, publicación por instantánea) y la ficha que lo muestra; **todavía no hay ninguna afirmación verificada real**, así que cada ficha dice «sin datos verificados». El mapa está **bloqueado en producción** hasta verificar derechos (L-01). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
+> **Estado:** Fases 0 (Discovery), 1 (Foundation), 2 (mapa real de Panamá) y 3 (GIS: ingesta controlada de áreas, API espacial, capas/leyenda declarativas y selección de áreas) completadas en local. **Fase 4 (Destinos) en curso**: está hecho el **modelo de contenido** (afirmaciones con evidencia, estado derivado, puertas de verificación en BD y dominio, publicación por instantánea) y la ficha que lo muestra; **todavía no hay ninguna afirmación verificada real**, así que cada ficha dice «sin datos verificados». El mapa está **bloqueado en producción** hasta verificar derechos (L-01), **pero el repositorio es público y ya contiene el mapa base** (`public/data/panama-basemap.pmtiles`, derivado de Overture/OpenStreetMap, con derechos provisionales): la política de derechos gobierna lo que sirve el sitio, no lo que hay en GitHub (ver `docs/deploy.md` §1 y §4). Ver [`docs/progress.md`](docs/progress.md) para el estado exacto, lo verificado y lo pendiente.
 > Documento rector del proyecto: [`docs/PROMPT-MAESTRO.md`](docs/PROMPT-MAESTRO.md) (copia literal).
 
 ## Qué funciona hoy
@@ -93,7 +93,7 @@ Empieza por [`docs/architecture.md`](docs/architecture.md) y [`docs/decisions/`]
 
 1. **No se inventan datos**: ni geometrías, ni cobertura, ni imágenes, ni verificaciones. Lo no comprobado es `UNKNOWN`, nunca «no existe».
 2. **Procedencia visible**: cada dato dice su fuente, licencia y fecha. Lo derivado de OpenStreetMap se etiqueta como **no oficial**.
-3. **Nada se publica sin derechos leídos en la fuente primaria** (política de derechos `deny-by-default`).
+3. **El sitio no sirve en producción nada sin derechos leídos en la fuente primaria** (política de derechos `deny-by-default`). Excepción conocida y por decidir (L-01, L-06): el repositorio es público y ya redistribuye el mapa base y las marcas, con derechos provisionales o sin verificar.
 4. **Una máquina nunca figura como revisora** de una traducción; solo se indexa lo `published`.
 
 ## Licencia
