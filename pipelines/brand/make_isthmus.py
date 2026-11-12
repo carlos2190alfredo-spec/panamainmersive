@@ -7,7 +7,8 @@ de cada destino (``data/anchors/destination-anchors.json``). Escribe ``src/domai
 la ruta SVG, el ``viewBox``, los puntos de cada destino y la procedencia. No inventa nada: si falta un archivo o la
 frontera no separa a Panamá, falla.
 
-Uso: ``.venv/bin/python -I pipelines/brand/make_isthmus.py`` (sin red).
+Uso: ``.venv/bin/python -I pipelines/brand/make_isthmus.py`` (sin red) y después
+``pnpm exec prettier --write src/domains/tourism/isthmus.generated.json`` (``pnpm format`` lo comprueba).
 """
 
 from __future__ import annotations

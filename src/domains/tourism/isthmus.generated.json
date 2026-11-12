@@ -64,12 +64,7 @@
     "release": "2026-09-23.1",
     "simplify_deg": 0.012,
     "min_island_km2": 25.0,
-    "bbox": [
-      -83.1,
-      7.15,
-      -77.15,
-      9.7
-    ],
+    "bbox": [-83.1, 7.15, -77.15, 9.7],
     "generator": "pipelines/brand/make_isthmus.py"
   }
 }
