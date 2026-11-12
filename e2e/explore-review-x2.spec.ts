@@ -467,10 +467,12 @@ test.describe('los destinos se reconocen sin pasar el cursor y la etiqueta emerg
     b: [number, number, number, number],
   ): boolean => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
 
-  test('a 1440×900 varios marcadores muestran su nombre solos, dentro del hueco libre y sin tapar ningún otro botón ni etiqueta', async ({
+  // A 1920×1080 y no a 1440×900: con el ancla de Santa Catalina corregida (E-106) la vista inicial a 1440 solo deja UN
+  // marcador suelto en el hueco libre (El Valle; Santa Catalina quedó bajo el dock, con Coiba) y estas dos pruebas necesitan dos.
+  test('a 1920×1080 varios marcadores muestran su nombre solos, dentro del hueco libre y sin tapar ningún otro botón ni etiqueta', async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await openMap(page, EXPLORE);
     await expect
       .poll(async () => (await probe(page)).filter((p) => p.labelAuto).length, { timeout: 20_000 })
@@ -534,13 +536,38 @@ test.describe('los destinos se reconocen sin pasar el cursor y la etiqueta emerg
   test('Escape descarta la etiqueta que solo se ve por el cursor (1.4.13) y al volver a entrar reaparece; la que se ve por tener sitio no se toca', async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 }); // ver la prueba anterior
     await openMap(page, EXPLORE);
     await expect
       .poll(async () => (await probe(page)).filter((p) => p.labelAuto && !p.inert).length, {
         timeout: 20_000,
       })
       .toBeGreaterThanOrEqual(2);
+    // La maquetación de etiquetas se repite en cada `idle` del mapa, al cambiar de tamaño una zona del HUD (llegan sus islas) y
+    // al llegar la tipografía, y cada pasada REESCRIBE `data-label-visible`: si una llega después de quitárselo a un marcador
+    // (abajo), se lo devuelve. Medido a 1920×1080: cinco pasadas en 1,6 s tras `ready`. Se espera a 1,5 s sin ninguna.
+    await page.evaluate(() => {
+      const w = window as typeof window & { __labelsAt?: number };
+      w.__labelsAt = performance.now();
+      new MutationObserver(() => {
+        w.__labelsAt = performance.now();
+      }).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-label-visible'],
+      });
+    });
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              performance.now() -
+              ((window as typeof window & { __labelsAt?: number }).__labelsAt ?? 0),
+          ),
+        { timeout: 20_000 },
+      )
+      .toBeGreaterThan(1_500);
     const [first, second] = (await probe(page)).filter((p) => p.labelAuto && !p.inert);
     if (!first || !second) throw new Error('sin dos etiquetas automáticas');
     const marker = page.locator(`button[data-destination="${first.key}"]`);

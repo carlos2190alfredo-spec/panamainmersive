@@ -403,7 +403,13 @@ def verify(path: Path, fid_path: Path, layers: list[Layer]) -> dict[str, object]
                 entry[f"z{z}"] = sorted(t) if t else None
                 if t is None or "land" not in t:
                     problems.append(f"{key}: la tesela z{z} del ancla no trae `land`")
-            if a["anchor"]["method"] == "division_point":
+            # La capa `places` son los puntos `divisions/division`: si el ancla sale de uno (enlazado a su polígono,
+            # `division_point`, o elegido directamente por ID, `point`), el lugar dibujado debe estar donde dice el ancla.
+            from_division = a["anchor"]["method"] == "division_point" or any(
+                s.get("role") == "anchor" and (s.get("theme"), s.get("type")) == ("divisions", "division")
+                for s in a.get("sources", [])
+            )
+            if from_division:
                 x, y = tile_xy(lon, lat, 14)
                 t = decode_tile(14, x, y) or {}
                 best = None

@@ -1153,12 +1153,14 @@ test.describe('HUD de Explorar: vista inicial y reencuadre (r1:V-05; con el mapa
   test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
 
   // Mínimos MEDIDOS en el navegador (los nueve destinos son 3 grupos de 1 a 3: Canal, Casco Antiguo y Ciudad de Panamá van
-  // juntos; Boquete y el volcán, juntos). `maxBounds` impide que quepan los nueve en ninguna pantalla de escritorio: Coiba,
-  // al sur, queda siempre bajo el dock (`bestEffortFrame` y su prueba lo documentan). 1920×1080 era 5 antes del arreglo.
+  // juntos; Boquete y el volcán, juntos). `maxBounds` impide que quepan los nueve en ninguna pantalla de escritorio: Coiba y
+  // Santa Catalina, al sur, quedan siempre bajo el dock (`bestEffortFrame` y su prueba lo documentan). 1920×1080 era 5 antes
+  // del arreglo; con el ancla de Santa Catalina corregida (E-106: el pueblo de Soná, 56 km al sur del homónimo de La Mesa)
+  // cada pantalla deja uno menos: 7 → 6, 5 → 4, 5 → 4 (y 1024 sigue en 4).
   for (const [width, height, atLeast] of [
-    [1920, 1080, 7],
-    [1440, 900, 5],
-    [1280, 800, 5],
+    [1920, 1080, 6],
+    [1440, 900, 4],
+    [1280, 800, 4],
     [1024, 768, 4],
   ] as const) {
     test(`${String(width)}×${String(height)}: la vista inicial deja al menos ${String(atLeast)} de los nueve destinos dentro del hueco libre del HUD`, async ({
@@ -1203,7 +1205,7 @@ test.describe('HUD de Explorar: vista inicial y reencuadre (r1:V-05; con el mapa
     await page.setViewportSize({ width: 1920, height: 1080 });
     await expect
       .poll(async () => (await destinationsInSafeArea(page)).length, { timeout: 20_000 })
-      .toBeGreaterThanOrEqual(7);
+      .toBeGreaterThanOrEqual(6);
     expect((await destinationsInSafeArea(page)).length).toBeGreaterThan(small.length);
   });
 
