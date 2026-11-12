@@ -13,6 +13,7 @@ import {
   openMap,
   routeTerrain,
   safeBox,
+  settled,
   watchFraming,
 } from './map-helpers';
 
@@ -1344,11 +1345,19 @@ test.describe('HUD de Explorar: panel, carril y avisos con el mapa (r1:V-07, V-0
   test('el aviso del relieve (AWS) no se pinta sobre el panel de información abierto: cede su sitio y, plegado el panel, vuelve al ancho del buscador', async ({
     page,
   }) => {
+    // Un mapa y una docena de interacciones: sin holgura, el arranque en frío del CI roza los 30 s
+    test.setTimeout(60_000);
     // Con poca altura el panel abierto llega hasta el borde superior de su fila, justo donde caen los avisos (van por encima del HUD)
     await page.setViewportSize({ width: 1024, height: 640 });
     await routeTerrain(page, 'ok');
-    await openMap(page, EXPLORE);
-    await page.getByRole('button', { name: 'Relieve en 3D' }).click();
+    // El aviso sale con «Sombreado» (la misma fuente de AWS que el 3D), NO pulsando «Relieve en 3D»: el 3D inclina la cámara y, con
+    // WebGL por software, la página pasa varios segundos sin pintar un cuadro (con la CPU ×6: huecos de hasta 3,9 s frente a 0,5 s
+    // con el sombreado). El clic de plegar el panel espera dos cuadros iguales y en el CI venció los 30 s (traza de `28af09e`: el
+    // resto de acciones sumaban 7 s y ese clic esperó 23 s a que el botón estuviera «estable»).
+    await openMap(
+      page,
+      `${EXPLORE}?l=protectedAreas,boundaries,places,waterways,landcover,hillshade`,
+    );
     const notice = page.locator('[role="status"]', { hasText: 'Amazon Web Services' });
     await expect(notice).toBeVisible();
     const search = page.locator('[data-hud-zone="search"]');
@@ -1364,6 +1373,7 @@ test.describe('HUD de Explorar: panel, carril y avisos con el mapa (r1:V-07, V-0
     expect(Math.abs((await box(notice)).x - (await box(search)).x)).toBeLessThanOrEqual(2);
     await openAreasPanel(page);
     await expect(panel).toHaveAttribute('data-state', 'open');
+    await settled(panel);
     const open = { notice: await box(notice), panel: await box(panel) };
     expect(overlap(open.notice, open.panel), 'el aviso no toca el panel abierto').toBe(false);
     expect(open.notice.x + open.notice.width, 'y termina antes de su borde izquierdo').toBeLessThan(
