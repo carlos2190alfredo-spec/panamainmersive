@@ -57,6 +57,7 @@ Un **marcador de ubicación** (punto de referencia derivado de OpenStreetMap, **
 - **Casco Antiguo**: **no** usar el `landuse=retail` «Casco Viejo» (está en **Veraguas**, E-41) ni la `locality` «San Felipe» (referencia contenedora) como límite del distrito histórico. La Fase 2 solo dibuja un **punto de referencia**; si algún día se dibuja un límite sin fuente oficial, será **editorial** y se etiquetará como tal.
 - **El Valle**: hay dos «El Valle» con polígono (localidad en Coclé, barrio en Chiriquí). El destino se vincula por **ID** y por contención del volcán, nunca por nombre (E-41).
 - **Volcán Barú**: Boquete y Volcán son **accesos** (`access_via`), no contenedores.
+- **Santa Catalina** (E-103 → **corregido en E-106**, 2026-11-11): el ancla era la localidad homónima de La Mesa (con polígono, 8,1398 / −81,2641), no el pueblo turístico; ahora es, **por ID**, el punto de división de Soná (7,6342 / −81,2546, sin polígono), 56 km al sur, que Overture Places corrobora por nombre y categoría. El terreno de la tabla se volvió a medir allí (≈ 53 m; el «≈ 50 m» de E-25 era el de La Mesa). Falta que la persona propietaria confirme la identificación (F5-9).
 - **Coiba**: la isla y el parque tienen el mismo QID de Wikidata (Q741636) en OSM; son entidades distintas (tierra vs. parque con zona marina). Cualquier superficie se calculará **con método identificado** (`geography`).
 - **Mar**: el terreno AWS no representa batimetría a z12 (devuelve 0 m, E-25). Las áreas marinas se dibujan con vectores, no con relieve, y sin presentar los 0 m como medición.
 
