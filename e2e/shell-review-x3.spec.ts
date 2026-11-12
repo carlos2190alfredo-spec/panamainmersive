@@ -471,71 +471,74 @@ test.describe('portada en teléfono: la llamada principal sobre el pliegue y el 
     }
   }
 
-  test('en teléfono la tarjeta de la marca no se muestra (la marca ya está en la cabecera); en tablet va ARRIBA, en una columna; desde 1024 px, a la derecha', async ({
+  test('el istmo va DEBAJO del texto en teléfono y tablet (la llamada principal primero) y es la segunda columna desde 1024 px (ADR-0026)', async ({
     page,
   }) => {
     const layout = async (width: number, height: number) => {
       await page.setViewportSize({ width, height });
       await page.goto(PATHS.home.es);
       return page.evaluate(() => {
-        const mark = document.querySelector('main img') as HTMLImageElement;
+        const fig = (document.querySelector('main figure') as HTMLElement).getBoundingClientRect();
         const h1 = (document.querySelector('main h1') as HTMLElement).getBoundingClientRect();
+        const cta = (
+          document.querySelector('main a[class*="cta"]') as HTMLElement
+        ).getBoundingClientRect();
         const input = (
           document.querySelector('input[type="search"]') as HTMLElement
         ).getBoundingClientRect();
-        const m = mark.getBoundingClientRect();
         return {
-          markWidth: m.width,
-          markBottom: m.bottom,
-          markLeft: m.left,
-          h1Top: h1.top,
+          figTop: fig.top,
+          figLeft: fig.left,
+          figWidth: fig.width,
+          ctaBottom: cta.bottom,
           h1Right: h1.right,
-          h1Width: h1.width,
           inputWidth: input.width,
+          viewport: window.innerHeight,
         };
       });
     };
     const phone = await layout(390, 844);
-    expect(phone.markWidth, 'en un teléfono la tarjeta no ocupa lugar').toBe(0);
-    const tablet = await layout(768, 1024);
-    expect(tablet.markWidth).toBeGreaterThan(0);
-    expect(tablet.markBottom, 'la marca va encima del título').toBeLessThanOrEqual(
-      tablet.h1Top + 1,
+    expect(phone.ctaBottom, 'la llamada principal se ve sin desplazarse').toBeLessThanOrEqual(
+      phone.viewport,
     );
+    expect(phone.figTop, 'el istmo va después del texto').toBeGreaterThan(phone.ctaBottom);
+    expect(phone.figWidth).toBeGreaterThan(300);
+    const tablet = await layout(768, 1024);
+    expect(tablet.figTop).toBeGreaterThan(tablet.ctaBottom);
     expect(
       tablet.inputWidth,
       'el formulario no queda apretado en una columna estrecha',
     ).toBeGreaterThan(400);
     const desktop = await layout(1024, 768);
-    expect(desktop.markLeft, 'desde 1024 px la marca es la segunda columna').toBeGreaterThan(
+    expect(desktop.figLeft, 'desde 1024 px el istmo es la segunda columna').toBeGreaterThan(
       desktop.h1Right - 1,
     );
   });
 
-  test('la tarjeta de la marca es UNA superficie sólida: sin desenfoque y con el rótulo sin fondo propio (r1:V-11)', async ({
+  test('el texto del héroe va sobre UNA superficie sólida sin desenfoque, y el crédito del istmo también (r1:V-11)', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(PATHS.home.es);
-    const frame = page.locator('main img').locator('..');
-    const style = await frame.evaluate((el) => {
-      const s = getComputedStyle(el);
-      const word = getComputedStyle(el.querySelector('p') as HTMLElement);
+    const style = await page.evaluate(() => {
       const alpha = (c: string): number => {
         const m = /rgba?\(([^)]+)\)/.exec(c);
         const parts = (m?.[1] ?? '').split(/[ ,/]+/).filter(Boolean);
         return parts.length > 3 ? Number(parts[3]) : 1;
       };
+      const copy = getComputedStyle(
+        (document.querySelector('main h1') as HTMLElement).parentElement as HTMLElement,
+      );
+      const credit = getComputedStyle(document.querySelector('main figcaption') as HTMLElement);
       return {
-        backdrop: s.backdropFilter,
-        frameAlpha: alpha(s.backgroundColor),
-        wordBg: word.backgroundColor,
-        wordAlpha: alpha(word.backgroundColor),
+        backdrop: copy.backdropFilter,
+        copyAlpha: alpha(copy.backgroundColor),
+        creditAlpha: alpha(credit.backgroundColor),
       };
     });
     expect(style.backdrop).toBe('none');
-    expect(style.frameAlpha).toBe(1);
-    expect(style.wordAlpha, `el rótulo no lleva «chapa» (${style.wordBg})`).toBe(0);
+    expect(style.copyAlpha).toBe(1);
+    expect(style.creditAlpha).toBe(1);
   });
 });
 

@@ -1,19 +1,24 @@
 import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
-import { BrandMark } from '@/components/BrandMark';
 import { ButtonLink } from '@/components/ButtonLink';
-import { DestinationGrid } from '@/components/DestinationGrid';
+import { DepthStage } from '@/components/DepthStage';
 import { DestinationSearch } from '@/components/DestinationSearch';
+import { IsthmusDefs, IsthmusMap } from '@/components/IsthmusMap';
 import { Notice } from '@/components/Notice';
+import { Travesia } from '@/components/Travesia';
+import { getEnv } from '@/config/env';
 import { SITE } from '@/config/site';
+import { isthmusRights } from '@/domains/geography/rights';
 import {
   DESTINATIONS,
   DESTINATION_KINDS,
   type DestinationKind,
 } from '@/domains/tourism/destinations';
 import { buildSearchIndex } from '@/domains/tourism/search';
+import { ISTHMUS_PROVENANCE } from '@/domains/tourism/travesia';
 import { assertLocale, type LocaleParams } from '@/lib/params';
+import { RIGHTS_POLICIES } from '@/lib/rights-policies';
 import { THEME_COLORS, pageMetadata } from '@/lib/seo';
 import styles from './page.module.css';
 
@@ -36,25 +41,21 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 export const viewport: Viewport = { colorScheme: 'dark', themeColor: THEME_COLORS.dark };
 
 /**
- * `sizes` de la marca del héroe (ver page.module.css `.mark`): grande en dos columnas (≥ 64rem), compacta en una columna
- * (≥ 40rem) y OCULTA en teléfonos (< 40rem: la marca ya está en la cabecera y la tarjeta empujaba la llamada principal
- * fuera del primer pliegue; r1:V-04). Con `1px` el navegador pide el archivo más pequeño (160 px) para la imagen que no se ve:
- * no se puede evitar la petición de una imagen `eager` oculta con CSS, pero sí que sea la mínima.
- */
-const MARK_SIZES =
-  '(min-width: 64rem) clamp(8.5rem, 19vw, 15.2rem), (min-width: 40rem) clamp(5.2rem, 20.8vw, 6.6rem), 1px';
-
-/**
- * Portada. ESTÁTICA a propósito: no calcula nada que dependa del día (sin getTodayIsoDate ni insignias de cobertura).
- * Va envuelta en `data-immersive`, que activa el ámbito oscuro de marca de tokens.css para TODA la página (cabecera y
- * pie incluidos). El texto va siempre sobre una superficie SÓLIDA (nunca sobre el degradado ni sobre vidrio
- * translúcido: así axe puede medirlo); el vidrio solo enmarca la imagen de la marca. Los adornos del héroe son dos capas `aria-hidden` sin texto (`.decor`, `.contours`) detrás del contenido.
+ * Portada «Travesía» (ADR-0026). ESTÁTICA a propósito: no calcula nada que dependa del día (sin getTodayIsoDate ni
+ * insignias de cobertura). Va envuelta en `data-immersive`, que activa el ámbito oscuro de marca de tokens.css para TODA
+ * la página (cabecera y pie incluidos). El texto va siempre sobre una superficie SÓLIDA (nunca sobre el degradado ni sobre
+ * vidrio translúcido: así axe puede medirlo); el héroe no lleva vidrio. Los adornos del héroe son dos capas `aria-hidden`
+ * sin texto (`.decor`, `.contours`) detrás del contenido.
+ *
+ * El istmo (contorno derivado de Overture) pasa por la MISMA puerta de derechos que el mapa base (`isthmusRights`): con la
+ * política `provisional`, en producción no se pinta ni en el héroe ni en las escenas (r:D-01). El entorno se conoce al
+ * construir (la página es estática).
  */
 export default async function HomePage({ params }: LocaleParams) {
   const locale = assertLocale((await params).locale);
   const t = await getTranslations('Home');
   const brand = await getTranslations('Brand');
-  const destinations = await getTranslations('Destinations');
+  const travesia = await getTranslations('Home.travesia');
   const kinds = await getTranslations('DestinationKind');
   const footer = await getTranslations('Footer');
   const messages = await getMessages();
@@ -64,13 +65,16 @@ export default async function HomePage({ params }: LocaleParams) {
   const kindLabels = Object.fromEntries(
     DESTINATION_KINDS.map((kind) => [kind, kinds(kind)]),
   ) as Record<DestinationKind, string>;
+  const showMap = isthmusRights(RIGHTS_POLICIES, getEnv().SITE_ENV).allowed;
 
   return (
     <div data-immersive="">
-      <section className={styles.hero} aria-labelledby="home-title">
-        {/* Adornos del héroe: dos capas SIN texto detrás del contenido (degradado + resplandor, y curvas de nivel). */}
+      {showMap ? <IsthmusDefs /> : null}
+      <section id="inicio" className={styles.hero} aria-labelledby="home-title">
+        {/* Adornos del héroe: dos capas SIN texto detrás del contenido (degradado + resplandor, y una rejilla decorativa: no es una retícula geográfica). */}
         <div className={styles.decor} aria-hidden="true" />
         <div className={styles.contours} aria-hidden="true" />
+        {showMap ? <DepthStage stageId="inicio" /> : null}
         <div className={styles.heroInner}>
           <div className={styles.copy}>
             <p className={styles.eyebrow}>{t('eyebrow')}</p>
@@ -95,16 +99,18 @@ export default async function HomePage({ params }: LocaleParams) {
             </NextIntlClientProvider>
           </div>
 
-          <div className={styles.brand}>
-            <div className={styles.frame}>
-              <BrandMark variant="p" priority className={styles.mark ?? ''} sizes={MARK_SIZES} />
-              {/* El nombre es TEXTO VIVO (nunca una imagen de texto); no es un encabezado: el único h1 es el título. */}
-              <p className={styles.wordmark}>
-                <span className={styles.wordmarkMain}>{SITE.wordmark.primary}</span>
-                <span className={styles.wordmarkSub}>{SITE.wordmark.secondary}</span>
-              </p>
-            </div>
-          </div>
+          {/* El istmo con los nueve destinos (decorativo: la barra de paradas y las escenas dicen lo mismo en texto). */}
+          {showMap ? (
+            <figure className={styles.isthmus}>
+              <IsthmusMap variant="hero" className={styles.isthmusMap ?? ''} />
+              <figcaption className={styles.credit}>
+                {travesia.rich('credit', {
+                  release: ISTHMUS_PROVENANCE.release,
+                  en: (chunks) => <span lang="en">{chunks}</span>,
+                })}
+              </figcaption>
+            </figure>
+          ) : null}
         </div>
       </section>
 
@@ -138,13 +144,7 @@ export default async function HomePage({ params }: LocaleParams) {
         </div>
       </section>
 
-      <section aria-labelledby="destinations-title" className={`${styles.section} hyphenate`}>
-        <div className={styles.wrap}>
-          <h2 id="destinations-title">{destinations('indexTitle')}</h2>
-          <p className="lead">{destinations('indexLead')}</p>
-          <DestinationGrid />
-        </div>
-      </section>
+      <Travesia showMap={showMap} />
 
       <section aria-labelledby="status-title" className={`${styles.section} hyphenate`}>
         <div className={styles.wrap}>

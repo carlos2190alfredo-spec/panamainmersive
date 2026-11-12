@@ -141,6 +141,16 @@ export function resolveMapExperience(
   };
 }
 
+/**
+ * El istmo de la portada (ADR-0026) es un DERIVADO de Overture (contorno del país transformado, proyectado y servido en
+ * el HTML): necesita las mismas tres acciones que el mapa base sobre esa fuente (no las tipografías, que el istmo no usa).
+ * Con la política `provisional`, en producción no se pinta (r:D-01: lo que el mapa base no puede mostrar allí, la portada
+ * tampoco).
+ */
+export function isthmusRights(policies: readonly RightsPolicy[], env: SiteEnv): RightsDecision {
+  return evaluateAll(policies, 'overture', ['display', 'transform', 'redistribute'], env);
+}
+
 /** Coherencia: toda fuente en uso tiene política y su estado coincide con el del registro de fuentes. */
 export function policiesMatchSources(policies: readonly RightsPolicy[]): string[] {
   const problems: string[] = [];

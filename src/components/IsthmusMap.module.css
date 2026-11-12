@@ -1,0 +1,147 @@
+/*
+ * Istmo de la «Travesía» (ADR-0026). Solo trazos y rellenos de los tokens del mapa (ámbito inmersivo, siempre oscuro): la
+ * tierra con el color de tierra del mapa y su costa con el de los límites, los destinos en Azul Claro (relleno sobre
+ * oscuro: no es texto; 5,51:1 sobre la tierra). El resaltado del localizador también es Azul Claro, más grande y con halo:
+ * NADA de rojo en un marcador del mapa (CLAUDE.md, identidad 4; el Rojo Panamá daba 2,91:1 sobre la tierra, r:A11Y-5).
+ * Profundidad «espacial»: cada capa (`data-depth`) se desplaza con el puntero según `--depth-x/--depth-y` (DepthStage),
+ * solo con `no-preference`.
+ */
+.map {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  overflow: visible;
+}
+
+/* La ruta compartida (una sola copia por página) no ocupa sitio (un `<svg>` de 0 × 0; no se pinta: solo lleva `<defs>`). */
+.defs {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+}
+
+/*
+ * La costa se dibuja con un trazo que NO escala (r:F6): con el viewBox de 1000 unidades en un teléfono (escala ≈ 0,3) un
+ * trazo de 1,2 unidades medía 0,35 px y la silueta desaparecía (la tierra contrasta poco con el fondo: 1,1–1,5:1). La
+ * costa (Arena tostada) es lo que dibuja el país: 5,5–7,5:1 sobre el fondo. Encima del relleno (`paint-order: normal`).
+ */
+.landPath {
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+
+.land {
+  fill: var(--color-map-land);
+  stroke: var(--color-map-boundary);
+  stroke-width: 1.25px;
+}
+
+.ocean {
+  fill: var(--color-map-label);
+  font-family: var(--font-text);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.halo {
+  fill: var(--color-sky);
+  opacity: 0.22;
+}
+
+.dot {
+  fill: var(--color-sky);
+  stroke: var(--color-map-halo);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.mini .stop:not(.current) .dot {
+  fill: var(--color-map-boundary);
+}
+
+.mini .stop:not(.current) .halo {
+  opacity: 0;
+}
+
+.current .dot {
+  fill: var(--color-sky);
+  stroke: var(--color-map-label);
+  stroke-width: 2.5px;
+}
+
+.current .halo {
+  fill: var(--color-sky);
+  opacity: 0.3;
+}
+
+/*
+ * Istmo del héroe estrecho (< 38rem de ANCHO DEL DIBUJO, no de la ventana: a 1024 px, en dos columnas, mide ≈ 560 px y a
+ * 640 px, en una, 608: r2:F6): los rótulos de los océanos medirían ≤ 11 px y no se leen (se dicen en el texto de la
+ * travesía) y los puntos crecen para seguir viéndose (`r` es propiedad CSS en SVG 2). El contenedor es la figura del
+ * héroe (`container-type` en page.module.css).
+ */
+@container (max-width: 38rem) {
+  .hero .ocean {
+    display: none;
+  }
+
+  .hero .dot {
+    r: 14px;
+  }
+
+  .hero .halo {
+    r: 26px;
+  }
+}
+
+/* Capas a distinta profundidad: el fondo apenas se mueve, los puntos más. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero [data-depth] {
+    transition: translate var(--motion-medium) var(--ease-out);
+  }
+
+  .hero [data-depth='far'] {
+    translate: calc(var(--depth-x, 0) * -6px) calc(var(--depth-y, 0) * -4px);
+  }
+
+  .hero [data-depth='mid'] {
+    translate: calc(var(--depth-x, 0) * 4px) calc(var(--depth-y, 0) * 3px);
+  }
+
+  .hero [data-depth='near'] {
+    translate: calc(var(--depth-x, 0) * 10px) calc(var(--depth-y, 0) * 7px);
+  }
+}
+
+/*
+ * Colores forzados. Selectores con `.map` delante: los de arriba (`.mini .stop:not(.current) .dot`, 0,4,0) ganarían por
+ * especificidad a un `.dot` suelto y el localizador conservaría el tostado (≈ 1,9:1 sobre Canvas blanco: r:A11Y-6).
+ */
+@media (forced-colors: active) {
+  .map .land {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+
+  .map .ocean {
+    fill: CanvasText;
+  }
+
+  .map .stop .dot,
+  .map .stop:not(.current) .dot {
+    fill: CanvasText;
+    stroke: Canvas;
+  }
+
+  .map .current .dot {
+    fill: Highlight;
+    stroke: CanvasText;
+  }
+
+  .map .stop .halo,
+  .map .current .halo {
+    opacity: 0;
+  }
+}
