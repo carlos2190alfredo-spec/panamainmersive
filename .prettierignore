@@ -12,4 +12,5 @@ docs/research
 db/migrations
 data
 .e2e-content-app
+.claude
 vendor

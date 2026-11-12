@@ -41,15 +41,19 @@ export async function clippedText(page: Page): Promise<string[]> {
   });
 }
 
-/** Pulsa Tab `tabs` veces y devuelve cuántos elementos enfocados se comprobaron y cuáles quedaron ENTERAMENTE tapados. */
+/**
+ * Pulsa Tab (o `Shift+Tab`: r:A11Y-1, hacia atrás el destino queda ENCIMA y el navegador lo alinea arriba, bajo lo que esté
+ * pegado) `tabs` veces y devuelve cuántos elementos enfocados se comprobaron y cuáles quedaron ENTERAMENTE tapados.
+ */
 export async function hiddenFocus(
   page: Page,
   tabs: number,
+  key: 'Tab' | 'Shift+Tab' = 'Tab',
 ): Promise<{ checked: number; hidden: string[] }> {
   const hidden: string[] = [];
   let checked = 0;
   for (let i = 0; i < tabs; i++) {
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(key);
     const result = await page.evaluate(() => {
       const el = document.activeElement;
       if (!el || el === document.body) return null;

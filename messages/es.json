@@ -81,7 +81,26 @@
       }
     },
     "statusHeading": "Estado actual",
-    "statusBody": "Esta es una versión de desarrollo. Las fichas de los destinos están en preparación y las traducciones están pendientes de revisión humana."
+    "statusBody": "Esta es una versión de desarrollo. Las fichas de los destinos están en preparación y las traducciones están pendientes de revisión humana.",
+    "travesia": {
+      "heading": "La travesía",
+      "lead": "Recorre Panamá de oeste a este, entre el mar Caribe y el océano Pacífico. Cada parada está en su punto de referencia, derivado de OpenStreetMap (vía Overture).",
+      "caribbean": "Mar Caribe",
+      "pacific": "Océano Pacífico",
+      "west": "Oeste",
+      "east": "Este",
+      "navLabel": "Paradas de la travesía",
+      "stop": "Parada {number} de {total}",
+      "reference": "Punto de referencia",
+      "coordinates": "{y}° {ns} · {x}° {ew}",
+      "credit": "Contorno y puntos de referencia: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (versión {release}). Contorno de referencia: no es un límite oficial.",
+      "hemisphere": {
+        "north": "N",
+        "south": "S",
+        "east": "E",
+        "west": "O"
+      }
+    }
   },
   "Search": {
     "label": "Buscar un destino",

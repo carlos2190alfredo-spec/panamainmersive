@@ -90,7 +90,8 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
   const IDENTICAL_TO_SPANISH_ALLOWED: Partial<Record<Locale, readonly string[]>> = {
     // «destino/destinos» se escribe igual en portugués y en español (también en el recuento de los
     // chips del filtro por tipo, Map.filter.count); «Mostrando {shown} de {total}.» también.
-    pt: ['Explore.count', 'Map.inView.count', 'Map.filter.count'],
+    // «Parada {number} de {total}» (las paradas de la travesía de la portada) también.
+    pt: ['Explore.count', 'Map.inView.count', 'Map.filter.count', 'Home.travesia.stop'],
   };
 
   it.each(LOCALES.filter((l) => l !== DEFAULT_LOCALE))(

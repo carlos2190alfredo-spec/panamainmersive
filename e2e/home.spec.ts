@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { DESTINATIONS, destinationSlug } from '../src/domains/tourism/destinations';
+import { travesiaStops } from '../src/domains/tourism/travesia';
 import { LOCALES, PATHS, watchPage, type Locale } from './helpers';
 
 /**
@@ -30,9 +31,12 @@ test.describe('portada: estructura y enlaces reales en los cinco idiomas', () =>
       await expect(page.locator('[role="search"]')).toHaveCount(1);
       await expect(page.locator('main > [data-immersive]')).toHaveCount(1);
 
+      // Las paradas de la travesía van de OESTE a ESTE (ADR-0026), no en el orden del registro
       const cards = main.locator('li[data-destination]');
       await expect(cards).toHaveCount(DESTINATIONS.length);
-      for (const [i, d] of DESTINATIONS.entries()) {
+      for (const [i, d] of travesiaStops()
+        .map((stop) => stop.entry)
+        .entries()) {
         const card = cards.nth(i);
         await expect(card).toHaveAttribute('data-destination', d.key);
         await expect(card).toHaveAttribute('data-kind', d.kind);
@@ -64,25 +68,203 @@ test.describe('portada: estructura y enlaces reales en los cinco idiomas', () =>
     });
   }
 
-  test('la marca P es UNA imagen decorativa y el nombre es texto vivo', async ({ page }) => {
+  test('el istmo del héroe se dibuja con los nueve destinos y su crédito de datos se ve (la marca ya está en la cabecera)', async ({
+    page,
+  }) => {
     await page.goto(PATHS.home.es);
-    const mark = page.locator('main img');
-    await expect(mark).toHaveCount(1);
-    await expect(mark).toHaveAttribute('alt', '');
-    await expect(mark).toHaveAttribute('src', /\/brand\/mark-p-320\.webp$/);
-    await expect(page.locator('main').getByText('Immersive', { exact: true })).toBeVisible();
-    // Se pinta de verdad (no es una imagen rota).
-    const natural = await mark.evaluate((img) => (img as HTMLImageElement).naturalWidth);
-    expect(natural).toBeGreaterThan(0);
+    await expect(page.locator('main img')).toHaveCount(0);
+    const isthmus = page.locator('main svg[data-isthmus="hero"]');
+    await expect(isthmus).toBeVisible();
+    await expect(isthmus.locator('[data-stop]')).toHaveCount(9);
+    const box = await isthmus.boundingBox();
+    expect(box?.width ?? 0, 'el istmo es grande: protagonista del héroe').toBeGreaterThan(500);
+    await expect(page.locator('main figcaption span[lang="en"]')).toBeVisible();
   });
 
-  test('en pantalla ancha la marca va a la derecha del texto', async ({ page }) => {
+  test('en pantalla ancha el istmo va a la derecha del texto', async ({ page }) => {
     await page.goto(PATHS.home.es);
-    const [title, mark] = await Promise.all([
+    const [title, isthmus] = await Promise.all([
       page.locator('main h1').boundingBox(),
-      page.locator('main img').boundingBox(),
+      page.locator('main figure').boundingBox(),
     ]);
-    expect(title && mark && mark.x > title.x + title.width - 1).toBe(true);
+    expect(title && isthmus && isthmus.x > title.x + title.width - 1).toBe(true);
+  });
+});
+
+test.describe('travesía: de oeste a este, con la barra de paradas', () => {
+  test('al desplazarse, la barra marca la parada a la vista y se llena; un enlace de la barra lleva a su escena', async ({
+    page,
+  }) => {
+    await page.goto(PATHS.home.es);
+    await hydrated(page);
+    const rail = page.locator('nav[data-travesia-rail]');
+    const stops = travesiaStops();
+    await expect(rail.locator('[aria-current]')).toHaveCount(0); // control: sin desplazarse no hay parada actual
+    const progress = (): Promise<number> =>
+      rail.evaluate((el) => Number(el.style.getPropertyValue('--travesia-progress')));
+    // La escena centrada es LA marcada (no «una de las nueve»: r:T-1) y la pista llega al centro de su columna
+    // stops[2] y no la central: (2 + 0,5) / 9 = 0,278 frente a 2 / 8 = 0,25 de la fórmula antigua (r2:H-07)
+    const target = stops[2]!.entry.key;
+    await page
+      .locator(`#parada-${target}`)
+      .evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await expect(rail.locator('[aria-current="step"]')).toHaveAttribute(
+      'data-travesia-link',
+      target,
+      { timeout: 10_000 },
+    );
+    await expect.poll(progress).toBeCloseTo(2.5 / stops.length, 3);
+    // La barra se queda pegada bajo la cabecera mientras se recorren las escenas
+    const [header, railBox] = await Promise.all([
+      page.locator('header').boundingBox(),
+      rail.boundingBox(),
+    ]);
+    expect(
+      Math.abs((railBox?.y ?? 0) - ((header?.y ?? 0) + (header?.height ?? 0))),
+    ).toBeLessThanOrEqual(2);
+    // Un enlace de la barra lleva a su escena (ancla de la propia página)
+    const last = stops.at(-1)!.entry.key;
+    await rail.locator(`a[href="#parada-${last}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`#parada-${last}$`));
+    await expect(page.locator(`#parada-${last}`)).toBeInViewport();
+    // El ancla deja la escena JUSTO bajo la barra (no a 284 px, contando dos veces la cabecera: r:A11Y-4) y la marca
+    const [sceneTop, railBottom] = await Promise.all([
+      page.locator(`#parada-${last}`).evaluate((el) => el.getBoundingClientRect().top),
+      rail.evaluate((el) => el.getBoundingClientRect().bottom),
+    ]);
+    expect(sceneTop).toBeGreaterThanOrEqual(railBottom);
+    expect(sceneTop - railBottom).toBeLessThanOrEqual(40);
+    await expect(rail.locator('[aria-current="step"]')).toHaveAttribute(
+      'data-travesia-link',
+      last,
+      {
+        timeout: 10_000,
+      },
+    );
+    await expect.poll(progress).toBeCloseTo(8.5 / stops.length, 3);
+  });
+
+  test('al invertir el sentido con dos escenas en la franja, la marcada es la que sigue a la vista (r:JS-1)', async ({
+    page,
+  }) => {
+    // Pantalla alta: la franja de lectura (10 % de lo visible bajo cabecera y barra, ≈ 91 px) es MAYOR que el hueco entre
+    // escenas (72 px), así que dos escenas pueden estar dentro a la vez
+    await page.setViewportSize({ width: 1280, height: 1100 });
+    await page.goto(PATHS.home.es);
+    await hydrated(page);
+    const rail = page.locator('nav[data-travesia-rail]');
+    const stops = travesiaStops();
+    const a = stops[2]!.entry.key;
+    const b = stops[3]!.entry.key;
+    const current = rail.locator('[aria-current="step"]');
+    const scrollBy = (dy: number): Promise<void> =>
+      page.evaluate(async (y) => {
+        window.scrollBy({ top: y, behavior: 'instant' });
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 150)));
+      }, dy);
+    // 1) El final de A, 10 px por encima de la línea de lectura: solo A está en la franja
+    const offset = await page.evaluate((key) => {
+      const top =
+        (document.querySelector('header')?.getBoundingClientRect().height ?? 0) +
+        (document.querySelector('[data-travesia-rail]') as HTMLElement).offsetHeight;
+      const line = top + (innerHeight - top) / 2;
+      return document.getElementById(`parada-${key}`)!.getBoundingClientRect().bottom - line + 10;
+    }, a);
+    await scrollBy(offset);
+    await expect(current).toHaveAttribute('data-travesia-link', a, { timeout: 10_000 });
+    // 2) 30 px más abajo: entra B (su borde está más cerca de la línea) y se marca
+    await scrollBy(30);
+    await expect(current).toHaveAttribute('data-travesia-link', b, { timeout: 10_000 });
+    // 3) 20 px de vuelta: B sale de la franja y A, que NO cambió de estado, tiene que volver a marcarse (con solo las
+    //    entradas que cambian se quedaba B)
+    await scrollBy(-20);
+    await expect(current).toHaveAttribute('data-travesia-link', a, { timeout: 10_000 });
+  });
+
+  for (const size of [
+    { width: 1280, height: 800 },
+    { width: 820, height: 1000 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`a ${String(size.width)} px el panel de cada escena NO tapa el punto de su destino en el localizador (r:F1)`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' }); // sin la separación de planos atada al scroll: medida estable
+      await page.setViewportSize(size);
+      await page.goto(PATHS.home.es);
+      await hydrated(page);
+      const covered: string[] = [];
+      for (const s of travesiaStops()) {
+        const dot = page.locator(
+          `#parada-${s.entry.key} svg[data-isthmus="mini"] [data-stop="${s.entry.key}"] circle:last-child`,
+        );
+        await dot.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        const hit = await dot.evaluate((el) => {
+          const b = el.getBoundingClientRect();
+          const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          return top === el || el.parentElement?.contains(top ?? null) === true
+            ? ''
+            : `${top?.tagName ?? '-'}.${String(top?.className ?? '')}`;
+        });
+        if (hit) covered.push(`${s.entry.key} tapado por ${hit}`);
+      }
+      expect(covered).toEqual([]);
+    });
+  }
+
+  test('el anillo de foco de los enlaces de la barra cabe ENTERO dentro de la lista que desplaza (r:F3)', async ({
+    page,
+  }) => {
+    for (const size of [
+      { width: 1280, height: 800 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(size);
+      await page.goto(PATHS.home.es);
+      // `load` y no `networkidle`: en la segunda visita del contexto no llega (ISR de Explorar) y `focus()` no necesita
+      // la página hidratada
+      await page.waitForLoadState('load');
+      const stops = travesiaStops();
+      for (const key of [stops[0]!.entry.key, stops.at(-1)!.entry.key]) {
+        const link = page.locator(`a[data-travesia-link="${key}"]`);
+        await link.focus();
+        const clipped = await link.evaluate((el) => {
+          const ring = 8; // contorno de 3 px + separación de 2 px + halo de 5 px (base.css)
+          const b = el.getBoundingClientRect();
+          const list = el.closest('ol')!.getBoundingClientRect();
+          const out: string[] = [];
+          if (b.top - ring < list.top - 0.5) out.push('arriba');
+          if (b.bottom + ring > list.bottom + 0.5) out.push('abajo');
+          if (b.left - ring < list.left - 0.5) out.push('izquierda');
+          if (b.right + ring > list.right + 0.5) out.push('derecha');
+          return out;
+        });
+        expect(clipped, `${key} a ${String(size.width)} px`).toEqual([]);
+      }
+    }
+  });
+
+  test('a 1280 px las nueve paradas caben en la barra sin desplazarla (es y de: r:F5)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    for (const path of [PATHS.home.es, PATHS.home.de]) {
+      await page.goto(path);
+      const fits = await page
+        .locator('nav[data-travesia-rail] ol')
+        .evaluate((el) => el.scrollWidth <= el.clientWidth);
+      expect(fits, path).toBe(true);
+    }
+  });
+
+  test('cada escena dice su ubicación real en el idioma de la página', async ({ page }) => {
+    await page.goto(PATHS.home.en);
+    const baru = page.locator('li[data-destination="volcan-baru"]');
+    await expect(baru).toContainText('8.81° N · 82.54° W');
+    await page.goto(PATHS.home.es);
+    await expect(page.locator('li[data-destination="volcan-baru"]')).toContainText(
+      '8,81° N · 82,54° O',
+    );
   });
 });
 
@@ -304,23 +486,71 @@ test.describe('movimiento: finito, solo con no-preference y sin inclinar con red
     expect(await perceptible()).toBeGreaterThanOrEqual(1);
   });
 
-  test('la inclinación del marco de la marca solo ocurre con no-preference', async ({ page }) => {
-    const transformOnHover = async (): Promise<string> => {
+  test('profundidad espacial: con el ratón las capas del istmo se desplazan solo con no-preference', async ({
+    page,
+  }) => {
+    const nearTranslate = async (): Promise<string> => {
       await page.goto(PATHS.home.es);
-      // `networkidle` NO llega en la SEGUNDA visita de este contexto: Explorar se regenera (ISR, r0:F-07) y su respuesta
-      // (`s-maxage` + `stale-while-revalidate`, también la de su prefetch desde la portada) la revalida Chromium en segundo
-      // plano, petición que a Playwright no le llega a terminar (2 pendientes durante 25 s con el servidor respondiendo en 24 ms;
-      // sin `revalidate` en Explorar no ocurre). Esta prueba solo mide un `transform` CSS: basta con que la página haya cargado.
+      // `networkidle` no llega en la segunda visita de este contexto (ISR de Explorar, r0:F-07): se espera a que DepthStage
+      // escuche (mover el ratón antes de hidratar no probaría nada: r:T-3)
       await page.waitForLoadState('load');
-      const frame = page.locator('main img').locator('..');
-      await frame.hover();
+      await expect(page.locator('#inicio[data-depth-ready]')).toHaveCount(1);
+      const box = await page.locator('main figure').boundingBox();
+      if (!box) throw new Error('sin istmo');
+      await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+      await page.mouse.move(box.x + box.width * 0.95, box.y + box.height * 0.1, { steps: 4 });
       await page.waitForTimeout(500);
-      return frame.evaluate((el) => getComputedStyle(el).transform);
+      return page
+        .locator('main svg[data-isthmus="hero"] g[data-depth="near"]')
+        .evaluate((el) => getComputedStyle(el).translate);
     };
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    expect(await transformOnHover(), 'control: con no-preference sí se inclina').not.toBe('none');
+    const moved = await nearTranslate();
+    expect(moved, 'control: con no-preference sí se desplaza').not.toBe('none');
+    expect(moved).not.toBe('0px');
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    expect(await transformOnHover()).toBe('none');
+    expect(await nearTranslate()).toBe('none');
+  });
+
+  test('profundidad: las variables van en el SVG (no en la sección) y un dedo no mueve nada (r2:H-08)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(PATHS.home.es);
+    await hydrated(page);
+    await expect(page.locator('#inicio[data-depth-ready]')).toHaveCount(1);
+    const read = (): Promise<{ section: string; svg: string }> =>
+      page.evaluate(() => ({
+        section: (document.getElementById('inicio') as HTMLElement).style.getPropertyValue(
+          '--depth-x',
+        ),
+        svg: (
+          document.querySelector('svg[data-isthmus="hero"]') as SVGElement
+        ).style.getPropertyValue('--depth-x'),
+      }));
+    // Un dedo (pointerType touch) que se arrastra por el héroe: nada se escribe
+    await page.evaluate(async () => {
+      const stage = document.getElementById('inicio')!;
+      const box = stage.getBoundingClientRect();
+      for (const f of [0.2, 0.5, 0.9]) {
+        stage.dispatchEvent(
+          new PointerEvent('pointermove', {
+            bubbles: true,
+            pointerType: 'touch',
+            clientX: box.left + box.width * f,
+            clientY: box.top + box.height * f,
+          }),
+        );
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));
+      }
+    });
+    expect(await read()).toEqual({ section: '', svg: '' });
+    // Control: el mismo gesto con un ratón SÍ escribe, y en el SVG, no en la sección
+    const box = await page.locator('main figure').boundingBox();
+    if (!box) throw new Error('sin istmo');
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.2, { steps: 3 });
+    await expect.poll(async () => (await read()).svg).not.toBe('');
+    expect((await read()).section).toBe('');
   });
 
   test('el enlace principal de cada tarjeta tiene transición con no-preference (control de la prueba de reduce)', async ({
@@ -344,7 +574,7 @@ test.describe('teclado en la portada', () => {
     await page.goto(PATHS.home.es);
     await hydrated(page);
     const seen = new Set<string>();
-    for (let i = 0; i < 45; i++) {
+    for (let i = 0; i < 60; i++) {
       await page.keyboard.press('Tab');
       const info = await page.evaluate(() => {
         const el = document.activeElement as HTMLElement | null;
@@ -361,8 +591,17 @@ test.describe('teclado en la portada', () => {
       expect(info.style, info.id).not.toBe('none');
       expect(info.width, info.id).toBeGreaterThanOrEqual(2);
     }
-    // Buscador (campo y botón) + dos botones + 2 entradas + 18 enlaces de las tarjetas, como mínimo.
-    expect(seen.size).toBeGreaterThanOrEqual(24);
+    // Buscador (campo y botón) + dos botones + 2 entradas + 9 de la barra de paradas + 18 de las escenas, como mínimo (r:T-2).
+    expect(seen.size).toBeGreaterThanOrEqual(33);
+    // Cada escena por sus DOS enlaces (la ficha y «Ver en el mapa»), no por el de la barra (r2:H-06)
+    for (const s of travesiaStops()) {
+      expect(seen.has(`A:#parada-${s.entry.key}`), `barra ${s.entry.key}`).toBe(true);
+      expect(
+        seen.has(`A:${PATHS.destinations.es}/${destinationSlug(s.entry, 'es')}`),
+        `ficha ${s.entry.key}`,
+      ).toBe(true);
+      expect(seen.has(`A:${PATHS.explore.es}?d=${s.entry.key}`), `mapa ${s.entry.key}`).toBe(true);
+    }
   });
 });
 

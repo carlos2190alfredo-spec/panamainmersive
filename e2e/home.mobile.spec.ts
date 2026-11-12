@@ -6,13 +6,13 @@ import { PATHS } from './helpers';
  * primer pliegue: r1:V-04), con la llamada principal a la vista, el buscador usable y nada que desborde.
  */
 test.describe('portada en móvil', () => {
-  test('la tarjeta de la marca no ocupa lugar, la llamada principal se ve sin desplazarse y nada desborda', async ({
+  test('sin imagen de marca en el héroe, la llamada principal se ve sin desplazarse y nada desborda', async ({
     page,
   }) => {
     await page.goto(PATHS.home.es);
     await page.waitForLoadState('networkidle');
-    // La marca sigue en la cabecera (y es la ÚNICA imagen visible); la del héroe está oculta con CSS
-    expect((await page.locator('main img').boundingBox())?.width ?? 0).toBe(0);
+    // La marca solo está en la cabecera: el héroe es el texto y, debajo, el istmo (ADR-0026)
+    await expect(page.locator('main img')).toHaveCount(0);
     expect((await page.locator('header img').boundingBox())?.width ?? 0).toBeGreaterThan(20);
     const cta = await page.locator('main a[class*="cta"]').first().boundingBox();
     const viewport = page.viewportSize();
@@ -55,5 +55,36 @@ test.describe('portada en móvil', () => {
     expect(rects).toHaveLength(9);
     expect(new Set(rects.map((r) => r.x)).size, 'una sola columna').toBe(1);
     for (const r of rects) expect(r.min).toBeGreaterThanOrEqual(44);
+  });
+
+  test('travesía en el teléfono: la barra de paradas desplaza en horizontal sin desbordar la página y cada escena es una columna', async ({
+    page,
+  }) => {
+    await page.goto(PATHS.home.es);
+    await page.waitForLoadState('networkidle');
+    const list = page.locator('nav[data-travesia-rail] ol');
+    const { scroll, client } = await list.evaluate((el) => ({
+      scroll: el.scrollWidth,
+      client: el.clientWidth,
+    }));
+    expect(scroll, 'la lista de paradas no cabe y desplaza dentro de sí misma').toBeGreaterThan(
+      client,
+    );
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+    // Al llegar a una parada lejana, la barra la trae a la vista desplazando SOLO la lista
+    await page.locator('#parada-panama-city').scrollIntoViewIfNeeded();
+    await expect(page.locator('a[data-travesia-link="panama-city"]')).toHaveAttribute(
+      'aria-current',
+      'step',
+      { timeout: 10_000 },
+    );
+    await expect.poll(() => list.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+    // Objetivos táctiles de la escena
+    const mapLink = page.locator('li[data-destination="coiba"] a').nth(1);
+    const box = await mapLink.boundingBox();
+    expect(box && box.height >= 44).toBe(true);
   });
 });

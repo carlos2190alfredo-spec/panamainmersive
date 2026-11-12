@@ -81,7 +81,26 @@
       }
     },
     "statusHeading": "État actuel",
-    "statusBody": "Ceci est une version de développement. Les fiches des destinations sont en préparation et les traductions attendent une relecture humaine."
+    "statusBody": "Ceci est une version de développement. Les fiches des destinations sont en préparation et les traductions attendent une relecture humaine.",
+    "travesia": {
+      "heading": "La traversée",
+      "lead": "Parcourez le Panama d’ouest en est, entre la mer des Caraïbes et l’océan Pacifique. Chaque étape est placée sur son point de repère, dérivé d’OpenStreetMap (via Overture).",
+      "caribbean": "Mer des Caraïbes",
+      "pacific": "Océan Pacifique",
+      "west": "Ouest",
+      "east": "Est",
+      "navLabel": "Étapes de la traversée",
+      "stop": "Étape {number} sur {total}",
+      "reference": "Point de repère",
+      "coordinates": "{y}° {ns} · {x}° {ew}",
+      "credit": "Contour et points de repère\u00a0: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (version {release}). Contour de référence\u00a0: ce n’est pas une limite officielle.",
+      "hemisphere": {
+        "north": "N",
+        "south": "S",
+        "east": "E",
+        "west": "O"
+      }
+    }
   },
   "Search": {
     "label": "Rechercher une destination",
