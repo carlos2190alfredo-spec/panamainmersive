@@ -81,7 +81,27 @@
       }
     },
     "statusHeading": "Current status",
-    "statusBody": "This is a development version. The destination pages are in preparation and the translations are pending human review."
+    "statusBody": "This is a development version. The destination pages are in preparation and the translations are pending human review.",
+    "travesia": {
+      "heading": "The crossing",
+      "lead": "Travel across Panama from west to east, between the Caribbean Sea and the Pacific Ocean. Every stop sits at its real position.",
+      "caribbean": "Caribbean Sea",
+      "pacific": "Pacific Ocean",
+      "west": "West",
+      "east": "East",
+      "navLabel": "Stops on the crossing",
+      "stop": "Stop {number} of {total}",
+      "location": "Location",
+      "coordinates": "{y}° {ns} · {x}° {ew}",
+      "credit": "Outline and positions: <en>© OpenStreetMap contributors, Overture Maps Foundation</en>",
+      "start": "Start the crossing",
+      "hemisphere": {
+        "north": "N",
+        "south": "S",
+        "east": "E",
+        "west": "W"
+      }
+    }
   },
   "Search": {
     "label": "Search for a destination",

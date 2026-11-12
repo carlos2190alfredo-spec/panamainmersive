@@ -1,0 +1,340 @@
+/*
+ * «Travesía» (ADR-0026): de oeste a este, una escena por destino. UI espacial: cada escena son dos planos a distinta
+ * profundidad (el localizador del istmo detrás, el panel delante y elevado, solapándolo) que se separan al desplazarse,
+ * y una barra de paradas pegada bajo la cabecera. Reglas de la portada que se mantienen (tests/unit/design/home-css.test.ts):
+ * el texto va SIEMPRE sobre una superficie sólida, solo propiedades lógicas, objetivos ≥ 44 px, nada recortado con texto
+ * dentro (1.4.12), movimiento solo con `no-preference` y atado al scroll (finito), sin animar `opacity` en lo que lleva texto.
+ */
+.section {
+  position: relative;
+  padding-block: var(--space-7) var(--space-8);
+  background-color: var(--color-paper);
+}
+
+.intro {
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  line-height: 1.05;
+  margin-block: 0 var(--space-3);
+  text-wrap: balance;
+}
+
+.lead {
+  max-inline-size: 40rem;
+  margin-block: 0;
+}
+
+/* ---------- Barra de paradas (pegada bajo la cabecera) ---------- */
+
+.rail {
+  position: sticky;
+  inset-block-start: var(--header-height);
+  z-index: 5;
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-6) var(--space-5);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  background-color: var(--color-surface);
+  border-block: 1px solid var(--color-line-soft);
+  box-shadow: var(--shadow-depth-2);
+}
+
+.ends {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  max-inline-size: 72rem;
+  inline-size: 100%;
+  margin-inline: auto;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.track {
+  display: block;
+  max-inline-size: 72rem;
+  inline-size: 100%;
+  margin-inline: auto;
+  block-size: 3px;
+  background-color: var(--color-line-soft);
+  border-radius: var(--radius-pill);
+}
+
+.fill {
+  display: block;
+  block-size: 100%;
+  inline-size: 100%;
+  background-color: var(--color-sky);
+  border-radius: inherit;
+  transform-origin: left center;
+  scale: var(--travesia-progress, 0) 1;
+}
+
+.railList {
+  position: relative;
+  display: flex;
+  gap: var(--space-1);
+  max-inline-size: 72rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.railLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-3);
+  color: var(--color-ink-muted);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-s);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.railLink:hover {
+  color: var(--color-ink);
+  background-color: var(--color-sunken);
+}
+
+.railLink[aria-current='step'] {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent);
+}
+
+.railIndex {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* ---------- Escenas ---------- */
+
+.stops {
+  display: grid;
+  gap: var(--space-8);
+  max-inline-size: 72rem;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+  list-style: none;
+  counter-reset: none;
+}
+
+.stop {
+  position: relative;
+  display: grid;
+  align-items: center;
+  scroll-margin-block-start: calc(var(--header-height) + 9rem);
+}
+
+.locator {
+  grid-area: 1 / 1;
+  padding: var(--space-4);
+  background-color: var(--color-glass-base);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-l);
+}
+
+.panel {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-block-start: calc(-1 * var(--space-7));
+  margin-inline: var(--space-3);
+  padding: var(--space-5);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-depth-3);
+}
+
+.step {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stepNumber {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: 0;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-s);
+}
+
+/* Enlace estirado: el nombre cubre toda la escena (el panel y el localizador) y «Ver en el mapa» queda por encima. */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-l);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
+.glyph {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.coords {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-variant-numeric: tabular-nums;
+}
+
+.coordsLabel {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.mapLink {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  margin-block-start: var(--space-2);
+  padding-inline: var(--space-4);
+  color: var(--color-on-accent);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mapLink:hover {
+  background-color: var(--color-accent-strong);
+}
+
+.stop:has(.link:focus-visible) .panel {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* Desde 48rem: el localizador ocupa dos tercios y el panel se superpone a su borde, alternando el lado. */
+@media (min-width: 48rem) {
+  .stop {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .locator {
+    grid-area: 1 / 1 / 2 / 9;
+  }
+
+  .panel {
+    grid-area: 1 / 7 / 2 / 13;
+    margin: 0;
+  }
+
+  .stop:nth-child(even) .locator {
+    grid-area: 1 / 5 / 2 / 13;
+  }
+
+  .stop:nth-child(even) .panel {
+    grid-area: 1 / 1 / 2 / 7;
+  }
+}
+
+/* Sin transición de color en los enlaces: cambian fondo y texto a la vez y axe mediría el contraste a mitad de camino. */
+
+/* Separación de planos atada al scroll: solo con soporte y sin preferencia de movimiento reducido. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .panel {
+      animation: panelFloat linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .locator {
+      animation: locatorDrift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+}
+
+@keyframes panelFloat {
+  from {
+    translate: 0 var(--space-7);
+    scale: 0.96;
+  }
+
+  to {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes locatorDrift {
+  from {
+    translate: 0 calc(-1 * var(--space-5));
+  }
+
+  to {
+    translate: 0 var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fill {
+    transition: scale var(--motion-medium) var(--ease-out);
+  }
+}
+
+@media (forced-colors: active) {
+  .rail,
+  .panel,
+  .locator {
+    border-color: CanvasText;
+  }
+
+  .fill,
+  .railLink[aria-current='step'],
+  .mapLink {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

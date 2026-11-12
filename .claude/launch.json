@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "panama-prod",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "next", "start", "-p", "3200"],
+      "port": 3200
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+/*
+ * Istmo de la «Travesía» (ADR-0026). Solo trazos y rellenos de los tokens del mapa (ámbito inmersivo, siempre oscuro): la
+ * tierra con el color de tierra del mapa y su costa con el de los límites, los destinos en Azul Claro (relleno sobre
+ * oscuro: no es texto) y el resaltado en Rojo Panamá SOLO como relleno de un punto. Profundidad «espacial»: cada capa
+ * (`data-depth`) se desplaza con el puntero según `--depth-x/--depth-y` (DepthStage), solo con `no-preference`.
+ */
+.map {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  overflow: visible;
+}
+
+.land {
+  fill: var(--color-map-land);
+  stroke: var(--color-map-boundary);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+.ocean {
+  fill: var(--color-map-label);
+  font-family: var(--font-text);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.route {
+  fill: none;
+  stroke: var(--color-sky);
+  stroke-width: 1.5;
+  stroke-dasharray: 0.006 0.008;
+  stroke-linecap: round;
+}
+
+.halo {
+  fill: var(--color-sky);
+  opacity: 0.22;
+}
+
+.dot {
+  fill: var(--color-sky);
+  stroke: var(--color-map-halo);
+  stroke-width: 1.5;
+}
+
+.mini .stop:not(.current) .dot {
+  fill: var(--color-map-boundary);
+}
+
+.mini .stop:not(.current) .halo {
+  opacity: 0;
+}
+
+.current .dot {
+  fill: var(--color-cta);
+  stroke: var(--color-map-label);
+  stroke-width: 2;
+}
+
+.current .halo {
+  fill: var(--color-cta);
+  opacity: 0.35;
+}
+
+/* Capas a distinta profundidad: el fondo apenas se mueve, los puntos más. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero [data-depth] {
+    transition: translate var(--motion-medium) var(--ease-out);
+  }
+
+  .hero [data-depth='far'] {
+    translate: calc(var(--depth-x, 0) * -6px) calc(var(--depth-y, 0) * -4px);
+  }
+
+  .hero [data-depth='mid'] {
+    translate: calc(var(--depth-x, 0) * 4px) calc(var(--depth-y, 0) * 3px);
+  }
+
+  .hero [data-depth='near'] {
+    translate: calc(var(--depth-x, 0) * 10px) calc(var(--depth-y, 0) * 7px);
+  }
+}
+
+@media (forced-colors: active) {
+  .land {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+
+  .ocean {
+    fill: CanvasText;
+  }
+
+  .dot {
+    fill: Highlight;
+    stroke: CanvasText;
+  }
+
+  .route {
+    stroke: Highlight;
+  }
+
+  .halo {
+    opacity: 0;
+  }
+}
