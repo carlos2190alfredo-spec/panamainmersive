@@ -1,13 +1,14 @@
 # Despliegue
 
-Estado (2026-10-24, revisado el 2026-11-03): **STAGING DESPLEGADO EN VERCEL; protección configurada pero su comportamiento NO verificado; producción pública bloqueada.** El repositorio existe (privado, GitHub) y el proyecto de Vercel está enlazado a él. **No se ha creado ninguna base de datos.** §7 recoge lo observado en el despliegue real (E-91); §2, el ensayo local previo (E-90).
+Estado (2026-10-24, revisado el 2026-11-03): **STAGING DESPLEGADO EN VERCEL; protección configurada pero su comportamiento NO verificado; producción pública bloqueada.** El repositorio existe en GitHub y es **público** (lo es desde su creación, el 2026-10-24; este documento decía «privado» por error y la persona propietaria decidió el 2026-11-11 mantenerlo público: §1) y el proyecto de Vercel está enlazado a él. **No se ha creado ninguna base de datos.** §7 recoge lo observado en el despliegue real (E-91); §2, el ensayo local previo (E-90).
 
 **Revisión del 2026-11-03 (E-98).** Lo que decía este documento sobre el CI estaba desactualizado: `ci.yml` y `audit.yml` **sí han corrido en GitHub** (verdes sobre `a0f9fd5` y `6193226`, Chromium 156 en Linux, ver §7). Lo que **no** ha pasado por GitHub es la entrega 5j: sus tres commits (`b1fd69a`, `30ed83a`, `ca34997`) y la revisión independiente posterior **no están en `origin`**, de modo que el staging desplegado y el CI verde son anteriores a la interfaz inmersiva.
 
 ## 1. Qué se decidió y qué no
 
 - **Decidido (2026-10-24, por la persona propietaria)**: primero un **staging privado en Vercel**; **no** producción pública. La razón es que producción pública está bloqueada por motivos que no son de configuración (§5).
-- **Decidido (2026-10-24, por la persona propietaria)**: el staging **debe mostrar el mapa**; el mapa base se versiona en el repositorio privado (§4).
+- **Decidido (2026-10-24, por la persona propietaria)**: el staging **debe mostrar el mapa**; el mapa base se versiona en el repositorio (§4).
+- **Decidido (2026-11-11, por la persona propietaria)**: el repositorio **se queda público**. Se creó así (el 2026-10-24 a las 19:57 UTC, sin cambios de visibilidad posteriores: lo dicen los eventos de GitHub, E-99) aunque este documento y el backlog (T-21) decían «privado»; se descubrió al preparar la fusión del PR #6. Consecuencia: el árbol y la historia de todas las ramas son visibles para cualquiera **desde el primer `push`**; la protección SSO de Vercel solo protege el sitio desplegado. Lo ya publicado no se puede retirar aunque se cambie la visibilidad.
 - **Sin decidir**: dominio, base de datos remota, dónde alojar el mapa base **para producción pública** (L-01), quién recibe los avisos de caducidad (T-19).
 
 ## 2. Ensayo local (medido el 2026-10-24, E-90)
@@ -27,7 +28,7 @@ Se clonó el paquete del repositorio (`git bundle`, HEAD `c542635`) en un direct
 
 ## 3. Pasos cuando exista el repositorio
 
-1. **Persona**: crear un repositorio **vacío y privado** en GitHub y reconectar la cuenta en https://claude.ai/connect-github. Subir el historial: `git clone panama-immersive.bundle panama-immersive && cd panama-immersive && git remote add origin <URL> && git push -u origin main`.
+1. **Persona**: crear un repositorio **vacío y privado** en GitHub _(se creó **público**: §1, 2026-11-11)_ y reconectar la cuenta en https://claude.ai/connect-github. Subir el historial: `git clone panama-immersive.bundle panama-immersive && cd panama-immersive && git remote add origin <URL> && git push -u origin main`.
 2. **CI** _(hecho el 2026-10-24; resultado en §7)_: `ci.yml` y `audit.yml` no habían corrido nunca y el primer push era su primer ensayo real (Chromium 156 frente al 141 de entonces, T-15). Salió verde, pero hay que seguir tratándolo como medición, no como trámite: cada commit nuevo es otro ensayo. Tras aceptar una actualización de acción, `pnpm check:action-pins --online`.
 3. **Vercel** (el equipo ya existe): proyecto Next.js enlazado al repositorio, Node 22.x, instalación `pnpm install --frozen-lockfile`, compilación `pnpm build`.
 4. **Variables** (en **todos** los entornos de Vercel, incluido el que Vercel llama «Production»: no es el `SITE_ENV=production` de este proyecto):
@@ -47,9 +48,9 @@ Se clonó el paquete del repositorio (`git bundle`, HEAD `c542635`) en un direct
 
 ## 4. El mapa en staging
 
-**Estado desde 2026-10-24 (rama `fix/staging-basemap`)**: el mapa base **viaja con el código**. `public/data/panama-basemap.pmtiles` (36,1 MB) y su manifiesto están **versionados** en el repositorio privado, de modo que cada despliegue de Vercel (por git, detrás de la protección) lo sirve como fichero estático del mismo origen (`/data/panama-basemap.pmtiles`, con Range: la CSP no cambia y no hace falta `NEXT_PUBLIC_TILES_BASE_URL`). Es la única vía con las herramientas de que se dispone: Vercel no permite subir un fichero de ese tamaño por la API de esta sesión y un almacén aparte (Blob) sería **público** o un servicio nuevo.
+**Estado desde 2026-10-24 (rama `fix/staging-basemap`)**: el mapa base **viaja con el código**. `public/data/panama-basemap.pmtiles` (36,1 MB) y su manifiesto están **versionados** en el repositorio (**público**: cualquiera puede descargarlos de GitHub, con su historial, sin pasar por la protección de Vercel), de modo que cada despliegue de Vercel (por git, detrás de la protección) lo sirve como fichero estático del mismo origen (`/data/panama-basemap.pmtiles`, con Range: la CSP no cambia y no hace falta `NEXT_PUBLIC_TILES_BASE_URL`). Es la única vía con las herramientas de que se dispone: Vercel no permite subir un fichero de ese tamaño por la API de esta sesión y un almacén aparte (Blob) sería **público** o un servicio nuevo.
 
-Sus derechos siguen **provisionales** (derivado de Overture/OpenStreetMap, ODbL; L-01). Versionarlo en un repositorio **privado** y servirlo solo tras la protección es coherente con eso, pero **no resuelve L-01**: antes de cualquier producción pública hay que decidir (y, si procede, sacarlo del historial). Con `SITE_ENV=production` el código sigue bloqueando el mapa.
+Sus derechos siguen **provisionales** (derivado de Overture/OpenStreetMap, ODbL; L-01). Servirlo solo tras la protección es coherente con eso, pero **versionarlo en un repositorio público** (como está desde el 2026-10-24) **ya lo redistribuye públicamente**: la protección de Vercel no cubre GitHub. No resuelve L-01: hay que decidir qué hacer con él (mantenerlo, sacarlo del historial o moverlo a otro almacén) antes de cualquier producción pública; sacarlo del historial de un repositorio público no retira las copias ya hechas. Con `SITE_ENV=production` el código sigue bloqueando el mapa.
 
 Cómo se regenera: `pnpm data:build` (§6 de `docs/setup.md`) y se vuelve a versionar el resultado. El de hoy se construyó con tippecanoe 2.79.0 y Overture `2026-09-23.1`; el manifiesto registra el `sha256`. Antes de esta decisión, sin el fichero, `/es/explorar` mostraba el aviso «Los datos del mapa base no están disponibles» y la petición a `/data/panama-basemap.pmtiles` daba 404 (observado en el despliegue real).
 
@@ -69,7 +70,7 @@ Cómo se regenera: `pnpm data:build` (§6 de `docs/setup.md`) y se vuelve a vers
 
 Producción pública **hoy** serviría los nueve destinos y fichas honestas sin contenido, **sin mapa**, sin relieve y sin ficha ampliada de áreas, **y con marcas cuya titularidad nadie ha verificado** (fila de arriba).
 
-**Archivos de procedencia servidos al público (r3:N-01, decisión del 2026-11-03).** `public/brand/SOURCE.json` (y el preexistente `public/map-assets/glyphs/SOURCE.json`) viven bajo `public/`, así que Next los sirve con un `200` en cuanto el sitio sea accesible: cualquiera podría leer allí que los derechos de las marcas están «pendientes» y que son ilustraciones de aspecto generado (5 202 bytes con notas de procedencia). En staging no importa (SSO). **Decisión: antes de abrir el sitio se mueven fuera de `public/` (p. ej. `docs/provenance/`) o se excluyen del despliegue**, y la prueba de `sha256` que hoy apunta a `public/brand/SOURCE.json` se redirige a la nueva ruta. **No se movieron ahora**: la prueba (`tests/unit/design/brand-files.test.ts`), `pipelines/brand/make_og.py` y `src/lib/seo.ts` los citan por su ruta actual y hoy no hay nada que ocultar (el staging es privado); queda en el backlog (L-06).
+**Archivos de procedencia servidos al público (r3:N-01, decisión del 2026-11-03).** `public/brand/SOURCE.json` (y el preexistente `public/map-assets/glyphs/SOURCE.json`) viven bajo `public/`, así que Next los sirve con un `200` en cuanto el sitio sea accesible: cualquiera podría leer allí que los derechos de las marcas están «pendientes» y que son ilustraciones de aspecto generado (5 202 bytes con notas de procedencia). En staging no importa (SSO). **Decisión: antes de abrir el sitio se mueven fuera de `public/` (p. ej. `docs/provenance/`) o se excluyen del despliegue**, y la prueba de `sha256` que hoy apunta a `public/brand/SOURCE.json` se redirige a la nueva ruta. **No se movieron ahora**: la prueba (`tests/unit/design/brand-files.test.ts`), `pipelines/brand/make_og.py` y `src/lib/seo.ts` los citan por su ruta actual y mover los archivos solo afecta al sitio desplegado: **el contenido de `SOURCE.json` ya es visible en el repositorio público** (corregido el 2026-11-11: esta frase decía «hoy no hay nada que ocultar (el staging es privado)»); queda en el backlog (L-06).
 
 ## 6. Lo que NO se ha probado (actualizado en §7)
 
@@ -79,7 +80,7 @@ Un despliegue real en Vercel; la protección de despliegues; las versiones de No
 
 **Hecho**
 
-- Repositorio privado `carlos2190alfredo-spec/panamainmersive` con los 54 commits (HEAD del remoto igual al local, `25ab369`).
+- Repositorio `carlos2190alfredo-spec/panamainmersive` con los 54 commits (HEAD del remoto igual al local, `25ab369`). **Público** desde su creación (esta línea decía «privado»; corregido el 2026-11-11, E-99).
 - Proyecto de Vercel `panamainmersive` (equipo `carlos2190alfredo-specs-projects`) enlazado al repositorio: Next.js, **Node 22.x** (por defecto traía 24.x y el proyecto se probó con 22.22), instalación `pnpm install --frozen-lockfile`, compilación `pnpm build`.
 - Variables en los tres entornos: `SITE_ENV=staging` y `NEXT_PUBLIC_SITE_URL=https://panamainmersive.vercel.app` (resultó ser un alias de este proyecto; no hizo falta un segundo despliegue).
 - Protección de despliegues: la API aceptó `ssoProtection: all` (por defecto venía «todo excepto dominios personalizados»).
