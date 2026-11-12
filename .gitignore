@@ -5,8 +5,13 @@ coverage/
 playwright-report/
 test-results/
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+.vercel/
+.claude/settings.local.json
+.mcp.json
+*.pem
+*.key
 *.tsbuildinfo
 .venv/
 __pycache__/
@@ -14,7 +19,8 @@ __pycache__/
 # datos generados (se reconstruyen con `pnpm data:build`; ver docs/gis.md)
 /data/build/
 # `public/data/panama-basemap.{pmtiles,manifest.json}` SÍ se versionan (2026-10-24): es el único modo de que el staging
-# privado de Vercel (despliegue por git, detrás de la protección) tenga mapa. Derechos provisionales (L-01): ver docs/deploy.md §4.
+# de Vercel (despliegue por git, detrás de la protección) tenga mapa. El repositorio es PÚBLICO: el archivo es descargable de GitHub.
+# Derechos provisionales (L-01): ver docs/deploy.md §4.
 .DS_Store
 next-env.d.ts
 /.e2e-content-app/

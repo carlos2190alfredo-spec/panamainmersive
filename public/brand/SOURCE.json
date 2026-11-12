@@ -14,7 +14,7 @@
   "rights": {
     "ownerOfRecord": "La persona propietaria del proyecto decide su titularidad y su licencia.",
     "status": "pendiente",
-    "unverified": "NO se ha verificado la titularidad, la licencia ni la posible existencia de derechos de terceros sobre estas ilustraciones (son de aspecto generado, y la titularidad de una obra generada es una cuestión abierta). Mientras tanto el sitio solo se sirve en staging privado (protegido por SSO y noindex). Debe resolverse ANTES de cualquier despliegue público (ADR-0025 §12, docs/deploy.md §5). Si cambia la respuesta, se actualiza este archivo."
+    "unverified": "NO se ha verificado la titularidad, la licencia ni la posible existencia de derechos de terceros sobre estas ilustraciones (son de aspecto generado, y la titularidad de una obra generada es una cuestión abierta). Mientras tanto el sitio solo se sirve en staging (protegido por SSO y noindex), pero el repositorio es público (desde 2026-10-24) y estas imágenes ya son descargables de GitHub. Debe resolverse ANTES de cualquier despliegue público (ADR-0025 §12, docs/deploy.md §5). Si cambia la respuesta, se actualiza este archivo."
   },
   "files": {
     "mark-p-160.webp": {
