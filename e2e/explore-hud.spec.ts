@@ -16,6 +16,7 @@ import {
   settled,
   watchFraming,
 } from './map-helpers';
+import { isolatedTest } from './isolated-browser';
 
 /**
  * HUD de Explorar (ADR-0025 §8): el mapa a pantalla completa y, encima, los componentes REALES de siempre como paneles
@@ -1327,81 +1328,84 @@ test.describe('HUD de Explorar: panel, carril y avisos con el mapa (r1:V-07, V-0
     expect(gap, 'distancia entre el carril y la escala').toBeGreaterThanOrEqual(8);
   });
 
-  test('el aviso del relieve (AWS) usa la columna y el ancho del buscador, en dos líneas como mucho (r1:V-09)', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await routeTerrain(page, 'ok');
-    await openMap(page, EXPLORE);
-    await page.getByRole('button', { name: 'Relieve en 3D' }).click();
-    const notice = page.locator('[role="status"]', { hasText: 'Amazon Web Services' });
-    await expect(notice).toBeVisible();
-    const box = await notice.boundingBox();
-    const search = await page.locator('[data-hud-zone="search"]').boundingBox();
-    expect(box && search).toBeTruthy();
-    expect(Math.abs((box?.x ?? 0) - (search?.x ?? 0))).toBeLessThanOrEqual(2);
-    expect(Math.abs((box?.width ?? 0) - (search?.width ?? 0))).toBeLessThanOrEqual(2);
-    expect(box?.height ?? 0, 'dos líneas: ≈ 62 px, no tres (≈ 98 px)').toBeLessThan(80);
-  });
+  isolatedTest(
+    'el aviso del relieve (AWS) usa la columna y el ancho del buscador, en dos líneas como mucho (r1:V-09)',
+    async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await routeTerrain(page, 'ok');
+      await openMap(page, EXPLORE);
+      await page.getByRole('button', { name: 'Relieve en 3D' }).click();
+      const notice = page.locator('[role="status"]', { hasText: 'Amazon Web Services' });
+      await expect(notice).toBeVisible();
+      const box = await notice.boundingBox();
+      const search = await page.locator('[data-hud-zone="search"]').boundingBox();
+      expect(box && search).toBeTruthy();
+      expect(Math.abs((box?.x ?? 0) - (search?.x ?? 0))).toBeLessThanOrEqual(2);
+      expect(Math.abs((box?.width ?? 0) - (search?.width ?? 0))).toBeLessThanOrEqual(2);
+      expect(box?.height ?? 0, 'dos líneas: ≈ 62 px, no tres (≈ 98 px)').toBeLessThan(80);
+    },
+  );
 
-  test('el aviso del relieve (AWS) no se pinta sobre el panel de información abierto: cede su sitio y, plegado el panel, vuelve al ancho del buscador', async ({
-    page,
-  }) => {
-    // Un mapa y una docena de interacciones: sin holgura, el arranque en frío del CI roza los 30 s
-    test.setTimeout(60_000);
-    // Con poca altura el panel abierto llega hasta el borde superior de su fila, justo donde caen los avisos (van por encima del HUD)
-    await page.setViewportSize({ width: 1024, height: 640 });
-    await routeTerrain(page, 'ok');
-    // El aviso sale con «Sombreado» (la misma fuente de AWS que el 3D), NO pulsando «Relieve en 3D»: el 3D inclina la cámara y, con
-    // WebGL por software, la página pasa varios segundos sin pintar un cuadro (con la CPU ×6: huecos de hasta 3,9 s frente a 0,5 s
-    // con el sombreado). El clic de plegar el panel espera dos cuadros iguales y en el CI venció los 30 s (traza de `28af09e`: el
-    // resto de acciones sumaban 7 s y ese clic esperó 23 s a que el botón estuviera «estable»).
-    await openMap(
-      page,
-      `${EXPLORE}?l=protectedAreas,boundaries,places,waterways,landcover,hillshade`,
-    );
-    const notice = page.locator('[role="status"]', { hasText: 'Amazon Web Services' });
-    await expect(notice).toBeVisible();
-    const search = page.locator('[data-hud-zone="search"]');
-    const panel = page.locator('[data-hud-zone="panel"]');
-    const box = async (locator: typeof notice) => {
-      const b = await locator.boundingBox();
-      if (!b) throw new Error('sin caja');
-      return b;
-    };
-    const overlap = (a: Awaited<ReturnType<typeof box>>, b: Awaited<ReturnType<typeof box>>) =>
-      a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-    // plegado: la columna y el ancho del buscador (la prueba de arriba, a otro tamaño)
-    expect(Math.abs((await box(notice)).x - (await box(search)).x)).toBeLessThanOrEqual(2);
-    await openAreasPanel(page);
-    await expect(panel).toHaveAttribute('data-state', 'open');
-    await settled(panel);
-    const open = { notice: await box(notice), panel: await box(panel) };
-    expect(overlap(open.notice, open.panel), 'el aviso no toca el panel abierto').toBe(false);
-    expect(open.notice.x + open.notice.width, 'y termina antes de su borde izquierdo').toBeLessThan(
-      open.panel.x,
-    );
-    // al plegar el panel, el aviso vuelve a la columna del buscador
-    await panelToggle(page).click();
-    await expect(panel).toHaveAttribute('data-state', 'closed');
-    await expect
-      .poll(async () => Math.abs((await box(notice)).x - (await box(search)).x))
-      .toBeLessThanOrEqual(2);
-    await openAreasPanel(page);
-    await expect(panel).toHaveAttribute('data-state', 'open');
-    // control: con el ancho de antes (sin ceder el sitio) SÍ lo tapaba a este tamaño
-    await notice.evaluate((el) => {
-      el.parentElement?.setAttribute('data-test-notices', '');
-    });
-    await applyCss(
-      page,
-      '[data-test-notices]{inset-inline:calc(var(--hud-rail-w,0px) + var(--hud-gap) * 2) calc(var(--hud-tools-w,var(--target-min)) + var(--hud-gap) * 2) !important}',
-    );
-    expect(
-      overlap(await box(notice), await box(panel)),
-      'control: antes lo tapaba (la comprobación puede fallar)',
-    ).toBe(true);
-  });
+  isolatedTest(
+    'el aviso del relieve (AWS) no se pinta sobre el panel de información abierto: cede su sitio y, plegado el panel, vuelve al ancho del buscador',
+    async ({ page }) => {
+      // Un mapa y una docena de interacciones: sin holgura, el arranque en frío del CI roza los 30 s
+      test.setTimeout(60_000);
+      // Con poca altura el panel abierto llega hasta el borde superior de su fila, justo donde caen los avisos (van por encima del HUD)
+      await page.setViewportSize({ width: 1024, height: 640 });
+      await routeTerrain(page, 'ok');
+      // El aviso sale con «Sombreado» (la misma fuente de AWS que el 3D), NO pulsando «Relieve en 3D»: el 3D inclina la cámara y, con
+      // WebGL por software, la página pasa varios segundos sin pintar un cuadro (con la CPU ×6: huecos de hasta 3,9 s frente a 0,5 s
+      // con el sombreado). El clic de plegar el panel espera dos cuadros iguales y en el CI venció los 30 s (traza de `28af09e`: el
+      // resto de acciones sumaban 7 s y ese clic esperó 23 s a que el botón estuviera «estable»).
+      await openMap(
+        page,
+        `${EXPLORE}?l=protectedAreas,boundaries,places,waterways,landcover,hillshade`,
+      );
+      const notice = page.locator('[role="status"]', { hasText: 'Amazon Web Services' });
+      await expect(notice).toBeVisible();
+      const search = page.locator('[data-hud-zone="search"]');
+      const panel = page.locator('[data-hud-zone="panel"]');
+      const box = async (locator: typeof notice) => {
+        const b = await locator.boundingBox();
+        if (!b) throw new Error('sin caja');
+        return b;
+      };
+      const overlap = (a: Awaited<ReturnType<typeof box>>, b: Awaited<ReturnType<typeof box>>) =>
+        a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+      // plegado: la columna y el ancho del buscador (la prueba de arriba, a otro tamaño)
+      expect(Math.abs((await box(notice)).x - (await box(search)).x)).toBeLessThanOrEqual(2);
+      await openAreasPanel(page);
+      await expect(panel).toHaveAttribute('data-state', 'open');
+      await settled(panel);
+      const open = { notice: await box(notice), panel: await box(panel) };
+      expect(overlap(open.notice, open.panel), 'el aviso no toca el panel abierto').toBe(false);
+      expect(
+        open.notice.x + open.notice.width,
+        'y termina antes de su borde izquierdo',
+      ).toBeLessThan(open.panel.x);
+      // al plegar el panel, el aviso vuelve a la columna del buscador
+      await panelToggle(page).click();
+      await expect(panel).toHaveAttribute('data-state', 'closed');
+      await expect
+        .poll(async () => Math.abs((await box(notice)).x - (await box(search)).x))
+        .toBeLessThanOrEqual(2);
+      await openAreasPanel(page);
+      await expect(panel).toHaveAttribute('data-state', 'open');
+      // control: con el ancho de antes (sin ceder el sitio) SÍ lo tapaba a este tamaño
+      await notice.evaluate((el) => {
+        el.parentElement?.setAttribute('data-test-notices', '');
+      });
+      await applyCss(
+        page,
+        '[data-test-notices]{inset-inline:calc(var(--hud-rail-w,0px) + var(--hud-gap) * 2) calc(var(--hud-tools-w,var(--target-min)) + var(--hud-gap) * 2) !important}',
+      );
+      expect(
+        overlap(await box(notice), await box(panel)),
+        'control: antes lo tapaba (la comprobación puede fallar)',
+      ).toBe(true);
+    },
+  );
 });
 
 test.describe('HUD de Explorar: tipografía de los marcadores (con el mapa)', () => {

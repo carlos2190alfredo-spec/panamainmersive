@@ -16,6 +16,7 @@ import {
   routeTerrain,
   trackRequests,
 } from './map-helpers';
+import { isolatedTest } from './isolated-browser';
 
 const EXPLORE = PATHS.explore.es;
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -294,47 +295,54 @@ test.describe('mapa: enlaces profundos', () => {
 
 test.describe('mapa: capas y relieve de terceros', () => {
   test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
-  test('activar el relieve lo pide a AWS (solo entonces), lo anuncia y lo refleja en leyenda, URL y atribución', async ({
-    page,
-  }) => {
-    const watch = watchPage(page);
-    const terrain = await routeTerrain(page, 'ok');
-    await openMap(page, EXPLORE);
-    await openLayers(page);
-    expect(terrain.requests).toEqual([]); // antes de activar nada: cero peticiones a AWS
+  isolatedTest(
+    'activar el relieve lo pide a AWS (solo entonces), lo anuncia y lo refleja en leyenda, URL y atribución',
+    async ({ page }) => {
+      const watch = watchPage(page);
+      const terrain = await routeTerrain(page, 'ok');
+      await openMap(page, EXPLORE);
+      await openLayers(page);
+      expect(terrain.requests).toEqual([]); // antes de activar nada: cero peticiones a AWS
 
-    await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
-    await expect(page).toHaveURL(
-      /[?&]l=protectedAreas,boundaries,places,waterways,landcover,hillshade(&|$)/,
-    );
-    await expect(
-      page.getByText('Con una capa de relieve activa, Amazon Web Services recibe tu dirección IP'),
-    ).toBeVisible();
-    await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
-    for (const url of terrain.requests)
-      expect(url).toMatch(new RegExp(`^https://${TERRAIN_HOST}/terrarium/\\d+/\\d+/\\d+\\.png$`));
-    // La leyenda (no el control, que también dice «Sombreado del relieve») refleja la capa activada.
-    const legend = page.getByRole('region', { name: 'Leyenda' });
-    await expect(
-      legend.getByRole('listitem').filter({ hasText: 'Sombreado del relieve' }),
-    ).toBeVisible();
-    await expect(page.locator('[data-map-layers]')).toHaveAttribute(
-      'data-map-layers',
-      'protectedAreas,boundaries,places,waterways,landcover,hillshade',
-    );
-    await expect(page.getByText('Relieve: AWS Terrain Tiles (SRTM, GMTED, ETOPO1)')).toBeAttached();
+      await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
+      await expect(page).toHaveURL(
+        /[?&]l=protectedAreas,boundaries,places,waterways,landcover,hillshade(&|$)/,
+      );
+      await expect(
+        page.getByText(
+          'Con una capa de relieve activa, Amazon Web Services recibe tu dirección IP',
+        ),
+      ).toBeVisible();
+      await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
+      for (const url of terrain.requests)
+        expect(url).toMatch(new RegExp(`^https://${TERRAIN_HOST}/terrarium/\\d+/\\d+/\\d+\\.png$`));
+      // La leyenda (no el control, que también dice «Sombreado del relieve») refleja la capa activada.
+      const legend = page.getByRole('region', { name: 'Leyenda' });
+      await expect(
+        legend.getByRole('listitem').filter({ hasText: 'Sombreado del relieve' }),
+      ).toBeVisible();
+      await expect(page.locator('[data-map-layers]')).toHaveAttribute(
+        'data-map-layers',
+        'protectedAreas,boundaries,places,waterways,landcover,hillshade',
+      );
+      await expect(
+        page.getByText('Relieve: AWS Terrain Tiles (SRTM, GMTED, ETOPO1)'),
+      ).toBeAttached();
 
-    await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).uncheck();
-    await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,places,waterways,landcover(&|$)/);
-    await expect(page.getByText('Con una capa de relieve activa')).toHaveCount(0);
-    await expect(legend.getByText('Sombreado del relieve')).toHaveCount(0);
-    await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
-    // La CSP deja pasar el origen del relieve (connect-src) y nada más.
-    expect(await watch.violations()).toEqual([]);
-    expect(watch.errors).toEqual([]);
-  });
+      await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).uncheck();
+      await expect(page).toHaveURL(
+        /[?&]l=protectedAreas,boundaries,places,waterways,landcover(&|$)/,
+      );
+      await expect(page.getByText('Con una capa de relieve activa')).toHaveCount(0);
+      await expect(legend.getByText('Sombreado del relieve')).toHaveCount(0);
+      await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
+      // La CSP deja pasar el origen del relieve (connect-src) y nada más.
+      expect(await watch.violations()).toEqual([]);
+      expect(watch.errors).toEqual([]);
+    },
+  );
 
-  test('«Relieve en 3D» permite inclinar más el mapa', async ({ page }) => {
+  isolatedTest('«Relieve en 3D» permite inclinar más el mapa', async ({ page }) => {
     await routeTerrain(page, 'ok');
     await openMap(page, `${EXPLORE}?c=-82.5424,8.8089,9000,0,0,0&l=protectedAreas,terrain3d`);
     await openLayers(page);
@@ -346,20 +354,23 @@ test.describe('mapa: capas y relieve de terceros', () => {
     await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
   });
 
-  test('si el relieve falla, el mapa base sigue funcionando y se avisa', async ({ page }) => {
-    await routeTerrain(page, 'fail');
-    await openMap(page, EXPLORE);
-    await openLayers(page);
-    await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
-    await expect(page.locator('[data-map-terrain-failed="true"]')).toBeAttached({
-      timeout: 30_000,
-    });
-    await expect(page.getByText('No se pudo cargar el relieve')).toBeVisible();
-    await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
-    // Al desactivarlo, el aviso desaparece.
-    await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).uncheck();
-    await expect(page.getByText('No se pudo cargar el relieve')).toHaveCount(0);
-  });
+  isolatedTest(
+    'si el relieve falla, el mapa base sigue funcionando y se avisa',
+    async ({ page }) => {
+      await routeTerrain(page, 'fail');
+      await openMap(page, EXPLORE);
+      await openLayers(page);
+      await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).check();
+      await expect(page.locator('[data-map-terrain-failed="true"]')).toBeAttached({
+        timeout: 30_000,
+      });
+      await expect(page.getByText('No se pudo cargar el relieve')).toBeVisible();
+      await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
+      // Al desactivarlo, el aviso desaparece.
+      await page.getByRole('checkbox', { name: 'Sombreado del relieve' }).uncheck();
+      await expect(page.getByText('No se pudo cargar el relieve')).toHaveCount(0);
+    },
+  );
 
   test('la leyenda se deriva de las capas activas y distingue por trazo, no solo por color', async ({
     page,
@@ -390,33 +401,34 @@ test.describe('mapa: capas propias y leyenda (registro declarativo)', () => {
     'Cobertura del suelo',
   ];
 
-  test('las cinco capas propias vienen activas, las de terceros apagadas, y el mapa lo confirma', async ({
-    page,
-  }) => {
-    const terrain = await routeTerrain(page, 'ok');
-    await openMap(page, EXPLORE);
-    await openLayers(page);
-    for (const name of FIRST_PARTY) {
-      await expect(page.getByRole('checkbox', { name }), name).toBeChecked();
-    }
-    await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).not.toBeChecked();
-    await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).not.toBeChecked();
-    await expect
-      .poll(() => styleLayers(page), { timeout: 20_000 })
-      .toEqual(
-        expect.arrayContaining([
-          'land',
-          'landcover',
-          'boundary-country',
-          'ocean',
-          'waterway',
-          'protected-fill',
-          'place-city',
-        ]),
-      );
-    expect(await styleLayers(page)).not.toContain('hillshade');
-    expect(terrain.requests).toEqual([]); // sin pedirlo, ni un byte a un tercero
-  });
+  isolatedTest(
+    'las cinco capas propias vienen activas, las de terceros apagadas, y el mapa lo confirma',
+    async ({ page }) => {
+      const terrain = await routeTerrain(page, 'ok');
+      await openMap(page, EXPLORE);
+      await openLayers(page);
+      for (const name of FIRST_PARTY) {
+        await expect(page.getByRole('checkbox', { name }), name).toBeChecked();
+      }
+      await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).not.toBeChecked();
+      await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).not.toBeChecked();
+      await expect
+        .poll(() => styleLayers(page), { timeout: 20_000 })
+        .toEqual(
+          expect.arrayContaining([
+            'land',
+            'landcover',
+            'boundary-country',
+            'ocean',
+            'waterway',
+            'protected-fill',
+            'place-city',
+          ]),
+        );
+      expect(await styleLayers(page)).not.toContain('hillshade');
+      expect(terrain.requests).toEqual([]); // sin pedirlo, ni un byte a un tercero
+    },
+  );
 
   const cases: { name: string; prefixes: string[]; keeps: string[]; legendGone: string[] }[] = [
     {
@@ -596,25 +608,28 @@ test.describe('mapa: idiomas, teclado y movimiento', () => {
     });
   }
 
-  test('cambiar de idioma conserva destino y capas y vuelve a abrir el mapa', async ({ page }) => {
-    // Dos cargas COMPLETAS del mapa (la inicial y la del idioma nuevo), cada una con un navegador recién abierto y WebGL por
-    // software: ≈ 12 s solo, ≈ 21 s con tres trabajadores y más con la suite entera (falló a los 30 s por defecto en una
-    // pasada completa, 2 de 2 intentos). Las esperas de dentro ya admiten 60 s: el plazo de la prueba tiene que caber con ellas.
-    test.setTimeout(90_000);
-    await routeTerrain(page, 'ok');
-    await openMap(page, `${EXPLORE}?d=boquete&l=protectedAreas,hillshade`);
-    await page.locator('summary').first().click();
-    await page.locator('a[hreflang="en"]').click();
-    await expect(page).toHaveURL(/\/en\/explore\?/);
-    const url = new URL(page.url());
-    expect(url.searchParams.get('d')).toBe('boquete');
-    expect(url.searchParams.get('l')).toBe('protectedAreas,hillshade');
-    await expect(page.locator('[data-map-status="ready"]')).toBeVisible({ timeout: 60_000 });
-    await expect(cardHeading(page)).toHaveText('Boquete');
-    await expect(page.getByText('Selected destination')).toBeVisible();
-    await openLayers(page);
-    await expect(page.getByRole('checkbox', { name: 'Terrain shading' })).toBeChecked();
-  });
+  isolatedTest(
+    'cambiar de idioma conserva destino y capas y vuelve a abrir el mapa',
+    async ({ page }) => {
+      // Dos cargas COMPLETAS del mapa (la inicial y la del idioma nuevo), cada una con un navegador recién abierto y WebGL por
+      // software: ≈ 12 s solo, ≈ 21 s con tres trabajadores y más con la suite entera (falló a los 30 s por defecto en una
+      // pasada completa, 2 de 2 intentos). Las esperas de dentro ya admiten 60 s: el plazo de la prueba tiene que caber con ellas.
+      test.setTimeout(90_000);
+      await routeTerrain(page, 'ok');
+      await openMap(page, `${EXPLORE}?d=boquete&l=protectedAreas,hillshade`);
+      await page.locator('summary').first().click();
+      await page.locator('a[hreflang="en"]').click();
+      await expect(page).toHaveURL(/\/en\/explore\?/);
+      const url = new URL(page.url());
+      expect(url.searchParams.get('d')).toBe('boquete');
+      expect(url.searchParams.get('l')).toBe('protectedAreas,hillshade');
+      await expect(page.locator('[data-map-status="ready"]')).toBeVisible({ timeout: 60_000 });
+      await expect(cardHeading(page)).toHaveText('Boquete');
+      await expect(page.getByText('Selected destination')).toBeVisible();
+      await openLayers(page);
+      await expect(page.getByRole('checkbox', { name: 'Terrain shading' })).toBeChecked();
+    },
+  );
 
   test('el mapa se maneja con el teclado (flechas desplazan)', async ({ page }) => {
     await openMap(page, `${EXPLORE}?c=-80.1,8.6,60000,0,0,0`);

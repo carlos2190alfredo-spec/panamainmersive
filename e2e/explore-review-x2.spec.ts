@@ -12,6 +12,7 @@ import {
   openMap,
   routeTerrain,
 } from './map-helpers';
+import { isolatedTest } from './isolated-browser';
 
 /**
  * Revisión independiente de la entrega 5j, paso X2: semántica, honestidad y privacidad de Explorar. Cada prueba lleva el
@@ -313,117 +314,119 @@ test.describe('«Cambiar de idioma conserva…» dice lo que de verdad conserva 
 test.describe('el aviso de privacidad de «Relieve en 3D» llega ANTES de pulsar (r3:F-01; con el mapa)', () => {
   test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
 
-  test('el botón se describe con «Amazon Web Services recibirá tu IP»; el aviso se ve al pasar el cursor o enfocar, Escape lo descarta y NO se pide nada a AWS hasta pulsar', async ({
-    page,
-  }) => {
-    // Es una secuencia larga con el mapa dibujado (cursor, Escape, teclado, una espera fija de 1,2 s y el relieve pedido): en
-    // la suite completa con tres trabajadores tardó 27,6 s de los 30 s por defecto y, en otra pasada, venció dos veces.
-    test.setTimeout(90_000);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    const terrain = await routeTerrain(page, 'ok');
-    await openMap(page, `${EXPLORE}?d=boquete`);
-    await expect(threeD(page)).toBeEnabled();
-    const notice = page.locator('[data-tool-notice="threeD"]');
-    // la descripción accesible SIEMPRE está (también para quien no pasa el cursor)
-    await expect(threeD(page)).toHaveAccessibleDescription(/Amazon Web Services.*dirección IP/);
-    await expect(notice).toBeHidden(); // y no estorba a la vista hasta que se pide
-    // cursor
-    await threeD(page).hover();
-    await expect(notice).toBeVisible();
-    const box = await notice.boundingBox();
-    const button = await threeD(page).boundingBox();
-    if (!box || !button) throw new Error('sin cajas');
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(button.x + 1); // a la izquierda del botón: no lo tapa
-    // WCAG 1.4.13: el cursor puede pasar sobre el aviso sin que se cierre
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await expect(notice).toBeVisible();
-    // …y Escape lo descarta mientras dure ese cursor; al volver a entrar se rearma
-    await page.keyboard.press('Escape');
-    await expect(notice).toBeHidden();
-    await page.mouse.move(40, 500);
-    await threeD(page).hover();
-    await expect(notice).toBeVisible();
-    // teclado
-    await page.mouse.move(40, 500);
-    await expect(notice).toBeHidden();
-    await threeD(page).focus();
-    await expect(notice).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(notice).toBeHidden();
-    // hasta aquí NI UN byte a AWS
-    await page.waitForTimeout(1200);
-    expect(terrain.requests, 'antes de pulsar').toEqual([]);
-    // pulsar: se pide el relieve, el aviso previo se retira y el de estado (el de siempre) lo sustituye
-    await threeD(page).click();
-    // El estado del botón lo lee de la URL (`history.pushState` → `useSearchParams`), que llega a React con retraso cuando la
-    // CPU está ocupada por el WebGL por software: 5 s no bastaron en una pasada completa (`aria-pressed` seguía sin ponerse).
-    await expect(threeD(page)).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
-    await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
-    await expect(page.getByText('Con una capa de relieve activa')).toBeVisible();
-    await page.mouse.move(40, 500);
-    await expect(notice).toBeHidden();
-  });
+  isolatedTest(
+    'el botón se describe con «Amazon Web Services recibirá tu IP»; el aviso se ve al pasar el cursor o enfocar, Escape lo descarta y NO se pide nada a AWS hasta pulsar',
+    async ({ page }) => {
+      // Es una secuencia larga con el mapa dibujado (cursor, Escape, teclado, una espera fija de 1,2 s y el relieve pedido): en
+      // la suite completa con tres trabajadores tardó 27,6 s de los 30 s por defecto y, en otra pasada, venció dos veces.
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      const terrain = await routeTerrain(page, 'ok');
+      await openMap(page, `${EXPLORE}?d=boquete`);
+      await expect(threeD(page)).toBeEnabled();
+      const notice = page.locator('[data-tool-notice="threeD"]');
+      // la descripción accesible SIEMPRE está (también para quien no pasa el cursor)
+      await expect(threeD(page)).toHaveAccessibleDescription(/Amazon Web Services.*dirección IP/);
+      await expect(notice).toBeHidden(); // y no estorba a la vista hasta que se pide
+      // cursor
+      await threeD(page).hover();
+      await expect(notice).toBeVisible();
+      const box = await notice.boundingBox();
+      const button = await threeD(page).boundingBox();
+      if (!box || !button) throw new Error('sin cajas');
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(button.x + 1); // a la izquierda del botón: no lo tapa
+      // WCAG 1.4.13: el cursor puede pasar sobre el aviso sin que se cierre
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await expect(notice).toBeVisible();
+      // …y Escape lo descarta mientras dure ese cursor; al volver a entrar se rearma
+      await page.keyboard.press('Escape');
+      await expect(notice).toBeHidden();
+      await page.mouse.move(40, 500);
+      await threeD(page).hover();
+      await expect(notice).toBeVisible();
+      // teclado
+      await page.mouse.move(40, 500);
+      await expect(notice).toBeHidden();
+      await threeD(page).focus();
+      await expect(notice).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(notice).toBeHidden();
+      // hasta aquí NI UN byte a AWS
+      await page.waitForTimeout(1200);
+      expect(terrain.requests, 'antes de pulsar').toEqual([]);
+      // pulsar: se pide el relieve, el aviso previo se retira y el de estado (el de siempre) lo sustituye
+      await threeD(page).click();
+      // El estado del botón lo lee de la URL (`history.pushState` → `useSearchParams`), que llega a React con retraso cuando la
+      // CPU está ocupada por el WebGL por software: 5 s no bastaron en una pasada completa (`aria-pressed` seguía sin ponerse).
+      await expect(threeD(page)).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
+      await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
+      await expect(page.getByText('Con una capa de relieve activa')).toBeVisible();
+      await page.mouse.move(40, 500);
+      await expect(notice).toBeHidden();
+    },
+  );
 
-  test('apagar «Relieve en 3D» enseguida tras encenderlo, con la máquina lenta, NO deja que el mapa siga pidiendo teselas a AWS DESPUÉS de apagarlo (r3:F-02)', async ({
-    page,
-  }) => {
-    test.setTimeout(180_000);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    // Cada petición a AWS con su instante (como `routeTerrain`, pero con la hora)
-    const tile = flatTerrainTile();
-    const requests: { at: number; url: string }[] = [];
-    await page.route(`https://${TERRAIN_HOST}/**`, async (route) => {
-      requests.push({ at: Date.now(), url: route.request().url() });
-      await route.fulfill({
-        status: 200,
-        contentType: 'image/png',
-        headers: { 'access-control-allow-origin': '*' },
-        body: tile,
+  isolatedTest(
+    'apagar «Relieve en 3D» enseguida tras encenderlo, con la máquina lenta, NO deja que el mapa siga pidiendo teselas a AWS DESPUÉS de apagarlo (r3:F-02)',
+    async ({ page }) => {
+      test.setTimeout(180_000);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      // Cada petición a AWS con su instante (como `routeTerrain`, pero con la hora)
+      const tile = flatTerrainTile();
+      const requests: { at: number; url: string }[] = [];
+      await page.route(`https://${TERRAIN_HOST}/**`, async (route) => {
+        requests.push({ at: Date.now(), url: route.request().url() });
+        await route.fulfill({
+          status: 200,
+          contentType: 'image/png',
+          headers: { 'access-control-allow-origin': '*' },
+          body: tile,
+        });
       });
-    });
-    await openMap(page, `${EXPLORE}?d=boquete`);
-    await expect(threeD(page)).toBeEnabled();
-    // El instante en que la PÁGINA atiende cada pulsación del 3D (no cuando Playwright la envía: con la máquina cargada el
-    // clic tarda cientos de ms en atenderse, y medir desde el envío contaba como «tardías» peticiones ya hechas)
-    await page.evaluate(() => {
-      const times: number[] = [];
-      (window as unknown as { __clicks: number[] }).__clicks = times;
-      document.addEventListener(
-        'click',
-        (event) => {
-          if (event.target instanceof Element && event.target.closest('button[aria-pressed]')) {
-            times.push(performance.timeOrigin + performance.now());
-          }
-        },
-        true,
-      );
-    });
-    // Máquina lenta: el render de React con la URL nueva llega con retraso (≈ 0,5–1 s medido) y, mientras tanto, el relieve
-    // seguía encendido en el mapa (y la cámara bajando) pidiendo teselas que ya nadie quería
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
-    const late: string[] = [];
-    for (let cycle = 0; cycle < 6; cycle++) {
-      await threeD(page).click();
-      await page.waitForTimeout(150);
-      await threeD(page).click();
-      const offAt = await page.evaluate(
-        () => (window as unknown as { __clicks: number[] }).__clicks.at(-1) ?? 0,
-      );
-      await page.waitForTimeout(1500);
-      for (const request of requests)
-        if (request.at > offAt)
-          late.push(`ciclo ${String(cycle)}: +${String(request.at - offAt)} ms ${request.url}`);
-      requests.length = 0;
-    }
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-    await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
-    expect(
-      late,
-      'peticiones a AWS DESPUÉS de que la página atendiera la pulsación que lo apaga',
-    ).toEqual([]);
-  });
+      await openMap(page, `${EXPLORE}?d=boquete`);
+      await expect(threeD(page)).toBeEnabled();
+      // El instante en que la PÁGINA atiende cada pulsación del 3D (no cuando Playwright la envía: con la máquina cargada el
+      // clic tarda cientos de ms en atenderse, y medir desde el envío contaba como «tardías» peticiones ya hechas)
+      await page.evaluate(() => {
+        const times: number[] = [];
+        (window as unknown as { __clicks: number[] }).__clicks = times;
+        document.addEventListener(
+          'click',
+          (event) => {
+            if (event.target instanceof Element && event.target.closest('button[aria-pressed]')) {
+              times.push(performance.timeOrigin + performance.now());
+            }
+          },
+          true,
+        );
+      });
+      // Máquina lenta: el render de React con la URL nueva llega con retraso (≈ 0,5–1 s medido) y, mientras tanto, el relieve
+      // seguía encendido en el mapa (y la cámara bajando) pidiendo teselas que ya nadie quería
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+      const late: string[] = [];
+      for (let cycle = 0; cycle < 6; cycle++) {
+        await threeD(page).click();
+        await page.waitForTimeout(150);
+        await threeD(page).click();
+        const offAt = await page.evaluate(
+          () => (window as unknown as { __clicks: number[] }).__clicks.at(-1) ?? 0,
+        );
+        await page.waitForTimeout(1500);
+        for (const request of requests)
+          if (request.at > offAt)
+            late.push(`ciclo ${String(cycle)}: +${String(request.at - offAt)} ms ${request.url}`);
+        requests.length = 0;
+      }
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
+      expect(
+        late,
+        'peticiones a AWS DESPUÉS de que la página atendiera la pulsación que lo apaga',
+      ).toEqual([]);
+    },
+  );
 });
 
 test.describe('los destinos se reconocen sin pasar el cursor y la etiqueta emergente se puede descartar (r1:V-15, r2:N4; con el mapa)', () => {
