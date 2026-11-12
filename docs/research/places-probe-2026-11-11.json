@@ -1,0 +1,1403 @@
+{
+  "release": "2026-09-23.1",
+  "area": "PANAMA_BBOX (rectángulo de ingeniería, no límite oficial)",
+  "bbox_total": 35996,
+  "with_pa_address": 32698,
+  "panama_roots": {
+    "services_and_business": 6746,
+    "shopping": 6039,
+    "food_and_drink": 5611,
+    "cultural_and_historic": 2631,
+    "lodging": 2560,
+    "education": 1762,
+    "travel_and_transportation": 1752,
+    "lifestyle_services": 1681,
+    "health_care": 1633,
+    "sports_and_recreation": 1429,
+    "null": 1336,
+    "community_and_government": 1166,
+    "arts_and_entertainment": 838,
+    "geographic_entities": 812
+  },
+  "destinations": {
+    "bocas-del-toro": {
+      "anchor": [
+        -82.24182,
+        9.3403
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 416,
+          "confidence_median": 0.717,
+          "share_confidence_ge_0_9": 0.224,
+          "share_status_known": 0.0,
+          "share_website": 0.514,
+          "share_with_personal_contact": 0.793,
+          "datasets": {
+            "Overture": 416,
+            "meta": 412,
+            "Foursquare": 2,
+            "Microsoft": 2
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 416,
+            "Apache-2.0": 2
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 144,
+            "confidence_median": 0.834,
+            "share_confidence_ge_0_9": 0.368,
+            "share_status_known": 0.0,
+            "share_website": 0.694,
+            "share_with_personal_contact": 0.889,
+            "datasets": {
+              "Overture": 144,
+              "meta": 143,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 144,
+              "Apache-2.0": 1
+            }
+          },
+          "food_and_drink": {
+            "n": 90,
+            "confidence_median": 0.723,
+            "share_confidence_ge_0_9": 0.233,
+            "share_status_known": 0.0,
+            "share_website": 0.411,
+            "share_with_personal_contact": 0.878,
+            "datasets": {
+              "Overture": 90,
+              "meta": 89,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 90,
+              "Apache-2.0": 1
+            }
+          },
+          "activities": {
+            "n": 58,
+            "confidence_median": 0.708,
+            "share_confidence_ge_0_9": 0.086,
+            "share_status_known": 0.0,
+            "share_website": 0.431,
+            "share_with_personal_contact": 0.466,
+            "datasets": {
+              "Overture": 58,
+              "meta": 58
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 58
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 12,
+            "confidence_median": 0.681,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.417,
+            "share_with_personal_contact": 0.583,
+            "datasets": {
+              "Overture": 12,
+              "meta": 12
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 12
+            }
+          }
+        }
+      },
+      "bounds": [
+        -82.3322,
+        9.0889,
+        -81.5402,
+        9.4411
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 513,
+          "confidence_median": 0.742,
+          "share_confidence_ge_0_9": 0.253,
+          "share_status_known": 0.0,
+          "share_website": 0.538,
+          "share_with_personal_contact": 0.793,
+          "datasets": {
+            "Overture": 513,
+            "meta": 507,
+            "Foursquare": 4,
+            "Microsoft": 2
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 513,
+            "Apache-2.0": 4
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 188,
+            "confidence_median": 0.861,
+            "share_confidence_ge_0_9": 0.441,
+            "share_status_known": 0.0,
+            "share_website": 0.745,
+            "share_with_personal_contact": 0.91,
+            "datasets": {
+              "Overture": 188,
+              "meta": 186,
+              "Foursquare": 2
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 188,
+              "Apache-2.0": 2
+            }
+          },
+          "food_and_drink": {
+            "n": 105,
+            "confidence_median": 0.75,
+            "share_confidence_ge_0_9": 0.238,
+            "share_status_known": 0.0,
+            "share_website": 0.381,
+            "share_with_personal_contact": 0.876,
+            "datasets": {
+              "Overture": 105,
+              "meta": 104,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 105,
+              "Apache-2.0": 1
+            }
+          },
+          "activities": {
+            "n": 79,
+            "confidence_median": 0.72,
+            "share_confidence_ge_0_9": 0.076,
+            "share_status_known": 0.0,
+            "share_website": 0.405,
+            "share_with_personal_contact": 0.405,
+            "datasets": {
+              "Overture": 79,
+              "meta": 79
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 79
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 12,
+            "confidence_median": 0.681,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.417,
+            "share_with_personal_contact": 0.583,
+            "datasets": {
+              "Overture": 12,
+              "meta": 12
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 12
+            }
+          }
+        }
+      }
+    },
+    "boquete": {
+      "anchor": [
+        -82.43482,
+        8.77637
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 465,
+          "confidence_median": 0.703,
+          "share_confidence_ge_0_9": 0.2,
+          "share_status_known": 0.0,
+          "share_website": 0.477,
+          "share_with_personal_contact": 0.813,
+          "datasets": {
+            "Overture": 465,
+            "meta": 459,
+            "Foursquare": 3,
+            "Microsoft": 2,
+            "AllThePlaces": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 465,
+            "Apache-2.0": 3,
+            "CC0-1.0": 1
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 93,
+            "confidence_median": 0.834,
+            "share_confidence_ge_0_9": 0.376,
+            "share_status_known": 0.0,
+            "share_website": 0.645,
+            "share_with_personal_contact": 0.882,
+            "datasets": {
+              "Overture": 93,
+              "meta": 92,
+              "Microsoft": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 93
+            }
+          },
+          "food_and_drink": {
+            "n": 123,
+            "confidence_median": 0.77,
+            "share_confidence_ge_0_9": 0.309,
+            "share_status_known": 0.0,
+            "share_website": 0.407,
+            "share_with_personal_contact": 0.87,
+            "datasets": {
+              "Overture": 123,
+              "meta": 121,
+              "Microsoft": 1,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 123,
+              "Apache-2.0": 1
+            }
+          },
+          "activities": {
+            "n": 20,
+            "confidence_median": 0.642,
+            "share_confidence_ge_0_9": 0.05,
+            "share_status_known": 0.0,
+            "share_website": 0.55,
+            "share_with_personal_contact": 0.8,
+            "datasets": {
+              "Overture": 20,
+              "meta": 20
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 20
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 8,
+            "confidence_median": 0.648,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.5,
+            "share_with_personal_contact": 0.5,
+            "datasets": {
+              "Overture": 8,
+              "meta": 8
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 8
+            }
+          }
+        }
+      },
+      "bounds": [
+        -82.5596,
+        8.595,
+        -82.2578,
+        8.8866
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 555,
+          "confidence_median": 0.71,
+          "share_confidence_ge_0_9": 0.205,
+          "share_status_known": 0.0,
+          "share_website": 0.477,
+          "share_with_personal_contact": 0.814,
+          "datasets": {
+            "Overture": 555,
+            "meta": 546,
+            "Foursquare": 4,
+            "Microsoft": 3,
+            "AllThePlaces": 2
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 555,
+            "Apache-2.0": 4,
+            "CC0-1.0": 2
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 110,
+            "confidence_median": 0.836,
+            "share_confidence_ge_0_9": 0.382,
+            "share_status_known": 0.0,
+            "share_website": 0.636,
+            "share_with_personal_contact": 0.882,
+            "datasets": {
+              "Overture": 110,
+              "meta": 108,
+              "Microsoft": 1,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 110,
+              "Apache-2.0": 1
+            }
+          },
+          "food_and_drink": {
+            "n": 139,
+            "confidence_median": 0.775,
+            "share_confidence_ge_0_9": 0.302,
+            "share_status_known": 0.0,
+            "share_website": 0.41,
+            "share_with_personal_contact": 0.871,
+            "datasets": {
+              "Overture": 139,
+              "meta": 136,
+              "AllThePlaces": 1,
+              "Microsoft": 1,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 139,
+              "CC0-1.0": 1,
+              "Apache-2.0": 1
+            }
+          },
+          "activities": {
+            "n": 26,
+            "confidence_median": 0.743,
+            "share_confidence_ge_0_9": 0.077,
+            "share_status_known": 0.0,
+            "share_website": 0.577,
+            "share_with_personal_contact": 0.769,
+            "datasets": {
+              "Overture": 26,
+              "meta": 26
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 26
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 9,
+            "confidence_median": 0.639,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.444,
+            "share_with_personal_contact": 0.444,
+            "datasets": {
+              "Overture": 9,
+              "meta": 9
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 9
+            }
+          }
+        }
+      }
+    },
+    "casco-antiguo": {
+      "anchor": [
+        -79.53472,
+        8.95255
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 9356,
+          "confidence_median": 0.587,
+          "share_confidence_ge_0_9": 0.121,
+          "share_status_known": 0.0,
+          "share_website": 0.583,
+          "share_with_personal_contact": 0.832,
+          "datasets": {
+            "Overture": 9356,
+            "meta": 8870,
+            "Foursquare": 229,
+            "Microsoft": 171,
+            "AllThePlaces": 85,
+            "PinMeTo": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 9356,
+            "Apache-2.0": 229,
+            "CC0-1.0": 85
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 337,
+            "confidence_median": 0.833,
+            "share_confidence_ge_0_9": 0.395,
+            "share_status_known": 0.0,
+            "share_website": 0.558,
+            "share_with_personal_contact": 0.748,
+            "datasets": {
+              "Overture": 337,
+              "meta": 325,
+              "Microsoft": 8,
+              "Foursquare": 3,
+              "AllThePlaces": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 337,
+              "Apache-2.0": 3,
+              "CC0-1.0": 1
+            }
+          },
+          "food_and_drink": {
+            "n": 1477,
+            "confidence_median": 0.7,
+            "share_confidence_ge_0_9": 0.219,
+            "share_status_known": 0.0,
+            "share_website": 0.454,
+            "share_with_personal_contact": 0.804,
+            "datasets": {
+              "Overture": 1477,
+              "meta": 1360,
+              "Foursquare": 61,
+              "AllThePlaces": 38,
+              "Microsoft": 18
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1477,
+              "Apache-2.0": 61,
+              "CC0-1.0": 38
+            }
+          },
+          "activities": {
+            "n": 170,
+            "confidence_median": 0.661,
+            "share_confidence_ge_0_9": 0.082,
+            "share_status_known": 0.0,
+            "share_website": 0.541,
+            "share_with_personal_contact": 0.671,
+            "datasets": {
+              "Overture": 170,
+              "meta": 167,
+              "Microsoft": 2,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 170,
+              "Apache-2.0": 1
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 293,
+            "confidence_median": 0.677,
+            "share_confidence_ge_0_9": 0.044,
+            "share_status_known": 0.0,
+            "share_website": 0.154,
+            "share_with_personal_contact": 0.403,
+            "datasets": {
+              "Overture": 293,
+              "meta": 293
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 293
+            }
+          }
+        }
+      },
+      "bounds": [
+        -79.5389,
+        8.9492,
+        -79.5315,
+        8.9556
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 1055,
+          "confidence_median": 0.401,
+          "share_confidence_ge_0_9": 0.091,
+          "share_status_known": 0.0,
+          "share_website": 0.564,
+          "share_with_personal_contact": 0.879,
+          "datasets": {
+            "Overture": 1055,
+            "meta": 1016,
+            "Foursquare": 15,
+            "Microsoft": 12,
+            "AllThePlaces": 12
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 1055,
+            "Apache-2.0": 15,
+            "CC0-1.0": 12
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 47,
+            "confidence_median": 0.808,
+            "share_confidence_ge_0_9": 0.383,
+            "share_status_known": 0.0,
+            "share_website": 0.617,
+            "share_with_personal_contact": 0.787,
+            "datasets": {
+              "Overture": 47,
+              "meta": 47
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 47
+            }
+          },
+          "food_and_drink": {
+            "n": 211,
+            "confidence_median": 0.697,
+            "share_confidence_ge_0_9": 0.199,
+            "share_status_known": 0.0,
+            "share_website": 0.483,
+            "share_with_personal_contact": 0.829,
+            "datasets": {
+              "Overture": 211,
+              "meta": 197,
+              "Foursquare": 9,
+              "Microsoft": 3,
+              "AllThePlaces": 2
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 211,
+              "Apache-2.0": 9,
+              "CC0-1.0": 2
+            }
+          },
+          "activities": {
+            "n": 32,
+            "confidence_median": 0.618,
+            "share_confidence_ge_0_9": 0.156,
+            "share_status_known": 0.0,
+            "share_website": 0.594,
+            "share_with_personal_contact": 0.812,
+            "datasets": {
+              "Overture": 32,
+              "meta": 31,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 32,
+              "Apache-2.0": 1
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 15,
+            "confidence_median": 0.716,
+            "share_confidence_ge_0_9": 0.067,
+            "share_status_known": 0.0,
+            "share_website": 0.2,
+            "share_with_personal_contact": 0.267,
+            "datasets": {
+              "Overture": 15,
+              "meta": 15
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 15
+            }
+          }
+        }
+      }
+    },
+    "coiba": {
+      "anchor": [
+        -81.79592,
+        7.48343
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 1,
+          "confidence_median": 0.793,
+          "share_confidence_ge_0_9": 0.0,
+          "share_status_known": 0.0,
+          "share_website": 0.0,
+          "share_with_personal_contact": 0.0,
+          "datasets": {
+            "Overture": 1,
+            "meta": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 1
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 0
+          },
+          "food_and_drink": {
+            "n": 0
+          },
+          "activities": {
+            "n": 1,
+            "confidence_median": 0.793,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.0,
+            "share_with_personal_contact": 0.0,
+            "datasets": {
+              "Overture": 1,
+              "meta": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 0
+          }
+        }
+      },
+      "bounds": [
+        -81.9373,
+        7.1758,
+        -81.5359,
+        7.8928
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 4,
+          "confidence_median": 0.743,
+          "share_confidence_ge_0_9": 0.0,
+          "share_status_known": 0.0,
+          "share_website": 0.5,
+          "share_with_personal_contact": 0.5,
+          "datasets": {
+            "Overture": 4,
+            "meta": 4
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 4
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 0
+          },
+          "food_and_drink": {
+            "n": 1,
+            "confidence_median": 0.456,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 1.0,
+            "share_with_personal_contact": 1.0,
+            "datasets": {
+              "Overture": 1,
+              "meta": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1
+            }
+          },
+          "activities": {
+            "n": 2,
+            "confidence_median": 0.768,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.5,
+            "share_with_personal_contact": 0.5,
+            "datasets": {
+              "Overture": 2,
+              "meta": 2
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 2
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 1,
+            "confidence_median": 0.744,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.0,
+            "share_with_personal_contact": 0.0,
+            "datasets": {
+              "Overture": 1,
+              "meta": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1
+            }
+          }
+        }
+      }
+    },
+    "el-valle-de-anton": {
+      "anchor": [
+        -80.12161,
+        8.60251
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 101,
+          "confidence_median": 0.754,
+          "share_confidence_ge_0_9": 0.218,
+          "share_status_known": 0.0,
+          "share_website": 0.317,
+          "share_with_personal_contact": 0.723,
+          "datasets": {
+            "Overture": 101,
+            "meta": 98,
+            "Microsoft": 2,
+            "Foursquare": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 101,
+            "Apache-2.0": 1
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 37,
+            "confidence_median": 0.825,
+            "share_confidence_ge_0_9": 0.297,
+            "share_status_known": 0.0,
+            "share_website": 0.486,
+            "share_with_personal_contact": 0.919,
+            "datasets": {
+              "Overture": 37,
+              "meta": 37
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 37
+            }
+          },
+          "food_and_drink": {
+            "n": 22,
+            "confidence_median": 0.623,
+            "share_confidence_ge_0_9": 0.136,
+            "share_status_known": 0.0,
+            "share_website": 0.091,
+            "share_with_personal_contact": 0.773,
+            "datasets": {
+              "Overture": 22,
+              "meta": 22
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 22
+            }
+          },
+          "activities": {
+            "n": 8,
+            "confidence_median": 0.728,
+            "share_confidence_ge_0_9": 0.25,
+            "share_status_known": 0.0,
+            "share_website": 0.25,
+            "share_with_personal_contact": 0.625,
+            "datasets": {
+              "Overture": 8,
+              "meta": 8
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 8
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 4,
+            "confidence_median": 0.729,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.25,
+            "share_with_personal_contact": 0.25,
+            "datasets": {
+              "Overture": 4,
+              "meta": 4
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 4
+            }
+          }
+        }
+      },
+      "bounds": [
+        -80.1636,
+        8.5814,
+        -80.1016,
+        8.6574
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 96,
+          "confidence_median": 0.758,
+          "share_confidence_ge_0_9": 0.219,
+          "share_status_known": 0.0,
+          "share_website": 0.312,
+          "share_with_personal_contact": 0.729,
+          "datasets": {
+            "Overture": 96,
+            "meta": 93,
+            "Microsoft": 2,
+            "Foursquare": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 96,
+            "Apache-2.0": 1
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 33,
+            "confidence_median": 0.828,
+            "share_confidence_ge_0_9": 0.303,
+            "share_status_known": 0.0,
+            "share_website": 0.485,
+            "share_with_personal_contact": 0.939,
+            "datasets": {
+              "Overture": 33,
+              "meta": 33
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 33
+            }
+          },
+          "food_and_drink": {
+            "n": 22,
+            "confidence_median": 0.623,
+            "share_confidence_ge_0_9": 0.136,
+            "share_status_known": 0.0,
+            "share_website": 0.091,
+            "share_with_personal_contact": 0.773,
+            "datasets": {
+              "Overture": 22,
+              "meta": 22
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 22
+            }
+          },
+          "activities": {
+            "n": 8,
+            "confidence_median": 0.728,
+            "share_confidence_ge_0_9": 0.25,
+            "share_status_known": 0.0,
+            "share_website": 0.25,
+            "share_with_personal_contact": 0.625,
+            "datasets": {
+              "Overture": 8,
+              "meta": 8
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 8
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 4,
+            "confidence_median": 0.729,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.25,
+            "share_with_personal_contact": 0.25,
+            "datasets": {
+              "Overture": 4,
+              "meta": 4
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 4
+            }
+          }
+        }
+      }
+    },
+    "panama-canal": {
+      "anchor": [
+        -79.5907,
+        8.99534
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 801,
+          "confidence_median": 0.687,
+          "share_confidence_ge_0_9": 0.145,
+          "share_status_known": 0.0,
+          "share_website": 0.493,
+          "share_with_personal_contact": 0.704,
+          "datasets": {
+            "Overture": 801,
+            "meta": 739,
+            "Foursquare": 28,
+            "AllThePlaces": 19,
+            "Microsoft": 15
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 801,
+            "Apache-2.0": 28,
+            "CC0-1.0": 19
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 16,
+            "confidence_median": 0.765,
+            "share_confidence_ge_0_9": 0.312,
+            "share_status_known": 0.0,
+            "share_website": 0.438,
+            "share_with_personal_contact": 0.5,
+            "datasets": {
+              "Overture": 16,
+              "meta": 16
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 16
+            }
+          },
+          "food_and_drink": {
+            "n": 142,
+            "confidence_median": 0.742,
+            "share_confidence_ge_0_9": 0.197,
+            "share_status_known": 0.0,
+            "share_website": 0.408,
+            "share_with_personal_contact": 0.732,
+            "datasets": {
+              "Overture": 142,
+              "meta": 122,
+              "AllThePlaces": 11,
+              "Foursquare": 9
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 142,
+              "CC0-1.0": 11,
+              "Apache-2.0": 9
+            }
+          },
+          "activities": {
+            "n": 15,
+            "confidence_median": 0.794,
+            "share_confidence_ge_0_9": 0.2,
+            "share_status_known": 0.0,
+            "share_website": 0.467,
+            "share_with_personal_contact": 0.467,
+            "datasets": {
+              "Overture": 15,
+              "meta": 14,
+              "Microsoft": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 15
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 19,
+            "confidence_median": 0.746,
+            "share_confidence_ge_0_9": 0.105,
+            "share_status_known": 0.0,
+            "share_website": 0.211,
+            "share_with_personal_contact": 0.421,
+            "datasets": {
+              "Overture": 19,
+              "meta": 19
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 19
+            }
+          }
+        }
+      },
+      "bounds": [
+        -79.9262,
+        8.9429,
+        -79.5647,
+        9.3115
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 957,
+          "confidence_median": 0.653,
+          "share_confidence_ge_0_9": 0.107,
+          "share_status_known": 0.0,
+          "share_website": 0.405,
+          "share_with_personal_contact": 0.665,
+          "datasets": {
+            "Overture": 957,
+            "meta": 923,
+            "Foursquare": 13,
+            "Microsoft": 11,
+            "AllThePlaces": 10
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 957,
+            "Apache-2.0": 13,
+            "CC0-1.0": 10
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 38,
+            "confidence_median": 0.734,
+            "share_confidence_ge_0_9": 0.263,
+            "share_status_known": 0.0,
+            "share_website": 0.5,
+            "share_with_personal_contact": 0.579,
+            "datasets": {
+              "Overture": 38,
+              "meta": 35,
+              "Microsoft": 2,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 38,
+              "Apache-2.0": 1
+            }
+          },
+          "food_and_drink": {
+            "n": 102,
+            "confidence_median": 0.652,
+            "share_confidence_ge_0_9": 0.118,
+            "share_status_known": 0.0,
+            "share_website": 0.343,
+            "share_with_personal_contact": 0.676,
+            "datasets": {
+              "Overture": 102,
+              "meta": 88,
+              "AllThePlaces": 8,
+              "Foursquare": 4,
+              "Microsoft": 2
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 102,
+              "CC0-1.0": 8,
+              "Apache-2.0": 4
+            }
+          },
+          "activities": {
+            "n": 22,
+            "confidence_median": 0.726,
+            "share_confidence_ge_0_9": 0.136,
+            "share_status_known": 0.0,
+            "share_website": 0.5,
+            "share_with_personal_contact": 0.545,
+            "datasets": {
+              "Overture": 22,
+              "meta": 22
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 22
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 38,
+            "confidence_median": 0.737,
+            "share_confidence_ge_0_9": 0.079,
+            "share_status_known": 0.0,
+            "share_website": 0.184,
+            "share_with_personal_contact": 0.316,
+            "datasets": {
+              "Overture": 38,
+              "meta": 38
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 38
+            }
+          }
+        }
+      }
+    },
+    "panama-city": {
+      "anchor": [
+        -79.53418,
+        8.97145
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 12536,
+          "confidence_median": 0.585,
+          "share_confidence_ge_0_9": 0.117,
+          "share_status_known": 0.0,
+          "share_website": 0.58,
+          "share_with_personal_contact": 0.837,
+          "datasets": {
+            "Overture": 12536,
+            "meta": 11912,
+            "Foursquare": 306,
+            "Microsoft": 217,
+            "AllThePlaces": 100,
+            "PinMeTo": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 12536,
+            "Apache-2.0": 306,
+            "CC0-1.0": 100
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 386,
+            "confidence_median": 0.81,
+            "share_confidence_ge_0_9": 0.365,
+            "share_status_known": 0.0,
+            "share_website": 0.536,
+            "share_with_personal_contact": 0.728,
+            "datasets": {
+              "Overture": 386,
+              "meta": 374,
+              "Microsoft": 7,
+              "Foursquare": 4,
+              "AllThePlaces": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 386,
+              "Apache-2.0": 4,
+              "CC0-1.0": 1
+            }
+          },
+          "food_and_drink": {
+            "n": 1898,
+            "confidence_median": 0.702,
+            "share_confidence_ge_0_9": 0.22,
+            "share_status_known": 0.0,
+            "share_website": 0.445,
+            "share_with_personal_contact": 0.809,
+            "datasets": {
+              "Overture": 1898,
+              "meta": 1746,
+              "Foursquare": 76,
+              "AllThePlaces": 50,
+              "Microsoft": 26
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1898,
+              "Apache-2.0": 76,
+              "CC0-1.0": 50
+            }
+          },
+          "activities": {
+            "n": 180,
+            "confidence_median": 0.635,
+            "share_confidence_ge_0_9": 0.083,
+            "share_status_known": 0.0,
+            "share_website": 0.539,
+            "share_with_personal_contact": 0.672,
+            "datasets": {
+              "Overture": 180,
+              "meta": 177,
+              "Microsoft": 2,
+              "Foursquare": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 180,
+              "Apache-2.0": 1
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 456,
+            "confidence_median": 0.657,
+            "share_confidence_ge_0_9": 0.031,
+            "share_status_known": 0.0,
+            "share_website": 0.127,
+            "share_with_personal_contact": 0.401,
+            "datasets": {
+              "Overture": 456,
+              "meta": 456
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 456
+            }
+          }
+        }
+      },
+      "bounds": null,
+      "in_bounds": null
+    },
+    "santa-catalina": {
+      "anchor": [
+        -81.26411,
+        8.13977
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 1,
+          "confidence_median": 0.629,
+          "share_confidence_ge_0_9": 0.0,
+          "share_status_known": 0.0,
+          "share_website": 0.0,
+          "share_with_personal_contact": 0.0,
+          "datasets": {
+            "Overture": 1,
+            "meta": 1
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 1
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 0
+          },
+          "food_and_drink": {
+            "n": 0
+          },
+          "activities": {
+            "n": 0
+          },
+          "historic_site_unreviewed": {
+            "n": 0
+          }
+        }
+      },
+      "bounds": [
+        -81.267,
+        8.1366,
+        -81.2563,
+        8.1417
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 0
+        },
+        "groups": {
+          "lodging": {
+            "n": 0
+          },
+          "food_and_drink": {
+            "n": 0
+          },
+          "activities": {
+            "n": 0
+          },
+          "historic_site_unreviewed": {
+            "n": 0
+          }
+        }
+      }
+    },
+    "volcan-baru": {
+      "anchor": [
+        -82.54239,
+        8.80893
+      ],
+      "radius_km": 5.0,
+      "radius": {
+        "all": {
+          "n": 4,
+          "confidence_median": 0.748,
+          "share_confidence_ge_0_9": 0.25,
+          "share_status_known": 0.0,
+          "share_website": 0.5,
+          "share_with_personal_contact": 0.75,
+          "datasets": {
+            "Overture": 4,
+            "meta": 4
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 4
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 0
+          },
+          "food_and_drink": {
+            "n": 0
+          },
+          "activities": {
+            "n": 1,
+            "confidence_median": 0.982,
+            "share_confidence_ge_0_9": 1.0,
+            "share_status_known": 0.0,
+            "share_website": 1.0,
+            "share_with_personal_contact": 1.0,
+            "datasets": {
+              "Overture": 1,
+              "meta": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 0
+          }
+        }
+      },
+      "bounds": [
+        -82.6255,
+        8.7554,
+        -82.4889,
+        8.8881
+      ],
+      "in_bounds": {
+        "all": {
+          "n": 59,
+          "confidence_median": 0.737,
+          "share_confidence_ge_0_9": 0.186,
+          "share_status_known": 0.0,
+          "share_website": 0.39,
+          "share_with_personal_contact": 0.712,
+          "datasets": {
+            "Overture": 59,
+            "meta": 59
+          },
+          "licenses": {
+            "CDLA-Permissive-2.0": 59
+          }
+        },
+        "groups": {
+          "lodging": {
+            "n": 15,
+            "confidence_median": 0.788,
+            "share_confidence_ge_0_9": 0.267,
+            "share_status_known": 0.0,
+            "share_website": 0.6,
+            "share_with_personal_contact": 0.8,
+            "datasets": {
+              "Overture": 15,
+              "meta": 15
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 15
+            }
+          },
+          "food_and_drink": {
+            "n": 12,
+            "confidence_median": 0.697,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.167,
+            "share_with_personal_contact": 0.833,
+            "datasets": {
+              "Overture": 12,
+              "meta": 12
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 12
+            }
+          },
+          "activities": {
+            "n": 4,
+            "confidence_median": 0.903,
+            "share_confidence_ge_0_9": 0.5,
+            "share_status_known": 0.0,
+            "share_website": 1.0,
+            "share_with_personal_contact": 0.75,
+            "datasets": {
+              "Overture": 4,
+              "meta": 4
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 4
+            }
+          },
+          "historic_site_unreviewed": {
+            "n": 1,
+            "confidence_median": 0.593,
+            "share_confidence_ge_0_9": 0.0,
+            "share_status_known": 0.0,
+            "share_website": 0.0,
+            "share_with_personal_contact": 1.0,
+            "datasets": {
+              "Overture": 1,
+              "meta": 1
+            },
+            "licenses": {
+              "CDLA-Permissive-2.0": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}
