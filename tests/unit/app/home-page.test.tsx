@@ -3,16 +3,26 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { NextIntlClientProvider, createTranslator } from 'next-intl';
 import type * as NextIntl from 'next-intl';
+import type * as EnvModule from '@/config/env';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { SITE } from '@/config/site';
 import { destinationName, destinationSlug } from '@/domains/tourism/destinations';
-import { travesiaStops } from '@/domains/tourism/travesia';
+import { ISTHMUS_PROVENANCE, travesiaStops } from '@/domains/tourism/travesia';
 import { LOCALES, type Locale } from '@/i18n/locales';
 import { THEME_COLORS } from '@/lib/seo';
 import { MESSAGES } from '../components/messages-fixture';
 
-const state = vi.hoisted(() => ({ locale: 'es' }));
+const state = vi.hoisted(() => ({
+  locale: 'es',
+  siteEnv: 'development',
+}));
+
+// El istmo pasa por la puerta de derechos según el entorno (ADR-0026, r:D-01): el resto de la configuración, la real.
+vi.mock('@/config/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof EnvModule>();
+  return { ...actual, getEnv: () => ({ ...actual.getEnv(), SITE_ENV: state.siteEnv }) };
+});
 
 vi.mock('@/i18n/navigation', async () => (await import('../components/nav-mock')).navigationMock);
 
@@ -167,11 +177,30 @@ describe.each(LOCALES)('portada (%s)', (locale) => {
     const travesia = tr(locale, 'Home.travesia');
     expect(svg?.textContent).toContain(travesia('caribbean'));
     expect(svg?.textContent).toContain(travesia('pacific'));
-    // La atribución de ODbL es visible y en su idioma (es un nombre propio en inglés)
+    // Sin línea entre las paradas: se leería como un itinerario (r:D-03)
+    expect(svg?.querySelectorAll('path, polyline, line')).toHaveLength(0);
+    // La atribución de ODbL es visible y en su idioma (es un nombre propio en inglés), con la versión y el aviso de que
+    // el contorno NO es un límite oficial (r:D-04)
     const credit = figure?.querySelector('figcaption');
     expect(credit?.querySelector('span[lang="en"]')?.textContent).toBe(
       '© OpenStreetMap contributors, Overture Maps Foundation',
     );
+    const raw = (MESSAGES[locale] as unknown as { Home: { travesia: { credit: string } } }).Home
+      .travesia.credit;
+    expect(credit?.textContent).toBe(
+      raw.replace(/<\/?en>/g, '').replace('{release}', ISTHMUS_PROVENANCE.release),
+    );
+    expect(credit?.textContent).toContain(ISTHMUS_PROVENANCE.release);
+  });
+
+  it('la ruta del contorno va UNA sola vez y los diez istmos la reutilizan con <use> (r:JS-3)', () => {
+    const defs = doc.querySelectorAll('svg[data-isthmus-defs] path[id="isthmus-land"]');
+    expect(defs).toHaveLength(1);
+    expect(defs[0]?.getAttribute('d')?.startsWith('M')).toBe(true);
+    expect(doc.querySelectorAll('svg[data-isthmus] path')).toHaveLength(0);
+    const uses = [...doc.querySelectorAll('svg[data-isthmus] use')];
+    expect(uses).toHaveLength(10);
+    for (const u of uses) expect(u.getAttribute('href')).toBe('#isthmus-land');
   });
 
   it('tres entradas con los textos de siempre y enlaces REALES solo a Explorar y a Fuentes', () => {
@@ -217,6 +246,15 @@ describe.each(LOCALES)('portada (%s)', (locale) => {
       expect(
         scene.querySelector('svg[data-isthmus="mini"]')?.closest('[aria-hidden="true"]'),
       ).not.toBeNull();
+      // El panel va al lado contrario del punto (r:F1) y «Parada N de 9» va DESPUÉS del h3 (r:A11Y-7)
+      expect(scene.getAttribute('data-panel-side')).toBe(stops[i]!.panelSide);
+      const panel = scene.querySelector('h3')?.parentElement;
+      expect(panel?.children[1]?.textContent).toBe(
+        tr(locale, 'Home.travesia')('stop', { number: i + 1, total: stops.length }),
+      );
+      // El resaltado del localizador es el ÚLTIMO punto pintado (encima de sus vecinos de la ciudad)
+      const marks = [...(scene.querySelectorAll('svg[data-isthmus="mini"] [data-stop]') ?? [])];
+      expect(marks.at(-1)?.getAttribute('data-stop')).toBe(d.key);
     });
     const travesia = tr(locale, 'Home.travesia');
     expect(doc.querySelector('#travesia-title')?.textContent).toBe(travesia('heading'));
@@ -245,6 +283,39 @@ describe.each(LOCALES)('portada (%s)', (locale) => {
     // Enlaces a rutas reales del sitio, o anclas a las paradas de la propia página
     for (const a of doc.querySelectorAll('a')) {
       expect(a.getAttribute('href') ?? '', a.outerHTML).toMatch(/^(\/|#parada-)/);
+    }
+  });
+});
+
+describe('portada en producción con el contorno en derechos PROVISIONALES (r:D-01)', () => {
+  it('sin istmo en el héroe ni localizadores en las escenas; la travesía sigue entera, en texto', async () => {
+    state.siteEnv = 'production';
+    try {
+      const doc = await renderHome('es');
+      expect(doc.querySelectorAll('svg[data-isthmus], svg[data-isthmus-defs], use')).toHaveLength(
+        0,
+      );
+      expect(doc.querySelector('section[aria-labelledby="home-title"] figure')).toBeNull();
+      const scenes = [...doc.querySelectorAll('li[data-destination]')];
+      expect(scenes).toHaveLength(9);
+      for (const scene of scenes) {
+        expect(scene.hasAttribute('data-panel-side')).toBe(false);
+        expect(scene.querySelectorAll('a')).toHaveLength(2);
+      }
+      // Las coordenadas (dos decimales) siguen: Explorar ya publica las anclas en producción con más precisión
+      expect(scenes[0]?.textContent).toContain('8,81° N · 82,54° O');
+    } finally {
+      state.siteEnv = 'development';
+    }
+  });
+
+  it('control: en staging (donde se despliega hoy) el istmo sí se pinta', async () => {
+    state.siteEnv = 'staging';
+    try {
+      const doc = await renderHome('es');
+      expect(doc.querySelectorAll('svg[data-isthmus]')).toHaveLength(10);
+    } finally {
+      state.siteEnv = 'development';
     }
   });
 });

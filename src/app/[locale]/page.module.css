@@ -60,9 +60,10 @@
 }
 
 /*
- * Mejora progresiva (color-mix: Chrome 111, Safari 16.2, Firefox 113): resplandor azul claro DETRÁS de la marca (fuera de la
- * columna de texto) y una retícula de meridianos y paralelos con máscara que la desvanece hacia los bordes. Los centros siguen a la columna de la
- * marca: `min(79%, 50% + 20.8rem)` es su centro en pantallas estrechas (columnas 7fr/5fr) y en las anchas (contenedor de 72rem).
+ * Mejora progresiva (color-mix: Chrome 111, Safari 16.2, Firefox 113): resplandor azul claro DETRÁS del istmo (fuera de la
+ * columna de texto) y una rejilla DECORATIVA de 4rem con máscara que la desvanece hacia los bordes (no son meridianos ni
+ * paralelos: no se alinea con la proyección del istmo). Desde 64rem el resplandor sigue a la columna del istmo (texto 5fr,
+ * istmo 7fr): su centro es el 71 % del contenedor, `min(71%, 50% + 15rem)` con el contenedor de 72rem.
  */
 @supports (background: color-mix(in srgb, red 50%, transparent)) {
   .decor {
@@ -99,7 +100,7 @@
     .decor {
       background:
         radial-gradient(
-          36rem 28rem at min(79%, calc(50% + 20.8rem)) 50%,
+          36rem 28rem at min(71%, calc(50% + 15rem)) 50%,
           color-mix(in srgb, var(--color-brand-sky) 46%, transparent),
           transparent 72%
         ),
@@ -140,22 +141,27 @@
   align-items: center;
 }
 
-/* Dos columnas solo desde 64rem: a 768 px la tarjeta de la marca ocupaba una segunda columna y apretaba el formulario (r1:V-10). */
+/*
+ * Dos columnas solo desde 64rem (a 768 px una segunda columna apretaba el formulario: r1:V-10). Sin istmo (derechos del
+ * contorno denegados en este entorno: ADR-0026) el texto va solo, con su ancho de lectura.
+ */
 @media (min-width: 64rem) {
   .heroInner {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: var(--space-6);
   }
+
+  .heroInner:not(:has(.isthmus)) {
+    grid-template-columns: minmax(0, 40rem);
+  }
 }
 
-/* ---------- Superficies: la columna de texto (sólida) y el marco de la marca (vidrio) ---------- */
+/* ---------- Superficie: la columna de texto (sólida) ---------- */
 
 /*
- * Columna de texto y tarjeta de la marca: SÓLIDAS (--color-glass-base, opaca) y de UNA sola pieza. axe no puede medir el
- * contraste de un texto cuya superficie es translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría.
- * Sobre una superficie opaca sí lo mide (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo
- * posible). La tarjeta de la marca fue vidrio con una «chapa» sólida detrás del rótulo (una caja dentro de otra, r1:V-11):
- * ahora el rótulo va directamente sobre la tarjeta, sin fondo propio.
+ * Columna de texto: SÓLIDA (--color-glass-base, opaca) y de UNA sola pieza. axe no puede medir el contraste de un texto
+ * cuya superficie es translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría. Sobre una superficie
+ * opaca sí lo mide (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo posible).
  */
 .copy {
   background: var(--color-glass-base);
@@ -231,7 +237,7 @@
   gap: var(--space-3);
 }
 
-/* ---------- Tarjeta de la marca ---------- */
+/* ---------- Istmo ---------- */
 
 /*
  * El istmo (ADR-0026): segunda columna desde 64rem, debajo del texto en pantallas menores (el orden del DOM es el visual: el
@@ -243,6 +249,8 @@
   display: grid;
   gap: var(--space-2);
   min-inline-size: 0;
+  /* Su ancho decide el tamaño de rótulos y puntos del dibujo (IsthmusMap.module.css). */
+  container-type: inline-size;
 }
 
 /* El istmo NO se sale del contenedor: con un margen negativo la página desbordaba 14–45 px de 1024 a 1440 px (y al 125–200 %). */

@@ -65,6 +65,8 @@ def main() -> int:
         return 1
     km2 = (111.32**2) * math.cos(math.radians(8.5))
     land = unary_union([shape(f["geometry"]) for f in lines(LAND)])
+    # Control en UN sentido (r:D-06): el continente cae sobre tierra en ≥ 95 %. No detecta un contorno que haya PERDIDO un
+    # trozo (lo que queda seguiría sobre tierra): para eso se imprime el área, que se revisa en el diff al regenerar.
     overlap = mainland.intersection(land).area / mainland.area
     if overlap < 0.95:
         print(f"el contorno y la capa de tierra no coinciden ({overlap:.1%})", file=sys.stderr)
@@ -109,7 +111,10 @@ def main() -> int:
         },
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
-    print(f"{OUT.relative_to(ROOT)}: {len(polys)} polígonos, {len(d)} caracteres de ruta, viewBox {out['viewBox']}")
+    print(
+        f"{OUT.relative_to(ROOT)}: {len(polys)} polígonos, {len(d)} caracteres de ruta, viewBox {out['viewBox']}, "
+        f"continente ≈ {mainland.area * km2:,.0f} km² ({overlap:.1%} sobre tierra)"
+    )
     return 0
 
 

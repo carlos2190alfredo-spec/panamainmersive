@@ -3,7 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DESTINATIONS } from '@/domains/tourism/destinations';
 import {
+  ISTHMUS_PROVENANCE,
   ISTHMUS_SHAPE,
+  LOW_POINT,
   coordinateParts,
   isthmusPoint,
   travesiaStops,
@@ -66,5 +68,59 @@ describe('coordenadas', () => {
     });
     expect(coordinateParts(-1.5, 'lat', 'de').hemisphere).toBe('south');
     expect(coordinateParts(3, 'lon', 'fr').hemisphere).toBe('east');
+  });
+});
+
+describe('travesía: lo DIBUJADO sale de la proyección, no a ojo (r:D-05)', () => {
+  it('x e y de cada punto son la proyección de su lon/lat con el bbox y el viewBox del dibujo', () => {
+    const [west, south, east, north] = ISTHMUS_PROVENANCE.bbox;
+    const [, , width] = ISTHMUS_SHAPE.viewBox.split(' ').map(Number);
+    const k = Math.cos((((south! + north!) / 2) * Math.PI) / 180);
+    const scale = width! / ((east! - west!) * k);
+    for (const d of DESTINATIONS) {
+      const p = isthmusPoint(d.key);
+      expect(Math.abs(p.x - (p.lon - west!) * k * scale), d.key).toBeLessThanOrEqual(0.051);
+      expect(Math.abs(p.y - (north! - p.lat) * scale), d.key).toBeLessThanOrEqual(0.051);
+    }
+  });
+});
+
+describe('travesía: el contorno usa la misma proyección que los puntos (r2:H-11)', () => {
+  it('la ruta llena el viewBox (los extremos del país tocan casi los bordes de la caja de trabajo)', () => {
+    const [, , width, height] = ISTHMUS_SHAPE.viewBox.split(' ').map(Number);
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (const m of ISTHMUS_SHAPE.path.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)) {
+      xs.push(Number(m[1]));
+      ys.push(Number(m[2]));
+    }
+    expect(xs.length).toBeGreaterThan(500);
+    // Panamá va de ≈ −83,05° a ≈ −77,17° y de ≈ 7,2° a ≈ 9,65° (caja de −83,1/−77,15 y 7,15/9,7): pocas unidades de margen
+    expect(Math.min(...xs)).toBeLessThan(20);
+    expect(Math.max(...xs)).toBeGreaterThan(width! - 20);
+    expect(Math.min(...ys)).toBeLessThan(20);
+    expect(Math.max(...ys)).toBeGreaterThan(height! - 20);
+    // y cada punto cae dentro de la caja de la costa
+    for (const d of DESTINATIONS) {
+      const p = isthmusPoint(d.key);
+      expect(p.x).toBeGreaterThan(Math.min(...xs));
+      expect(p.y).toBeLessThan(Math.max(...ys));
+    }
+  });
+});
+
+describe('travesía: el panel no tapa el punto de su localizador (r:F1)', () => {
+  it('mitad oeste → panel al este (`end`); mitad este → al oeste (`start`); Coiba y Santa Catalina son puntos «bajos»', () => {
+    const byKey = new Map(travesiaStops().map((s) => [s.entry.key, s]));
+    for (const s of byKey.values()) expect(s.panelSide).toBe(s.along < 0.5 ? 'end' : 'start');
+    // Los dos que tapaba la alternancia por posición en la lista
+    expect(byKey.get('boquete')!.panelSide).toBe('end');
+    expect(byKey.get('coiba')!.panelSide).toBe('end');
+    expect(byKey.get('panama-city')!.panelSide).toBe('start');
+    expect(byKey.get('coiba')!.low).toBe(true);
+    expect(byKey.get('santa-catalina')!.low).toBe(true);
+    expect(byKey.get('bocas-del-toro')!.low).toBe(false);
+    for (const s of byKey.values())
+      expect(s.low).toBe(s.point.y / Number(ISTHMUS_SHAPE.viewBox.split(' ')[3]) > LOW_POINT);
   });
 });

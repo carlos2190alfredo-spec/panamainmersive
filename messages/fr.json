@@ -1,7 +1,7 @@
 {
   "Meta": {
     "home": {
-      "title": "{siteName} : explorez le Panama avec des données ouvertes et vérifiables",
+      "title": "{siteName}\u00a0: explorez le Panama avec des données ouvertes et vérifiables",
       "description": "Carte, relief et sources dont la provenance est visible pour découvrir et comprendre le Panama à partir de données ouvertes et vérifiables. Version de développement."
     },
     "explore": {
@@ -14,7 +14,7 @@
     },
     "destination": {
       "title": "{name}",
-      "description": "État des données géographiques de {name}, au Panama : sources, provenance et couverture."
+      "description": "État des données géographiques de {name}, au Panama\u00a0: sources, provenance et couverture."
     },
     "sources": {
       "title": "Sources et attributions",
@@ -22,13 +22,13 @@
     },
     "accessibility": {
       "title": "Accessibilité",
-      "description": "Déclaration d’accessibilité : ce qui fonctionne, ce qui ne fonctionne pas et comment nous allons nous améliorer."
+      "description": "Déclaration d’accessibilité\u00a0: ce qui fonctionne, ce qui ne fonctionne pas et comment nous allons nous améliorer."
     },
     "notFound": {
       "title": "Page introuvable"
     },
     "og": {
-      "alt": "Logo de {siteName} : une lettre P avec un paysage et une boussole."
+      "alt": "Logo de {siteName}\u00a0: une lettre P avec un paysage et une boussole."
     }
   },
   "Common": {
@@ -56,7 +56,7 @@
   "Language": {
     "label": "Langue",
     "menu": "Choisir la langue",
-    "current": "Langue actuelle : {name}",
+    "current": "Langue actuelle\u00a0: {name}",
     "help": "Changer de langue conserve la destination, la vue de la carte et les couches actives."
   },
   "Home": {
@@ -69,7 +69,7 @@
     "principles": {
       "map": {
         "title": "La carte d’abord",
-        "body": "L’expérience commence par le territoire : relief, côte et zones réelles, avec une liste équivalente pour qui n’utilise pas la carte."
+        "body": "L’expérience commence par le territoire\u00a0: relief, côte et zones réelles, avec une liste équivalente pour qui n’utilise pas la carte."
       },
       "provenance": {
         "title": "Chaque donnée, avec sa provenance",
@@ -84,17 +84,16 @@
     "statusBody": "Ceci est une version de développement. Les fiches des destinations sont en préparation et les traductions attendent une relecture humaine.",
     "travesia": {
       "heading": "La traversée",
-      "lead": "Parcourez le Panama d'ouest en est, entre la mer des Caraïbes et l'océan Pacifique. Chaque étape est à sa position réelle.",
+      "lead": "Parcourez le Panama d’ouest en est, entre la mer des Caraïbes et l’océan Pacifique. Chaque étape est placée sur son point de repère, dérivé d’OpenStreetMap (via Overture).",
       "caribbean": "Mer des Caraïbes",
       "pacific": "Océan Pacifique",
       "west": "Ouest",
       "east": "Est",
       "navLabel": "Étapes de la traversée",
       "stop": "Étape {number} sur {total}",
-      "location": "Emplacement",
+      "reference": "Point de repère",
       "coordinates": "{y}° {ns} · {x}° {ew}",
-      "credit": "Contour et positions : <en>© OpenStreetMap contributors, Overture Maps Foundation</en>",
-      "start": "Commencer la traversée",
+      "credit": "Contour et points de repère\u00a0: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (version {release}). Contour de référence\u00a0: ce n’est pas une limite officielle.",
       "hemisphere": {
         "north": "N",
         "south": "S",
@@ -107,18 +106,18 @@
     "label": "Rechercher une destination",
     "placeholder": "Nom de la destination",
     "submit": "Rechercher",
-    "scope": "La recherche porte uniquement sur les neuf destinations initiales, par leur nom dans l’une des cinq langues ; elle ne reconnaît pas les autres noms d’usage courant. Elle n’inclut ni attractions, ni hébergements, ni activités.",
+    "scope": "La recherche porte uniquement sur les neuf destinations initiales, par leur nom dans l’une des cinq langues\u00a0; elle ne reconnaît pas les autres noms d’usage courant. Elle n’inclut ni attractions, ni hébergements, ni activités.",
     "resultsLabel": "Résultats de la recherche",
-    "results": "{count, plural, =0 {Aucune destination ne correspond à « {query} ».} one {# destination correspond à « {query} ».} other {# destinations correspondent à « {query} ».}}",
+    "results": "{count, plural, =0 {Aucune destination ne correspond à «\u00a0{query}\u00a0».} one {# destination correspond à «\u00a0{query}\u00a0».} other {# destinations correspondent à «\u00a0{query}\u00a0».}}",
     "viewOnMap": "Voir sur la carte",
-    "viewOnMapLabel": "Voir sur la carte : {name}"
+    "viewOnMapLabel": "Voir sur la carte\u00a0: {name}"
   },
   "Explore": {
     "title": "Explorer le Panama",
     "mapLabel": "Carte du Panama",
     "panelLabel": "Informations de la carte",
     "listHeading": "Destinations",
-    "listDescription": "Cette liste est l’alternative textuelle à la carte : elle contient les mêmes destinations.",
+    "listDescription": "Cette liste est l’alternative textuelle à la carte\u00a0: elle contient les mêmes destinations.",
     "count": "{count, plural, one {# destination} other {# destinations}}"
   },
   "Map": {
@@ -147,7 +146,7 @@
     "selectedHeading": "Destination sélectionnée",
     "selectedAnnouncement": "{name} sélectionné sur la carte.",
     "openFicha": "Ouvrir la fiche de {name}",
-    "referencePoint": "Le repère est un point de référence dérivé d’OpenStreetMap ; ce n’est pas une limite officielle.",
+    "referencePoint": "Le repère est un point de référence dérivé d’OpenStreetMap\u00a0; ce n’est pas une limite officielle.",
     "clearSelection": "Effacer la sélection",
     "layers": {
       "heading": "Couches",
@@ -157,29 +156,29 @@
       },
       "hillshade": {
         "label": "Ombrage du relief",
-        "hint": "Données tierces : charge des tuiles depuis Amazon Web Services."
+        "hint": "Données tierces\u00a0: charge des tuiles depuis Amazon Web Services."
       },
       "terrain3d": {
         "label": "Relief en 3D",
-        "hint": "Données tierces : charge des tuiles depuis Amazon Web Services. Inclinez la carte pour le voir."
+        "hint": "Données tierces\u00a0: charge des tuiles depuis Amazon Web Services. Inclinez la carte pour le voir."
       },
       "thirdPartyNotice": "Lorsqu’une couche de relief est active, Amazon Web Services reçoit votre adresse IP lors de la demande des tuiles.",
       "rightsPending": "Désactivée tant que les droits sur ces données ne sont pas vérifiés.",
       "boundaries": {
         "label": "Limites administratives",
-        "hint": "Pays, provinces et districts dérivés d’OpenStreetMap via Overture ; ce ne sont pas des limites officielles."
+        "hint": "Pays, provinces et districts dérivés d’OpenStreetMap via Overture\u00a0; ce ne sont pas des limites officielles."
       },
       "places": {
         "label": "Localités et noms de lieux",
-        "hint": "Noms tels que la source les fournit ; ils ne sont pas traduits."
+        "hint": "Noms tels que la source les fournit\u00a0; ils ne sont pas traduits."
       },
       "waterways": {
         "label": "Rivières et canaux",
-        "hint": "Cours d’eau dérivés d’OpenStreetMap ; visibles à partir du zoom 7."
+        "hint": "Cours d’eau dérivés d’OpenStreetMap\u00a0; visibles à partir du zoom 7."
       },
       "landcover": {
         "label": "Occupation du sol",
-        "hint": "Forêt, zone humide, sable et récif dérivés d’OpenStreetMap ; visible à partir du zoom 8."
+        "hint": "Forêt, zone humide, sable et récif dérivés d’OpenStreetMap\u00a0; visible à partir du zoom 8."
       }
     },
     "legend": {
@@ -197,7 +196,7 @@
       "waterways": "Rivière ou canal",
       "places": "Localité (point)"
     },
-    "attribution": "Fond de carte : <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (version {release}). Cartographie de référence : ne contient aucune limite officielle.",
+    "attribution": "Fond de carte\u00a0: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (version {release}). Cartographie de référence\u00a0: ne contient aucune limite officielle.",
     "controls": {
       "zoomIn": "Zoom avant",
       "zoomOut": "Zoom arrière",
@@ -210,9 +209,9 @@
       "scaleMeters": "m",
       "scaleKilometers": "km"
     },
-    "cluster": "{count} destinations regroupées : {names}. Zoomer sur la carte",
+    "cluster": "{count} destinations regroupées\u00a0: {names}. Zoomer sur la carte",
     "noscript": "La carte interactive nécessite JavaScript. La liste des destinations contient les mêmes informations.",
-    "showOnMapLabel": "Voir sur la carte : {name}",
+    "showOnMapLabel": "Voir sur la carte\u00a0: {name}",
     "blocked": {
       "title": "La carte est désactivée en production",
       "body": "Les droits d’utilisation des données de la carte n’ont pas encore été vérifiés auprès des sources primaires. La liste des destinations reste disponible."
@@ -229,20 +228,20 @@
         "osm_derived": "Géométrie dérivée d’OpenStreetMap (non officielle)",
         "editorial": "Géométrie éditoriale (non officielle)"
       },
-      "tileNote": "Le fond de carte dérive d’OpenStreetMap via Overture ; ce n’est pas une limite officielle.",
+      "tileNote": "Le fond de carte dérive d’OpenStreetMap via Overture\u00a0; ce n’est pas une limite officielle.",
       "nameLocal": "Nom local de la source, non traduit.",
       "nameCommon": "Nom de la source dans cette langue.",
       "nameEditorial": "Nom éditorial.",
       "areaHeading": "Superficie",
       "areaMethod": "Calculée sur la géométrie d’origine avec {method}.",
-      "areaUnknown": "Superficie indisponible : la méthode de calcul n’est pas connue.",
-      "geometryVersion": "Version de la géométrie : {version}",
+      "areaUnknown": "Superficie indisponible\u00a0: la méthode de calcul n’est pas connue.",
+      "geometryVersion": "Version de la géométrie\u00a0: {version}",
       "sourceHeading": "Source de la géométrie",
       "sourceLine": "{institution} · version {version} · obtenue le {date}",
-      "license": "Licence : {license}",
+      "license": "Licence\u00a0: {license}",
       "licenseLink": "Texte de la licence",
-      "rightsProvisional": "Droits : provisoires (pas encore lus à la source primaire).",
-      "rightsVerified": "Droits : vérifiés.",
+      "rightsProvisional": "Droits\u00a0: provisoires (pas encore lus à la source primaire).",
+      "rightsVerified": "Droits\u00a0: vérifiés.",
       "noVerifiedData": "Il n’existe pas de données vérifiées sur les activités, les restrictions d’accès ni l’itinéraire pour cette zone.",
       "loading": "Chargement de la fiche…",
       "unavailable": "La fiche détaillée n’est pas disponible pour le moment. Seul ce que contient la carte est affiché.",
@@ -254,11 +253,11 @@
     },
     "inView": {
       "heading": "Aires protégées dans cette vue",
-      "description": "Cette liste est l’alternative au clic sur la carte : elle contient les zones dessinées dans la vue actuelle.",
+      "description": "Cette liste est l’alternative au clic sur la carte\u00a0: elle contient les zones dessinées dans la vue actuelle.",
       "count": "Affichage de {shown} sur {total}.",
       "zoomIn": "Zoomez pour voir moins de zones.",
       "empty": "Il n’y a pas d’aires protégées dans cette vue.",
-      "layerOff": "Activez la couche « Aires protégées » pour choisir des zones.",
+      "layerOff": "Activez la couche «\u00a0Aires protégées\u00a0» pour choisir des zones.",
       "waiting": "En attente de la fin du dessin de la carte.",
       "mapUnavailable": "La carte n’est pas disponible, il n’y a donc aucune zone à lister."
     },
@@ -292,8 +291,8 @@
       "layersOpen": "Couches et légende"
     },
     "sheet": {
-      "open": "{title} : ouvrir les informations de la carte",
-      "close": "{title} : fermer les informations de la carte"
+      "open": "{title}\u00a0: ouvrir les informations de la carte",
+      "close": "{title}\u00a0: fermer les informations de la carte"
     },
     "panel": {
       "toggle": "Afficher ou masquer le panneau d’informations"
@@ -302,7 +301,7 @@
       "railLabel": "Filtres et couches de la carte",
       "searchRegionLabel": "Recherche de destinations",
       "carouselLabel": "Carrousel de destinations",
-      "mapUnavailable": "Indisponible : la carte n’est pas active."
+      "mapUnavailable": "Indisponible\u00a0: la carte n’est pas active."
     }
   },
   "Destinations": {
@@ -313,18 +312,18 @@
     "dataStatusHeading": "État des données",
     "contentHeading": "Contenu éditorial",
     "contentPending": "La fiche éditoriale de cette destination n’est pas encore rédigée. Nous n’affichons pas de descriptions sans source vérifiable.",
-    "evidenceNote": "Évaluation du {date}. Elle expire le {expires} ; ensuite l’état redevient « Inconnue ».",
+    "evidenceNote": "Évaluation du {date}. Elle expire le {expires}\u00a0; ensuite l’état redevient «\u00a0Inconnue\u00a0».",
     "capabilityColumn": "Capacité",
     "statusColumn": "État",
     "observationColumn": "Observation",
     "notesHeading": "Avant de continuer",
     "notes": {
-      "homonymBaru": "Ce n’est pas le district de Barú : ce sont des entités distinctes.",
+      "homonymBaru": "Ce n’est pas le district de Barú\u00a0: ce sont des entités distinctes.",
       "homonymSantaCatalina": "D’autres localités et un district portent ce nom. Ici, il s’agit de la localité côtière de Veraguas.",
-      "bocasAmbiguous": "« Bocas del Toro » désigne à la fois une province, un district et une localité. La portée exacte de la destination reste à définir par la rédaction.",
-      "cascoNoBoundary": "La limite officielle du quartier historique n’a pas pu être consultée (source inaccessible depuis l’environnement de travail). La carte ne signale qu’un point de repère dérivé d’OpenStreetMap ; elle ne trace aucune limite.",
-      "homonymElValle": "Il existe un autre « El Valle » (un quartier du Chiriquí). Il s’agit ici de la localité de la province de Coclé.",
-      "homonymCascoViejo": "Il existe un autre « Casco Viejo » dans la province de Veraguas : ce n’est pas celui-ci."
+      "bocasAmbiguous": "«\u00a0Bocas del Toro\u00a0» désigne à la fois une province, un district et une localité. La portée exacte de la destination reste à définir par la rédaction.",
+      "cascoNoBoundary": "La limite officielle du quartier historique n’a pas pu être consultée (source inaccessible depuis l’environnement de travail). La carte ne signale qu’un point de repère dérivé d’OpenStreetMap\u00a0; elle ne trace aucune limite.",
+      "homonymElValle": "Il existe un autre «\u00a0El Valle\u00a0» (un quartier du Chiriquí). Il s’agit ici de la localité de la province de Coclé.",
+      "homonymCascoViejo": "Il existe un autre «\u00a0Casco Viejo\u00a0» dans la province de Veraguas\u00a0: ce n’est pas celui-ci."
     }
   },
   "DestinationKind": {
@@ -356,15 +355,15 @@
     "geometryLabel": "Géométrie",
     "observation": {
       "geoCounty": "Limite de district dérivée d’OpenStreetMap, non officielle.",
-      "geoRegionCountyLocality": "Province, district et localité : trois entités distinctes, dérivées d’OpenStreetMap.",
+      "geoRegionCountyLocality": "Province, district et localité\u00a0: trois entités distinctes, dérivées d’OpenStreetMap.",
       "geoLocality": "Limite de localité dérivée d’OpenStreetMap, non officielle.",
       "geoProtectedArea": "Polygone d’aire protégée dérivé d’OpenStreetMap, non officiel.",
       "geoProtectedIsland": "Polygones d’île et de parc dérivés d’OpenStreetMap, non officiels.",
-      "geoCanalLines": "Lignes et polygones d’eau (canal, lac, écluses) dérivés d’OpenStreetMap ; il n’existe pas de zone officielle du Canal.",
-      "geoContainingLocality": "Il n’existe que le polygone de la localité qui le contient (San Felipe), dérivé d’OpenStreetMap ; ce n’est pas la limite du quartier historique.",
-      "geoLocalityCorroborated": "Polygone de la localité « El Valle » dérivé d’OpenStreetMap, rattaché par inclusion d’un élément du volcan ; non officiel.",
+      "geoCanalLines": "Lignes et polygones d’eau (canal, lac, écluses) dérivés d’OpenStreetMap\u00a0; il n’existe pas de zone officielle du Canal.",
+      "geoContainingLocality": "Il n’existe que le polygone de la localité qui le contient (San Felipe), dérivé d’OpenStreetMap\u00a0; ce n’est pas la limite du quartier historique.",
+      "geoLocalityCorroborated": "Polygone de la localité «\u00a0El Valle\u00a0» dérivé d’OpenStreetMap, rattaché par inclusion d’un élément du volcan\u00a0; non officiel.",
       "terrainLand": "Relief disponible sur terre (source SRTM).",
-      "terrainLandNoBathymetry": "Relief sur terre ; pas de bathymétrie à fort zoom.",
+      "terrainLandNoBathymetry": "Relief sur terre\u00a0; pas de bathymétrie à fort zoom.",
       "reasonNoCredential": "Aucun identifiant pour la vérifier.",
       "reasonBlockedHost": "Source inaccessible depuis l’environnement de travail.",
       "reasonNotEvaluated": "Pas encore évaluée."
@@ -387,7 +386,7 @@
     },
     "fallbackNotice": "Ce contenu n’est disponible qu’en {language}.",
     "machineTranslatedNotice": "Traduction automatique en attente de relecture humaine.",
-    "outdatedNotice": "Le texte original a changé ; cette traduction peut être obsolète."
+    "outdatedNotice": "Le texte original a changé\u00a0; cette traduction peut être obsolète."
   },
   "Sources": {
     "title": "Sources et attributions",
@@ -404,7 +403,7 @@
     },
     "rights": {
       "verified": "Vérifié",
-      "provisional": "Provisoire : non vérifié à la source primaire"
+      "provisional": "Provisoire\u00a0: non vérifié à la source primaire"
     },
     "use": {
       "overture": "Littoral, eau, occupation du sol, aires protégées, limites administratives et localités, dérivés d’OpenStreetMap.",
@@ -480,19 +479,19 @@
       "high": "élevée"
     },
     "sources": "Sources",
-    "sourceMeta": "Consultée le {date} · Licence : <doc>{license}</doc>",
-    "locator": "Où, dans la source : <doc>{locator}</doc>",
+    "sourceMeta": "Consultée le {date} · Licence\u00a0: <doc>{license}</doc>",
+    "locator": "Où, dans la source\u00a0: <doc>{locator}</doc>",
     "translationReviewed": "Traduction relue par une personne.",
-    "originalShown": "Texte original affiché en {language} : {reason}",
+    "originalShown": "Texte original affiché en {language}\u00a0: {reason}",
     "reason": {
       "no_translation": "il n’existe pas encore de traduction dans cette langue.",
       "translation_not_published": "il n’existe pas encore de traduction relue et publiée.",
       "translation_outdated": "la traduction n’est plus à jour."
     },
-    "expired": "{field} : l’information vérifiée a expiré le {date}. Nous ne l’affichons pas car elle a pu changer.",
-    "disputed": "{field} : des informations contradictoires sont en cours d’examen. Nous ne les affichons pas tant que ce n’est pas résolu.",
+    "expired": "{field}\u00a0: l’information vérifiée a expiré le {date}. Nous ne l’affichons pas car elle a pu changer.",
+    "disputed": "{field}\u00a0: des informations contradictoires sont en cours d’examen. Nous ne les affichons pas tant que ce n’est pas résolu.",
     "unknownHeading": "Pas encore de données vérifiées",
-    "unknownLead": "Il n’y a pas encore d’information vérifiée sur ces sujets. Cela ne signifie pas qu’elle n’existe pas : cela signifie que nous ne l’avons pas encore confrontée à une source.",
+    "unknownLead": "Il n’y a pas encore d’information vérifiée sur ces sujets. Cela ne signifie pas qu’elle n’existe pas\u00a0: cela signifie que nous ne l’avons pas encore confrontée à une source.",
     "siteContentUpdatedOn": "Contenu du site mis à jour pour la dernière fois le {date}."
   }
 }
