@@ -11,6 +11,7 @@ import {
   routeTerrain,
   watchFraming,
 } from './map-helpers';
+import { isolatedTest } from './isolated-browser';
 
 /**
  * Interacciones del HUD de Explorar (ADR-0025 §8): filtro por tipo, buscador y herramientas del mapa («Relieve en 3D» y
@@ -490,129 +491,136 @@ test.describe('herramientas del mapa', () => {
     await expect(page.getByRole('checkbox', { name: 'Áreas protegidas' })).toBeHidden();
   });
 
-  test('el aviso de terceros es UNO solo y se ve aunque el grupo «Capas» esté plegado (también al venir en el enlace)', async ({
-    page,
-  }) => {
-    await routeTerrain(page, 'ok'); // sin salir a AWS de verdad
-    await page.goto(`${EXPLORE}?l=protectedAreas,hillshade`);
-    await expect(page.locator('[data-map-status]')).toHaveCount(1);
-    const notice = page.getByText(
-      'Con una capa de relieve activa, Amazon Web Services recibe tu dirección IP',
-    );
-    await expect(notice).toHaveCount(1);
-    await expect(notice).toBeVisible();
-    await expect(page.locator('#hud-group-layers')).not.toHaveAttribute('open', '');
-    // Es un aviso de estado (role=status), no una alerta
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Con una capa de relieve activa' }),
-    ).toHaveCount(1);
-  });
+  isolatedTest(
+    'el aviso de terceros es UNO solo y se ve aunque el grupo «Capas» esté plegado (también al venir en el enlace)',
+    async ({ page }) => {
+      await routeTerrain(page, 'ok'); // sin salir a AWS de verdad
+      await page.goto(`${EXPLORE}?l=protectedAreas,hillshade`);
+      await expect(page.locator('[data-map-status]')).toHaveCount(1);
+      const notice = page.getByText(
+        'Con una capa de relieve activa, Amazon Web Services recibe tu dirección IP',
+      );
+      await expect(notice).toHaveCount(1);
+      await expect(notice).toBeVisible();
+      await expect(page.locator('#hud-group-layers')).not.toHaveAttribute('open', '');
+      // Es un aviso de estado (role=status), no una alerta
+      await expect(
+        page.getByRole('status').filter({ hasText: 'Con una capa de relieve activa' }),
+      ).toHaveCount(1);
+    },
+  );
 });
 
 test.describe('herramientas del mapa: «Relieve en 3D» con el mapa dibujado', () => {
   test.skip(!MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON);
 
-  test('es OPT-IN: sin pulsar, cero peticiones a AWS; al pulsar pide el relieve, escribe `l`, inclina, avisa y se puede apagar', async ({
-    page,
-  }) => {
-    test.setTimeout(120_000); // el relieve en 3D con WebGL por software es lento
-    const watch = watchPage(page);
-    const terrain = await routeTerrain(page, 'ok');
-    await openMap(page, `${EXPLORE}?d=boquete`);
-    await openLayers(page);
-    await expect(threeD(page)).toBeEnabled();
-    await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
-    await page.waitForTimeout(1500);
-    expect(terrain.requests, 'antes de pulsar: ni un byte a AWS').toEqual([]);
-    const notice = page.getByText('Con una capa de relieve activa');
-    await expect(notice).toHaveCount(0);
-    const before = await mapState(page);
-    expect(before.pitch).toBeLessThan(5);
+  isolatedTest(
+    'es OPT-IN: sin pulsar, cero peticiones a AWS; al pulsar pide el relieve, escribe `l`, inclina, avisa y se puede apagar',
+    async ({ page }) => {
+      test.setTimeout(120_000); // el relieve en 3D con WebGL por software es lento
+      const watch = watchPage(page);
+      const terrain = await routeTerrain(page, 'ok');
+      await openMap(page, `${EXPLORE}?d=boquete`);
+      await openLayers(page);
+      await expect(threeD(page)).toBeEnabled();
+      await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
+      await page.waitForTimeout(1500);
+      expect(terrain.requests, 'antes de pulsar: ni un byte a AWS').toEqual([]);
+      const notice = page.getByText('Con una capa de relieve activa');
+      await expect(notice).toHaveCount(0);
+      const before = await mapState(page);
+      expect(before.pitch).toBeLessThan(5);
 
-    await threeD(page).click();
-    await expect(threeD(page)).toHaveAttribute('aria-pressed', 'true');
-    await expect(page).toHaveURL(
-      /[?&]l=protectedAreas,boundaries,places,waterways,landcover,hillshade,terrain3d(&|$)/,
-    );
-    await expect(page).toHaveURL(/[?&]d=boquete(&|$)/); // el destino se conserva
-    // Se pide el relieve (solo ahora), con el aviso visible y UNO solo
-    await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
-    for (const url of terrain.requests) {
-      expect(url).toMatch(new RegExp(`^https://${TERRAIN_HOST}/terrarium/\\d+/\\d+/\\d+\\.png$`));
-    }
-    await expect(notice).toHaveCount(1);
-    await expect(notice).toBeVisible();
-    // La casilla «Relieve en 3D» y la de sombreado reflejan lo mismo (una sola fuente: la URL)
-    await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).toBeChecked();
-    await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).toBeChecked();
-    // El mapa se inclina (≈ 55°). `data-pitch` se actualiza en `idle`, que con WebGL por software y relieve tarda ≈ 9–11 s en
-    // una máquina en reposo (medido, 12 pulsaciones intercaladas contra el build anterior: misma latencia; no es un efecto del
-    // HUD). 20 s dejaba un margen de 2× que bajo carga (otra tarea en marcha) se agotaba: el `pitch` «seguía en 0».
-    await expect
-      .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
-      .toBeGreaterThan(45);
-    await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
+      await threeD(page).click();
+      await expect(threeD(page)).toHaveAttribute('aria-pressed', 'true');
+      await expect(page).toHaveURL(
+        /[?&]l=protectedAreas,boundaries,places,waterways,landcover,hillshade,terrain3d(&|$)/,
+      );
+      await expect(page).toHaveURL(/[?&]d=boquete(&|$)/); // el destino se conserva
+      // Se pide el relieve (solo ahora), con el aviso visible y UNO solo
+      await expect.poll(() => terrain.requests.length, { timeout: 20_000 }).toBeGreaterThan(0);
+      for (const url of terrain.requests) {
+        expect(url).toMatch(new RegExp(`^https://${TERRAIN_HOST}/terrarium/\\d+/\\d+/\\d+\\.png$`));
+      }
+      await expect(notice).toHaveCount(1);
+      await expect(notice).toBeVisible();
+      // La casilla «Relieve en 3D» y la de sombreado reflejan lo mismo (una sola fuente: la URL)
+      await expect(page.getByRole('checkbox', { name: 'Relieve en 3D' })).toBeChecked();
+      await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).toBeChecked();
+      // El mapa se inclina (≈ 55°). `data-pitch` se actualiza en `idle`, que con WebGL por software y relieve tarda ≈ 9–11 s en
+      // una máquina en reposo (medido, 12 pulsaciones intercaladas contra el build anterior: misma latencia; no es un efecto del
+      // HUD). 20 s dejaba un margen de 2× que bajo carga (otra tarea en marcha) se agotaba: el `pitch` «seguía en 0».
+      await expect
+        .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
+        .toBeGreaterThan(45);
+      await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'ready');
 
-    // Apagar: vuelve el mapa plano, desaparece el aviso y la URL deja las capas como estaban (el botón había añadido el sombreado)
-    await threeD(page).click();
-    await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
-    await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,places,waterways,landcover(&|$)/);
-    await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).not.toBeChecked();
-    await expect(notice).toHaveCount(0);
-    await expect
-      .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
-      .toBeLessThan(5);
-    expect(await watch.violations()).toEqual([]);
-    expect(watch.errors).toEqual([]);
-  });
+      // Apagar: vuelve el mapa plano, desaparece el aviso y la URL deja las capas como estaban (el botón había añadido el sombreado)
+      await threeD(page).click();
+      await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
+      await expect(page).toHaveURL(
+        /[?&]l=protectedAreas,boundaries,places,waterways,landcover(&|$)/,
+      );
+      await expect(page.getByRole('checkbox', { name: 'Sombreado del relieve' })).not.toBeChecked();
+      await expect(notice).toHaveCount(0);
+      await expect
+        .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
+        .toBeLessThan(5);
+      expect(await watch.violations()).toEqual([]);
+      expect(watch.errors).toEqual([]);
+    },
+  );
 
-  test('si el sombreado ya estaba activo (lo eligió la persona), apagar el 3D lo CONSERVA', async ({
-    page,
-  }) => {
-    await routeTerrain(page, 'ok');
-    await openMap(page, `${EXPLORE}?l=protectedAreas,boundaries,hillshade`);
-    await threeD(page).click();
-    await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,hillshade,terrain3d(&|$)/);
-    await threeD(page).click();
-    await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,hillshade(&|$)/);
-    await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
-  });
+  isolatedTest(
+    'si el sombreado ya estaba activo (lo eligió la persona), apagar el 3D lo CONSERVA',
+    async ({ page }) => {
+      await routeTerrain(page, 'ok');
+      await openMap(page, `${EXPLORE}?l=protectedAreas,boundaries,hillshade`);
+      await threeD(page).click();
+      await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,hillshade,terrain3d(&|$)/);
+      await threeD(page).click();
+      await expect(page).toHaveURL(/[?&]l=protectedAreas,boundaries,hillshade(&|$)/);
+      await expect(threeD(page)).toHaveAttribute('aria-pressed', 'false');
+    },
+  );
 
-  test('con movimiento reducido el cabeceo es inmediato (sin animación) y también llega a ≈ 55°', async ({
-    page,
-  }) => {
-    test.setTimeout(90_000); // el plazo de `data-pitch` (PITCH_SETTLE_MS) es mayor que el de 30 s por defecto
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await routeTerrain(page, 'ok');
-    await openMap(page, EXPLORE);
-    await threeD(page).click();
-    await expect
-      .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
-      .toBeGreaterThan(45);
-  });
+  isolatedTest(
+    'con movimiento reducido el cabeceo es inmediato (sin animación) y también llega a ≈ 55°',
+    async ({ page }) => {
+      test.setTimeout(90_000); // el plazo de `data-pitch` (PITCH_SETTLE_MS) es mayor que el de 30 s por defecto
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await routeTerrain(page, 'ok');
+      await openMap(page, EXPLORE);
+      await threeD(page).click();
+      await expect
+        .poll(async () => (await mapState(page)).pitch, { timeout: PITCH_SETTLE_MS })
+        .toBeGreaterThan(45);
+    },
+  );
 
-  test('mientras el mapa carga el 3D está apagado y no pide nada; la persona lo activa cuando el mapa está listo', async ({
-    page,
-  }) => {
-    const terrain = await routeTerrain(page, 'ok');
-    let release: () => void = () => undefined;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await page.route('**/data/panama-basemap.pmtiles', async (route) => {
-      await gate;
-      await route.continue();
-    });
-    await page.goto(EXPLORE);
-    await expect(page.locator('[data-hud-island]')).toHaveCount(4);
-    await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'loading');
-    await expect(threeD(page)).toBeDisabled();
-    await expect(layersTool(page)).toBeEnabled(); // no depende del mapa
-    release();
-    await expect(page.locator('[data-map-status="ready"]')).toBeVisible({ timeout: 60_000 });
-    await expect(threeD(page)).toBeEnabled();
-    expect(terrain.requests).toEqual([]);
-  });
+  isolatedTest(
+    'mientras el mapa carga el 3D está apagado y no pide nada; la persona lo activa cuando el mapa está listo',
+    async ({ page }) => {
+      const terrain = await routeTerrain(page, 'ok');
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.route('**/data/panama-basemap.pmtiles', async (route) => {
+        await gate;
+        await route.continue();
+      });
+      await page.goto(EXPLORE);
+      await expect(page.locator('[data-hud-island]')).toHaveCount(4);
+      await expect(page.locator('[data-map-status]')).toHaveAttribute('data-map-status', 'loading');
+      await expect(threeD(page)).toBeDisabled();
+      await expect(layersTool(page)).toBeEnabled(); // no depende del mapa
+      release();
+      await expect(page.locator('[data-map-status="ready"]')).toBeVisible({ timeout: 60_000 });
+      await expect(threeD(page)).toBeEnabled();
+      expect(terrain.requests).toEqual([]);
+    },
+  );
 });
 
 test.describe('filtro por tipo con el mapa dibujado', () => {
