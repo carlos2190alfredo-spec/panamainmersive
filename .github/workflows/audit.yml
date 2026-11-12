@@ -1,6 +1,7 @@
 # Vigilancia semanal: avisos de las dependencias (T-20) y vigencia de la evidencia de cobertura (T-19).
-# ESTADO: IMPLEMENTED, no VERIFIED: no se ha podido ejecutar fuera del entorno de desarrollo (no hay remoto). Los mismos
-# comandos (`pnpm check:audit`, `pnpm check:coverage`) sí se ejecutan en local (docs/testing.md).
+# ESTADO: corrió en GitHub los dos jobs, programado desde `main` (2026-10-26 y 2026-11-02, verde; E-98). NUNCA se ha visto
+# en rojo: no está probado que un fallo llegue a alguien. Los mismos comandos (`pnpm check:audit`, `pnpm check:coverage`)
+# se ejecutan en local (docs/testing.md).
 #
 # Va APARTE de ci.yml a propósito: la base de avisos de seguridad cambia aunque el código no cambie, y un aviso nuevo
 # sobre algo que no tiene relación con un cambio no debe bloquearlo (PROMPT-MAESTRO §18). Las licencias, que sí son

@@ -2,8 +2,11 @@ import { readFileSync } from 'node:fs';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, it } from 'vitest';
 import {
+  BASEMAP_ATTRIBUTION,
+  BASEMAP_SOURCE_ID,
   BASEMAP_SOURCE_LAYERS,
   PALETTE_KEYS,
+  TERRAIN_ATTRIBUTION,
   TERRAIN_SOURCE_ID,
   buildLegend,
   buildMapStyle,
@@ -18,6 +21,7 @@ import {
   MAP_LAYER_IDS,
   type MapLayerId,
 } from '@/domains/geography/map-url-state';
+import { SCOPE_SELECTORS, mutateAfter, parseThemes } from '../design/tokens-css';
 
 const palette = Object.fromEntries(
   PALETTE_KEYS.map((key, i) => [
@@ -86,6 +90,26 @@ describe('estilo del mapa', () => {
     expect(style.terrain).toBeUndefined();
     expect(usesTerrain(['terrain3d'])).toBe(true);
     expect(usesTerrain(['protectedAreas'])).toBe(false);
+  });
+
+  it('los créditos que MapLibre inyecta en su control llevan `lang` (inglés; «Relieve:» en español) y su texto no cambia (r2:F6)', () => {
+    const style = buildMapStyle(options(['hillshade']));
+    const attribution = (id: string): string =>
+      (style.sources[id] as { attribution?: string } | undefined)?.attribution ?? '';
+    const plain = (html: string): string => html.replace(/<[^>]+>/g, '');
+    const base = attribution(BASEMAP_SOURCE_ID);
+    expect(base).toBe(`<span lang="en">${BASEMAP_ATTRIBUTION}</span>`);
+    expect(plain(base)).toBe(BASEMAP_ATTRIBUTION);
+    const terrain = attribution(TERRAIN_SOURCE_ID);
+    expect(terrain).toContain('<span lang="en">AWS Terrain Tiles (SRTM, GMTED, ETOPO1)</span>');
+    expect(terrain).toContain('<span lang="es">Relieve:</span>');
+    expect(plain(terrain)).toBe(TERRAIN_ATTRIBUTION);
+    // Todo texto de los créditos está dentro de un elemento con `lang` (ninguno queda «suelto» en el idioma de la interfaz)
+    for (const html of [base, terrain]) {
+      expect(html.replace(/<span lang="[a-z]{2}">[^<]*<\/span>/g, '').trim()).toBe('');
+    }
+    // Las constantes de texto plano (registro de capas, página de fuentes) NO llevan marcas HTML
+    for (const text of [BASEMAP_ATTRIBUTION, TERRAIN_ATTRIBUTION]) expect(text).not.toMatch(/[<>]/);
   });
 
   it('terrain3d activa el relieve en 3D del estilo', () => {
@@ -184,14 +208,66 @@ describe('estilo del mapa', () => {
 });
 
 describe('paleta', () => {
-  it('cada clave se corresponde con un token CSS REAL declarado en tokens.css (claro y oscuro)', () => {
-    const css = readFileSync(new URL('../../../src/styles/tokens.css', import.meta.url), 'utf8');
-    const darkStart = css.indexOf('@media (prefers-color-scheme: dark)');
-    for (const key of PALETTE_KEYS) {
+  const tokensCss = readFileSync(
+    new URL('../../../src/styles/tokens.css', import.meta.url),
+    'utf8',
+  );
+
+  /**
+   * Las 13 claves de la paleta deben existir en CADA ámbito de tokens.css (claro, oscuro e inmersivo) y ser `#rrggbb`
+   * de 6 dígitos: `readPalette()` lee `documentElement` y lanza si falta una, y e2e/map-helpers.ts parsea el valor
+   * con `slice`. Se mira lo que declara CADA bloque (no el CSS partido por la primera `@media`: un bloque posterior
+   * taparía la ausencia en el anterior).
+   */
+  function missingPaletteTokens(css: string): string[] {
+    const { own } = parseThemes(css);
+    const scopes = [
+      ['claro', own.light],
+      ['oscuro', own.dark],
+      ['inmersivo', own.immersive],
+    ] as const;
+    return PALETTE_KEYS.flatMap((key) => {
       const name = paletteCssVariable(key);
-      expect(css.slice(0, darkStart), `claro: ${name}`).toContain(`${name}:`);
-      expect(css.slice(darkStart), `oscuro: ${name}`).toContain(`${name}:`);
-    }
+      const token = name.replace(/^--color-/, '');
+      return scopes.flatMap(([scope, tokens]) =>
+        /^#[0-9a-f]{6}$/.test(tokens[token] ?? '') ? [] : [`${scope}: ${name}`],
+      );
+    });
+  }
+
+  it('cada clave se corresponde con un token CSS REAL (#rrggbb) en los TRES ámbitos de tokens.css', () => {
+    expect(PALETTE_KEYS).toHaveLength(13);
+    expect(missingPaletteTokens(tokensCss)).toEqual([]);
+  });
+
+  /** La declaración `--color-<token>: #rrggbb;` del primer bloque que sigue a `marker` (lanza si no está). */
+  function declarationAfter(marker: string, token: string): string {
+    const found = new RegExp(`--color-${token}: #[0-9a-f]{6};`).exec(
+      tokensCss.slice(tokensCss.indexOf(marker)),
+    );
+    if (!found) throw new Error(`no hay --color-${token} después de «${marker}»`);
+    return found[0];
+  }
+
+  it('control: un token que falta SOLO en el ámbito inmersivo (u oscuro) se detecta y se nombra', () => {
+    const reef = declarationAfter(SCOPE_SELECTORS.immersive, 'map-reef');
+    const noImmersive = mutateAfter(tokensCss, SCOPE_SELECTORS.immersive, reef, '');
+    expect(missingPaletteTokens(noImmersive)).toEqual(['inmersivo: --color-map-reef']);
+
+    const water = declarationAfter(SCOPE_SELECTORS.darkMedia, 'map-water');
+    const noDark = mutateAfter(tokensCss, SCOPE_SELECTORS.darkMedia, water, '');
+    expect(missingPaletteTokens(noDark)).toEqual(['oscuro: --color-map-water']);
+  });
+
+  it('control: un valor que no es #rrggbb de 6 dígitos (rgb, #rgb) tampoco pasa', () => {
+    const land = declarationAfter(SCOPE_SELECTORS.immersive, 'map-land');
+    const rgb = mutateAfter(
+      tokensCss,
+      SCOPE_SELECTORS.immersive,
+      land,
+      '--color-map-land: rgb(17 34 64);',
+    );
+    expect(missingPaletteTokens(rgb)).toEqual(['inmersivo: --color-map-land']);
   });
 
   it('paletteCssVariable convierte camelCase en kebab-case', () => {

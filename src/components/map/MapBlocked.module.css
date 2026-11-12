@@ -1,0 +1,31 @@
+/* El aviso de «mapa desactivado por derechos»: el mismo hueco y fondo que el aviso de estado del lienzo (MapStage). */
+.stage {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 18rem;
+  background: var(--color-map-land);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--color-sunken);
+}
+
+/* En móvil el aviso se centra en lo que la hoja inferior deja libre (`--sheet-h` lo publica la hoja: su alto real). */
+@media (max-width: 55.999rem) {
+  .overlay {
+    padding-block-end: calc(var(--sheet-h, 5.5rem) + var(--space-4));
+  }
+}
+
+@media (min-width: 56rem) {
+  .overlay {
+    padding-inline: calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2) var(--hud-gap);
+  }
+}

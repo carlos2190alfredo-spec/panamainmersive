@@ -8,9 +8,18 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* La cabecera es fija (--header-height exacto): un elemento enfocado por teclado o un ancla no puede quedar debajo (2.4.11). */
+  scroll-padding-block-start: calc(var(--header-height) + var(--space-3));
 }
 
+/*
+ * Columna a pantalla completa (r1:V-01): en una página corta (404) el pie se pega al fondo en vez de dejar una banda vacía
+ * debajo; `main` absorbe el sobrante. Es una columna y no una rejilla: el hijo sticky (cabecera) y el absoluto (enlace de
+ * salto) siguen igual, y los hijos se estiran al ancho (el contenido no puede ensancharlos: no hay eje principal horizontal).
+ */
 body {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   min-block-size: 100dvh;
   background: var(--color-paper);
@@ -18,19 +27,44 @@ body {
   font-family: var(--font-text);
   font-size: var(--text-m);
   line-height: var(--leading-body);
-  font-optical-sizing: auto;
   overflow-wrap: break-word; /* alemán, francés y portugués: palabras largas sin desbordar */
-  hyphens: auto;
+  /*
+   * Sin guionado automático por defecto (r1:V-03): partía nombres propios («OpenS-treetMap»), titulares y celdas estrechas
+   * («oc-cupa-tion»). Solo se activa en los PÁRRAFOS DE LECTURA (`.page` y las secciones de la portada, más abajo), y solo en
+   * palabras largas; titulares, tablas y rótulos (los controles) vuelven a `manual`.
+   */
+  hyphens: manual;
 }
 
+main {
+  flex: 1 0 auto;
+}
+
+/* Párrafos de lectura: guionado automático solo en palabras de ≥ 10 letras y con ≥ 4 a cada lado (alemán y portugués, sin partir «estado» ni «revisión»). */
+.page,
+.hyphenate {
+  hyphens: auto;
+  hyphenate-limit-chars: 10 4 4;
+}
+
+/*
+ * Titulares en Playfair Display (ADR-0025). Solo h1–h3: sus trazos finos se pierden por debajo de --text-l, así que el
+ * texto pequeño y la interfaz van en Montserrat (--font-text). Revisado: ni Playfair ni Montserrat traen eje `opsz`
+ * (solo `wght`: 400–900 y 100–900), así que `font-optical-sizing` —ya «auto» por defecto— no hace nada y se retiró del
+ * body. Playfair trae la característica `lnum` y no `onum` (leído de su tabla GSUB), es decir, sus cifras por defecto son
+ * antiguas: en titulares con números («9 destinos») se piden las alineadas con las mayúsculas (`lining-nums`).
+ */
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
   font-weight: 600;
+  font-variant-numeric: lining-nums;
   line-height: var(--leading-tight);
   margin-block: 0 var(--space-3);
   text-wrap: balance;
+  /* Un titular no se parte con guion («explo-rada»): baja de línea por los espacios (r1:V-03). */
+  hyphens: manual;
 }
 
 h1 {
@@ -83,6 +117,8 @@ ol {
 table {
   border-collapse: collapse;
   inline-size: 100%;
+  /* Celdas: nombres, licencias y cifras en columnas estrechas no se parten con guion (r1:V-03, r1:V-14). */
+  hyphens: manual;
 }
 
 img,
@@ -113,6 +149,14 @@ svg {
 .lead {
   font-size: var(--text-l);
   color: var(--color-ink-muted);
+}
+
+/* Grupo de botones/enlaces de acción: separación entre ellos y aire respecto de lo que los precede (r1:V-02). */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
 }
 
 @media (prefers-reduced-motion: reduce) {

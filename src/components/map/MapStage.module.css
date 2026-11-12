@@ -13,6 +13,73 @@
   inset: 0;
 }
 
+/*
+ * Foco del LIENZO (WCAG 2.4.7; r2:F3). El anillo global (`:focus-visible` de base.css: 3 px + 2 px de separación, FUERA de la
+ * caja) lo recortaba todo: el lienzo ocupa el mapa entero, que a su vez recorta (`overflow: hidden`) y queda pegado al
+ * borde de la ventana y bajo la cabecera, así que enfocarlo cambiaba 16 píxeles de 1 024 000 y la persona de teclado no veía
+ * dónde estaba. Aquí el anillo va DENTRO de la caja (separación negativa): una moldura de 3 px de color de foco, y junto a
+ * ella, hacia dentro, otra de halo (la superficie) para que se lea sobre tierra clara, agua o relieve. El halo es un
+ * pseudo-elemento del contenedor: un `box-shadow` sobre un `<canvas>` queda DEBAJO de su contenido y no se vería.
+ * `border-radius: 0`: el anillo global redondea y el lienzo es un rectángulo a sangre.
+ */
+.stage :global(.maplibregl-canvas:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.stage .canvas:has(:global(.maplibregl-canvas:focus-visible))::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  z-index: 4;
+  border: 2px solid var(--color-focus-halo);
+  pointer-events: none;
+}
+
+/*
+ * «Atmósfera»: dos capas DECORATIVAS sobre el lienzo y bajo los marcadores y controles (z-index 0 frente a 1–3 de los
+ * marcadores y 2 de los controles): una viñeta que oscurece los bordes y, desde 56rem, un velo inferior que da base al
+ * dock del HUD (ficha y carrusel). No es profundidad ni clima ni ningún dato: la fuente no trae batimetría (E-25), así
+ * que no se dibuja «mar profundo» como si se midiera. Va AQUÍ y no en el HUD porque el HUD (z-index 10) pinta por encima
+ * de los controles de MapLibre: un velo suyo atenuaría la escala y los créditos (obligatorios por la licencia ODbL), que
+ * se sitúan justo en la franja que el velo oscurece más (hay una prueba que mide su contraste ya renderizado). Sin soporte
+ * de `color-mix` no se pinta. Las pruebas que miden el color real del lienzo la ocultan (`[data-atmosphere]`).
+ */
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .atmosphere {
+    background: radial-gradient(
+      ellipse 80% 80% at 50% 45%,
+      transparent 52%,
+      color-mix(in srgb, var(--color-brand-deep) 52%, transparent) 100%
+    );
+  }
+
+  @media (min-width: 56rem) {
+    .atmosphere {
+      background:
+        linear-gradient(
+          to top,
+          color-mix(in srgb, var(--color-brand-deep) 78%, transparent),
+          transparent 46%
+        ),
+        radial-gradient(
+          ellipse 80% 80% at 50% 45%,
+          transparent 52%,
+          color-mix(in srgb, var(--color-brand-deep) 52%, transparent) 100%
+        );
+    }
+  }
+}
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -23,10 +90,77 @@
   background: var(--color-sunken);
 }
 
+/* En móvil el aviso se centra en lo que la hoja inferior deja libre (`--sheet-h` lo publica la hoja: su alto real). */
+@media (max-width: 55.999rem) {
+  .overlay {
+    padding-block-end: calc(var(--sheet-h, 5.5rem) + var(--space-4));
+  }
+}
+
+/* En escritorio el aviso se centra en lo que el HUD deja libre (a la derecha del carril), no en todo el mapa. */
+@media (min-width: 56rem) {
+  .overlay {
+    padding-inline: calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2) var(--hud-gap);
+  }
+}
+
+/*
+ * Estado de carga (r1:V-19): el texto y, debajo, una barra fina. Con movimiento permitido un relleno la recorre TRES veces
+ * (≈ 4 s) y se detiene: nada infinito (WCAG 2.2.2: una animación de más de 5 s necesita pausa). Con movimiento reducido, o
+ * pasados esos 4 s, queda la pista quieta y el texto: la carga sigue diciéndose con palabras.
+ *
+ * Esta pantalla compite con el mapa por la misma CPU: con WebGL por software (el Chromium de las pruebas y de muchos equipos
+ * sin GPU) lo que se pinta mientras el mapa arranca le quita el turno. Medido hasta `ready` con un navegador recién abierto
+ * (mediana de 4–5 cargas; el build anterior a esta revisión, con fondo plano y sin barra animada: 3,6 s): con un resplandor
+ * radial de fondo y un barrido de `background-position` sobre un degradado, 4,7 s; con el fondo plano, 4,1 s; con la pista
+ * plana y un relleno que escala (`transform`) tras 2 s de espera, 3,8 s, igual que con la barra quieta. Por eso: fondo plano,
+ * SIN degradados, y el relleno ESPERA 2 s (`animation-delay`): en una carga normal no llega a verse y, si se alarga, es cuando
+ * informa. Con el relleno en marcha desde el primer momento (también con `transform` y `will-change`) la carga, ya con el navegador
+ * caliente, llegó a 4,7 s frente a 3,0 s del barrido anterior: una animación en curso cuesta aunque sea barata. `hud-css.test.ts` y `explore-hud.spec.ts` fijan las tres cosas.
+ */
 .loading {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
   margin: 0;
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
   font-weight: 600;
+}
+
+/* La pista y el relleno ocupan la MISMA celda (la segunda fila); el texto, la primera. */
+.loading::before,
+.loading::after {
+  content: '';
+  grid-area: 2 / 1;
+  inline-size: 9rem;
+  block-size: 0.25rem;
+  border-radius: var(--radius-pill);
+}
+
+.loading::before {
+  background: var(--color-line-strong);
+}
+
+.loading::after {
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .loading::after {
+    animation: shimmer 1.4s linear 2s 3;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .retry {
@@ -42,10 +176,11 @@
   cursor: pointer;
 }
 
+/* Avisos del mapa (enlace inválido, relieve fallido): en móvil, arriba a la izquierda sobre el mapa, sin pasar bajo el zoom ni las herramientas. */
 .notices {
   position: absolute;
-  inset-inline: var(--space-3);
-  inset-block-start: var(--space-3);
+  inset-inline: var(--space-3) calc(var(--target-min) + var(--hud-gap) * 2);
+  inset-block-start: calc(var(--hud-gap) + var(--target-min) + var(--space-3));
   z-index: 4;
   max-inline-size: 28rem;
   pointer-events: none;
@@ -55,7 +190,45 @@
   pointer-events: auto;
 }
 
+/*
+ * En escritorio flotan sobre el HUD (z-index por encima de `--z-hud`) bajo el buscador y con SU mismo ancho y su misma
+ * columna (r1:V-09: una placa plana de tres líneas, centrada en el mapa y no en el campo, tapaba marcadores y etiquetas):
+ * el buscador se centra entre el carril y la columna de herramientas, y aquí se usan los mismos márgenes (`--hud-rail-w`,
+ * `--hud-tools-w` y la separación del HUD). Tienen que poder leerse siempre: son avisos de estado (role=status). Con el
+ * lenguaje del HUD: radio, borde y sombra del vidrio, texto pequeño (dos líneas) y el filo de color del aviso.
+ */
+@media (min-width: 56rem) {
+  .notices {
+    inset-inline: calc(var(--hud-rail-w, 0px) + var(--hud-gap) * 2)
+      calc(
+        var(--hud-tools-w, var(--target-min)) + var(--hud-gap) * 2 + var(--hud-panel-col, 0px) +
+          min(var(--hud-gap), var(--hud-panel-col, 0px))
+      );
+    /* Ancho AUTOMÁTICO (el que dejan los dos márgenes de arriba) con un tope de 32rem, centrado: `min(32rem, 100%)` medía el 100 %
+       del mapa entero (el bloque contenedor de un elemento absoluto), no el hueco entre los márgenes, y con el panel abierto
+       (hueco de ≈ 380 px a 1024) desbordaba por la derecha y volvía a tapar el panel. */
+    margin-inline: auto;
+    inline-size: auto;
+    max-inline-size: 32rem;
+    inset-block-start: calc(var(--hud-gap) + var(--hud-search-h, var(--target-min)));
+    z-index: calc(var(--z-hud) + 1);
+  }
+
+  /* `div` (un elemento más de especificidad): gana a `.notice` de Notice.module.css sin depender del orden de las hojas. */
+  .notices > div {
+    padding: var(--space-2) var(--space-3);
+    margin-block-end: var(--space-2);
+    border: var(--glass-border);
+    border-inline-start: 4px solid var(--color-notice-fg);
+    border-radius: var(--radius-glass);
+    box-shadow: var(--shadow-depth-2);
+    font-size: var(--text-s);
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------------------- */
 /* Marcadores: botones HTML de al menos 44 px de objetivo, con la etiqueta visible al acercar, al pasar o al enfocar. */
+/* ------------------------------------------------------------------------------------------------------------- */
 .markerHost {
   z-index: 1;
 }
@@ -75,15 +248,25 @@
   border: 0;
   cursor: pointer;
   font: inherit;
+  /* `font: inherit` recoge la fuente de MapLibre (Helvetica Neue/Arial, 12px/20px: `.maplibregl-map` es el contenedor de los
+     marcadores), no la de la interfaz: los créditos y la escala ya fijan la suya. */
+  font-family: var(--font-text);
 }
 
+/*
+ * El punto: relleno de acento, aro de tinta y un aro exterior oscuro (se ve sobre tierra oscura, sobre agua clara y sobre
+ * el relieve). El estado seleccionado NO depende del color: crece, se invierte y su etiqueta queda abierta.
+ */
 .pin {
-  inline-size: 1.15rem;
-  block-size: 1.15rem;
+  position: relative;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
   background: var(--color-accent);
-  border: 3px solid var(--color-surface);
+  border: 3px solid var(--color-ink);
   border-radius: 50%;
-  box-shadow: var(--shadow-raised);
+  box-shadow:
+    0 0 0 2px var(--color-paper),
+    var(--shadow-depth-1);
   transition: transform var(--motion-fast) var(--ease-out);
 }
 
@@ -97,21 +280,52 @@
   border-color: var(--color-accent);
 }
 
-/* La etiqueta es el nombre accesible del botón: oculta SIN `display: none` (se seguiría leyendo). */
+/* Un pulso finito (dos veces) avisa de la selección; con movimiento reducido no hay pulso. */
+@media (prefers-reduced-motion: no-preference) {
+  .markerSelected .pin::after {
+    content: '';
+    position: absolute;
+    inset: -0.5rem;
+    border: 2px solid var(--color-accent);
+    border-radius: 50%;
+    animation: pulse 1.6s var(--ease-out) 2 both;
+  }
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(0.45);
+    opacity: 0.9;
+  }
+
+  to {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+/*
+ * La etiqueta es el nombre accesible del botón: oculta SIN `display: none` (se seguiría leyendo). Se VE:
+ *  - al pasar el cursor o enfocar con el teclado (contenido emergente: Escape la descarta, WCAG 1.4.13);
+ *  - si el destino está seleccionado;
+ *  - si hay sitio (`data-label-visible`, que pone `layoutMarkerLabels` con la lógica pura de `label-layout.ts`: no toca otro
+ *    botón ni otra etiqueta y cabe entera en el hueco libre del HUD). Sin ratón (táctil) es la única forma de saber cuál es cuál
+ *    (r1:V-15). Es el mismo chip de vidrio opaco de siempre (tinta sobre la base del token: el contraste ya medido).
+ */
 .label {
   position: absolute;
   inset-block-start: calc(100% - 0.35rem);
   inset-inline-start: 50%;
   translate: -50% 0;
   padding: 0.15rem 0.5rem;
-  background: var(--color-surface);
+  background: var(--color-glass-base);
   color: var(--color-ink);
-  border: 1px solid var(--color-line-strong);
+  border: var(--glass-border);
   border-radius: var(--radius-s);
   font-size: var(--text-s);
   font-weight: 600;
   white-space: nowrap;
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-depth-1);
   clip-path: inset(50%);
   inline-size: 1px;
   block-size: 1px;
@@ -119,10 +333,15 @@
   pointer-events: none;
 }
 
-.marker:hover .label,
-.marker:focus-visible .label,
-.markerSelected .label,
-.markerOpen .label {
+/*
+ * Escape descarta la etiqueta EMERGENTE (WCAG 1.4.13): con `data-label-dismissed` el cursor y el foco dejan de mostrarla y vuelve
+ * a su estado oculto de arriba mientras dure ese cursor o ese foco. Las que se ven por tener sitio o por estar seleccionadas no
+ * son emergentes y no dependen de eso (el script solo marca las otras).
+ */
+.marker:hover:not([data-label-dismissed]) .label,
+.marker:focus-visible:not([data-label-dismissed]) .label,
+.marker[data-label-visible] .label,
+.markerSelected .label {
   clip-path: none;
   inline-size: auto;
   block-size: auto;
@@ -138,14 +357,161 @@
   padding: 0;
   background: var(--color-accent);
   color: var(--color-on-accent);
-  border: 3px solid var(--color-surface);
+  border: 3px solid var(--color-ink);
   border-radius: 50%;
-  box-shadow: var(--shadow-raised);
+  box-shadow:
+    0 0 0 2px var(--color-paper),
+    var(--shadow-depth-1);
   font: inherit;
+  font-family: var(--font-text);
   font-weight: 800;
   cursor: pointer;
 }
 
 .cluster:hover {
   background: var(--color-accent-strong);
+}
+
+/* ------------------------------------------------------------------------------------------------------------- */
+/* Controles NATIVOS de MapLibre (zoom, brújula, escala, créditos), con la piel de los tokens. Su CSS pisa a un solo  */
+/* selector de clase (y fija `outline: none` en los botones), así que todo va con `.stage` + la clase de la librería.  */
+/* Sus propiedades son FÍSICAS (`top`, `right`, `margin`): se sustituyen por las mismas físicas, no por lógicas.     */
+/* ------------------------------------------------------------------------------------------------------------- */
+.stage :global(.maplibregl-ctrl-top-right) {
+  top: var(--hud-gap, var(--space-3));
+  right: var(--hud-gap, var(--space-3));
+}
+
+.stage :global(.maplibregl-ctrl-top-right .maplibregl-ctrl) {
+  margin: 0;
+}
+
+.stage :global(.maplibregl-ctrl-group) {
+  background: var(--surface-glass);
+  border: var(--glass-border);
+  border-radius: var(--radius-glass);
+}
+
+.stage :global(.maplibregl-ctrl-group:not(:empty)) {
+  box-shadow: var(--shadow-depth-1);
+}
+
+.stage :global(.maplibregl-ctrl-group button) {
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  color: var(--color-ink);
+}
+
+.stage :global(.maplibregl-ctrl-group button + button) {
+  border-block-start: 1px solid var(--color-line-soft);
+}
+
+.stage :global(.maplibregl-ctrl button:not(:disabled):hover),
+.stage :global(.maplibregl-ctrl button:not(:disabled):active) {
+  background-color: var(--color-sunken);
+}
+
+/* Anillo de foco del proyecto (doble: color + halo) en lugar del resplandor azul fijo de la librería. */
+.stage :global(.maplibregl-ctrl-group button:focus:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+  box-shadow: none;
+}
+
+/* Los iconos de la librería son negros: sobre vidrio oscuro se invierten SOLO ellos (no el botón: invertiría el foco). */
+.stage :global(.maplibregl-ctrl-icon) {
+  filter: invert(1);
+}
+
+/* Créditos (obligatorios por la licencia ODbL): píldora de vidrio con tinta y enlaces subrayados. */
+.stage :global(.maplibregl-ctrl-attrib.maplibregl-compact) {
+  min-height: 1.5rem;
+  background-color: var(--color-glass-base);
+  color: var(--color-ink);
+  border: var(--glass-border);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-text);
+  font-size: 0.75rem;
+  line-height: 1.5rem;
+}
+
+.stage :global(.maplibregl-ctrl-attrib a),
+.stage :global(.maplibregl-ctrl-attrib a:hover) {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+}
+
+.stage :global(.maplibregl-ctrl-attrib-button) {
+  background-color: transparent;
+  background-image: none;
+  color: var(--color-ink);
+}
+
+.stage :global(.maplibregl-ctrl-attrib-button)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentcolor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-1 4h2v2h-2zm0 4h2v5h-2z' fill-rule='evenodd'/%3E%3C/svg%3E")
+    center / 100% no-repeat;
+}
+
+.stage :global(.maplibregl-ctrl-attrib-button:focus:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+.stage :global(.maplibregl-ctrl-scale) {
+  background-color: transparent;
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+  border-width: 0 2px 2px;
+  font-family: var(--font-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-shadow:
+    0 0 3px var(--color-glass-base),
+    0 0 3px var(--color-glass-base);
+}
+
+/*
+ * En móvil la escala y los créditos (obligatorios por la licencia ODbL) se montan SOBRE la hoja inferior: `--sheet-h` es su
+ * alto real (la hoja lo publica, también mientras se abre), así que ni cerrada ni abierta los tapa. Antes de hidratar, el
+ * alto de una hoja cerrada típica.
+ */
+@media (max-width: 55.999rem) {
+  .stage :global(.maplibregl-ctrl-bottom-left),
+  .stage :global(.maplibregl-ctrl-bottom-right) {
+    bottom: var(--sheet-h, 5.5rem);
+  }
+
+  .stage :global(.maplibregl-ctrl-bottom-left .maplibregl-ctrl) {
+    margin: 0 0 var(--space-2) var(--space-3);
+  }
+
+  .stage :global(.maplibregl-ctrl-bottom-right .maplibregl-ctrl) {
+    margin: 0 var(--space-3) var(--space-2) 0;
+  }
+}
+
+/* En escritorio, la escala y los créditos quedan en la franja libre bajo el carrusel (el HUD la reserva). */
+@media (min-width: 56rem) {
+  .stage :global(.maplibregl-ctrl-bottom-left .maplibregl-ctrl) {
+    margin: 0 0 var(--space-2) var(--hud-gap);
+  }
+
+  .stage :global(.maplibregl-ctrl-bottom-right .maplibregl-ctrl) {
+    margin: 0 var(--hud-gap) var(--space-1) 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .stage :global(.maplibregl-ctrl-icon) {
+    filter: none;
+  }
+
+  .stage :global(.maplibregl-ctrl-attrib-button)::before {
+    background-color: ButtonText;
+  }
 }

@@ -36,6 +36,7 @@ const MANIFEST = {
       initialRevalidateSeconds: 3600,
       srcRoute: '/[locale]/destinations/[slug]',
     },
+    '/es/explore': { initialRevalidateSeconds: 3600, srcRoute: '/[locale]/explore' },
     '/sitemap.xml': { initialRevalidateSeconds: 3600, srcRoute: '/sitemap.xml' },
   },
 };
@@ -49,6 +50,8 @@ function healthyTree(): Tree {
     // Relleno poco comprimible: que el tamaño gzip sea de varios KB y se vea en la tabla (no «0.0 KB»).
     '.next/static/chunks/main.js': `/*${randomBytes(6000).toString('base64')}*/`,
     '.next/static/chunks/map.js': '/* Wrong magic number */'.repeat(10),
+    // El chunk de las islas del HUD de Explorar (diferido): se reconoce por el marcador `data-hud-island`
+    '.next/static/chunks/hud.js': `/*${randomBytes(1500).toString('base64')}*/ "data-hud-island"`,
     '.next/static/css/app.css': `/*${randomBytes(3000).toString('base64')}*/`,
     '.next/static/media/maplibre-gl.abc123.mjs': 'export default 1;'.repeat(50),
     '.next/static/media/maplibre-gl-worker.abc123.mjs': 'export default 2;'.repeat(50),
@@ -154,8 +157,17 @@ describe('check-bundle (script completo)', () => {
     expect(result.stderr).toMatch(/el mapa pesa/);
   });
 
+  it('superar el presupuesto de las islas diferidas del HUD FALLA, y se mide (sale en la tabla)', async () => {
+    const healthy = await run(materialize(healthyTree()));
+    expect(healthy.stdout).toMatch(/Islas del HUD .*: [\d.]+ KB gzip en 1 ficheros/);
+    expect(Number(/Islas del HUD .*: ([\d.]+) KB/.exec(healthy.stdout)?.[1])).toBeGreaterThan(0);
+    const result = await run(materialize(healthyTree()), { HUD_LAZY_BUDGET_KB: '0.001' });
+    expect(result.code).toBe(1);
+    expect(result.stderr).toMatch(/las islas del HUD pesan/);
+  });
+
   it.each(
-    ['JS_BUDGET_KB', 'CSS_BUDGET_KB', 'MAP_LAZY_BUDGET_KB'].flatMap((name) =>
+    ['JS_BUDGET_KB', 'CSS_BUDGET_KB', 'MAP_LAZY_BUDGET_KB', 'HUD_LAZY_BUDGET_KB'].flatMap((name) =>
       ['2l0', '0', '-5', 'NaN'].map((value) => [name, value] as const),
     ),
   )('un presupuesto no válido (%s=%s) detiene la puerta con código 2', async (name, value) => {
@@ -209,12 +221,45 @@ describe('check-bundle (script completo)', () => {
     expect(result.stderr).toContain('sitemap.xml');
   });
 
+  it('Explorar sin regeneración (revalidate) FALLA: sus insignias de cobertura se congelarían en el build (r0:F-07)', async () => {
+    const tree = healthyTree();
+    tree['.next/prerender-manifest.json'] = JSON.stringify({
+      routes: {
+        ...MANIFEST.routes,
+        '/es/explore': { initialRevalidateSeconds: false, srcRoute: '/[locale]/explore' },
+      },
+    });
+    const result = await run(materialize(tree));
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Explorar');
+    expect(result.stderr).toContain('/es/explore');
+  });
+
+  it('un manifiesto sin ninguna ruta de Explorar FALLA (no se da por buena)', async () => {
+    const tree = healthyTree();
+    const rest = Object.fromEntries(
+      Object.entries(MANIFEST.routes).filter(([route]) => route !== '/es/explore'),
+    );
+    tree['.next/prerender-manifest.json'] = JSON.stringify({ routes: rest });
+    const result = await run(materialize(tree));
+    expect(result.code).toBe(1);
+    expect(result.stderr).toMatch(/Explorar: el build no contiene ninguna ruta/);
+  });
+
   it('sin .next/prerender-manifest.json FALLA', async () => {
     const tree = healthyTree();
     delete tree['.next/prerender-manifest.json'];
     const result = await run(materialize(tree));
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('prerender-manifest.json');
+  });
+
+  it('sin el chunk de las islas del HUD FALLA (sin él, la comprobación no mediría nada)', async () => {
+    const tree = healthyTree();
+    delete tree['.next/static/chunks/hud.js'];
+    const result = await run(materialize(tree));
+    expect(result.code).toBe(1);
+    expect(result.stderr).toMatch(/chunk de las islas del HUD/);
   });
 
   it('menos de 3 ficheros del mapa diferido FALLA (¿cambió la forma de emitirlos?)', async () => {

@@ -1,5 +1,74 @@
+/*
+ * Región con desplazamiento horizontal + sombras que avisan de que queda contenido (r1:V-14). La sombra son dos
+ * pseudo-elementos del CONTENEDOR (no de la región enfocable: no se desplazan con ella), sin eventos y sin texto. El color
+ * sale de la tinta del tema con `color-mix` (o, sin él, del borde de vidrio): nunca un literal. Solo propiedades lógicas.
+ */
+.root {
+  --scroll-shade: var(--glass-edge);
+  --scroll-shade-size: 1.25rem;
+
+  position: relative;
+  max-inline-size: 100%;
+}
+
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .root {
+    --scroll-shade: color-mix(in srgb, var(--color-ink) 28%, transparent);
+  }
+}
+
 .scroll {
   overflow-x: auto;
   /* El foco ya lo dibuja :focus-visible global; el desplazamiento no debe romper el anillo */
   max-inline-size: 100%;
+}
+
+.root::before,
+.root::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inline-size: var(--scroll-shade-size);
+  pointer-events: none;
+  display: none;
+}
+
+.root::before {
+  inset-inline-start: 0;
+  background: linear-gradient(to right, var(--scroll-shade), transparent);
+}
+
+.root::after {
+  inset-inline-end: 0;
+  background: linear-gradient(to left, var(--scroll-shade), transparent);
+}
+
+/* Escritura de derecha a izquierda: el inicio es el lado derecho (hoy los cinco idiomas son de izquierda a derecha). */
+.root:dir(rtl)::before {
+  background: linear-gradient(to left, var(--scroll-shade), transparent);
+}
+
+.root:dir(rtl)::after {
+  background: linear-gradient(to right, var(--scroll-shade), transparent);
+}
+
+.root[data-more-start]::before,
+.root[data-more-end]::after {
+  display: block;
+}
+
+/* Sin JavaScript nadie calcula nada: en pantallas estrechas (donde las tablas no caben) se avisa por el final. */
+@media (scripting: none) and (max-width: 47.99rem) {
+  .root:not([data-ready])::after {
+    display: block;
+  }
+}
+
+/* Con colores forzados los degradados no se pintan: sin sombra (la región sigue siendo enfocable y se desplaza). */
+@media (forced-colors: active) {
+  .root[data-more-start]::before,
+  .root[data-more-end]::after,
+  .root:not([data-ready])::after {
+    display: none;
+  }
 }

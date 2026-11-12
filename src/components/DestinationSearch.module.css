@@ -1,0 +1,175 @@
+/*
+ * Buscador de destinos. Pensado para ir DENTRO de una superficie sólida o de vidrio (la portada, hoy): solo tokens
+ * semánticos, así que se ve igual en los tres ámbitos (claro, oscuro, inmersivo) y lo puede reutilizar Explorar.
+ * Reflow a 320 px: el campo puede encoger (`min-inline-size: 0`) y el botón baja de línea. Objetivos ≥ 44 px.
+ */
+.search {
+  display: grid;
+  /* Una columna que PUEDE encoger: sin `minmax(0, …)` el ancho intrínseco del campo (`size`, ≈ 20 caracteres) ensanchaba la
+     columna y, con el texto al 200 % en un teléfono, la portada ganaba desplazamiento horizontal (r2:F7). */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  /* Va DESPUÉS de los botones del héroe (r1:V-04: la llamada principal tiene que verse sin desplazarse): separación por arriba. */
+  margin-block-start: var(--space-5);
+}
+
+/*
+ * Sin JavaScript el campo no puede buscar nada (el emparejamiento es del navegador): se oculta el formulario en vez de dejar
+ * un cuadro que engaña (r0:F-09). Quedan los botones del héroe y las nueve tarjetas, que son enlaces reales.
+ */
+@media (scripting: none) {
+  .search {
+    display: none;
+  }
+}
+
+.label {
+  font-weight: 700;
+  font-size: var(--text-s);
+  letter-spacing: 0.02em;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.input {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 2px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  font: inherit;
+}
+
+.input::placeholder {
+  color: var(--color-ink-muted);
+  opacity: 1;
+}
+
+/* El anillo global fija otro radio al enfocar; aquí se conserva el del campo para que no «salte». */
+.input:focus-visible {
+  border-radius: var(--radius-m);
+}
+
+.submit {
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-5);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit:hover {
+  background: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+.submit:focus-visible {
+  border-radius: var(--radius-m);
+}
+
+/*
+ * Teléfonos (< 30rem): campo y botón en dos filas, a todo el ancho. En una sola fila el campo medía ≈ 200 px y el texto de
+ * ayuda se recortaba a media palabra («Busca entre los 9 des…»; r1:V-04); a todo el ancho cabe cualquiera de los cinco textos.
+ */
+@media (max-width: 29.99rem) {
+  .row {
+    flex-direction: column;
+  }
+
+  .input {
+    flex: 0 0 auto;
+    inline-size: 100%;
+  }
+
+  .submit {
+    inline-size: 100%;
+  }
+}
+
+.scope {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+/*
+ * Región viva: vacía hasta que se escribe; el texto es el recuento que oye quien usa un lector de pantalla. NO se oculta
+ * con `display: none` cuando está vacía: una región viva solo anuncia los cambios de una que ya estaba en el árbol.
+ */
+.status {
+  font-size: var(--text-s);
+  font-weight: 600;
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-m);
+}
+
+.resultLink {
+  display: grid;
+  align-content: center;
+  gap: var(--space-1);
+  min-block-size: var(--target-min);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+/* El enlace se reconoce por el subrayado del NOMBRE (1.4.1); el tipo, debajo, no lo lleva. */
+.resultName {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+
+.resultKind {
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.mapLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-accent-strong);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-m);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mapLink:hover {
+  background: var(--color-sunken);
+}
+
+.mapLink:focus-visible {
+  border-radius: var(--radius-m);
+}

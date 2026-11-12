@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * `scripts/check-deps.ts` de punta a punta (`pnpm check:licenses` y `pnpm check:audit`): la lógica pura se prueba en
@@ -23,6 +23,15 @@ import { afterEach, describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const SCRIPT = join(ROOT, 'scripts/check-deps.ts');
 const TSX = pathToFileURL(join(ROOT, 'node_modules/tsx/dist/loader.mjs')).href;
+
+/**
+ * Plazo explícito: cada llamada a `run` arranca un proceso `node --import tsx` (≈ 0,9 s en reposo) y tres pruebas
+ * lanzan DOS seguidos (≈ 1,7 s: `--policy`, «MPL-2.0…» y «un aviso solo de desarrollo…»). Con el plazo por defecto de 5 s
+ * (sin margen cuando la suite entera compite con ~100 trabajadores) «MPL-2.0…» vencía en una ejecución completa y
+ * pasaba aislada (revisión independiente de 5j, r0:F-04). Con 1,5 s fallan esas tres: el margen es real. Cada proceso
+ * hijo ya tiene su propio corte (`timeout` de `execFile`), así que un `pnpm` colgado no espera este plazo.
+ */
+vi.setConfig({ testTimeout: 120_000 });
 
 const dirs: string[] = [];
 afterEach(() => {

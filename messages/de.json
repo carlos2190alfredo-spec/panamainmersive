@@ -2,15 +2,15 @@
   "Meta": {
     "home": {
       "title": "{siteName}: Panama mit offenen, überprüfbaren Daten entdecken",
-      "description": "Karte, Relief und Quellen mit sichtbarer Herkunft, um Reisen durch Panama zu entdecken und zu planen. Entwicklungsversion."
+      "description": "Karte, Relief und Quellen mit sichtbarer Herkunft, um Panama anhand offener, überprüfbarer Daten zu entdecken und zu verstehen. Entwicklungsversion."
     },
     "explore": {
       "title": "Panama erkunden",
-      "description": "Karte von Panama mit den neun ersten Reisezielen und der gleichwertigen Textliste."
+      "description": "Karte von Panama mit den ersten neun Reisezielen und der gleichwertigen Textliste."
     },
     "destinations": {
       "title": "Reiseziele",
-      "description": "Die neun ersten Reiseziele von {siteName} und der Stand ihrer Daten."
+      "description": "Die ersten neun Reiseziele von {siteName} und der Stand ihrer Daten."
     },
     "destination": {
       "title": "{name}",
@@ -26,6 +26,9 @@
     },
     "notFound": {
       "title": "Seite nicht gefunden"
+    },
+    "og": {
+      "alt": "Logo von {siteName}: ein Buchstabe P mit einer Landschaft und einem Kompass."
     }
   },
   "Common": {
@@ -43,18 +46,23 @@
     "explore": "Entdecken",
     "destinations": "Reiseziele",
     "sources": "Quellen",
-    "accessibility": "Barrierefreiheit"
+    "accessibility": "Barrierefreiheit",
+    "menu": "Menü",
+    "cta": "Karte öffnen"
+  },
+  "Brand": {
+    "tagline": "Ein Land, unendlich viele Geschichten."
   },
   "Language": {
     "label": "Sprache",
     "menu": "Sprache auswählen",
     "current": "Aktuelle Sprache: {name}",
-    "help": "Beim Wechsel der Sprache bleiben Reiseziel, Karte und Filter erhalten."
+    "help": "Beim Wechsel der Sprache bleiben Reiseziel, Kartenansicht und aktive Ebenen erhalten."
   },
   "Home": {
     "eyebrow": "Entwicklungsversion",
     "title": "Panama, erkundet mit Karten und überprüfbaren Daten",
-    "lead": "Eine Plattform, um Reisen durch Panama zu entdecken, zu verstehen und zu planen. Sie stützt sich auf offene Quellen und zeigt immer, woher jedes Datum stammt.",
+    "lead": "Eine Plattform, um Panama anhand offener, überprüfbarer Quellen zu entdecken und zu verstehen. Jedes Datum zeigt, woher es stammt.",
     "ctaExplore": "Karte öffnen",
     "ctaDestinations": "Die neun Reiseziele ansehen",
     "principlesHeading": "So arbeiten wir",
@@ -69,11 +77,21 @@
       },
       "languages": {
         "title": "Fünf Sprachen",
-        "body": "Spanisch, Englisch, Portugiesisch, Französisch und Deutsch. Beim Sprachwechsel bleibt erhalten, was Sie gerade ansehen."
+        "body": "Spanisch, Englisch, Portugiesisch, Französisch und Deutsch. Beim Sprachwechsel bleiben Reiseziel und Kartenebenen erhalten."
       }
     },
     "statusHeading": "Aktueller Stand",
     "statusBody": "Dies ist eine Entwicklungsversion. Die Seiten der Reiseziele sind in Arbeit und die Übersetzungen warten auf eine menschliche Prüfung."
+  },
+  "Search": {
+    "label": "Ein Reiseziel suchen",
+    "placeholder": "Name des Reiseziels",
+    "submit": "Suchen",
+    "scope": "Die Suche umfasst nur die ersten neun Reiseziele, über ihren Namen in einer der fünf Sprachen; andere gebräuchliche Namen erkennt sie nicht. Sehenswürdigkeiten, Unterkünfte und Aktivitäten sind nicht enthalten.",
+    "resultsLabel": "Suchergebnisse",
+    "results": "{count, plural, =0 {Kein Reiseziel passt zu „{query}“.} one {# Reiseziel passt zu „{query}“.} other {# Reiseziele passen zu „{query}“.}}",
+    "viewOnMap": "Auf der Karte zeigen",
+    "viewOnMapLabel": "Auf der Karte zeigen: {name}"
   },
   "Explore": {
     "title": "Panama erkunden",
@@ -159,7 +177,7 @@
       "waterways": "Fluss oder Kanal",
       "places": "Ort (Punkt)"
     },
-    "attribution": "Basiskarte: © OpenStreetMap contributors, Overture Maps Foundation (Version {release}). Referenzkartografie: enthält keine offiziellen Grenzen.",
+    "attribution": "Basiskarte: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (Version {release}). Referenzkartografie: enthält keine offiziellen Grenzen.",
     "controls": {
       "zoomIn": "Vergrößern",
       "zoomOut": "Verkleinern",
@@ -223,6 +241,48 @@
       "layerOff": "Aktivieren Sie die Ebene „Schutzgebiete“, um Gebiete auszuwählen.",
       "waiting": "Warten, bis die Karte fertig gezeichnet ist.",
       "mapUnavailable": "Die Karte ist nicht verfügbar, daher gibt es keine Gebiete aufzulisten."
+    },
+    "filter": {
+      "heading": "Art des Reiseziels",
+      "all": "Alle",
+      "count": "{count, plural, one {# Reiseziel} other {# Reiseziele}}",
+      "announce": "{count, plural, =0 {Kein Reiseziel entspricht dem Filter.} one {# Reiseziel wird angezeigt.} other {# Reiseziele werden angezeigt.}}"
+    },
+    "search": {
+      "label": "Reiseziele suchen",
+      "placeholder": "Name des Reiseziels",
+      "count": "{count, plural, one {# Reiseziel passt zur Suche.} other {# Reiseziele passen zur Suche.}}",
+      "empty": "Kein Reiseziel passt zur Suche.",
+      "clear": "Suche zurücksetzen"
+    },
+    "carousel": {
+      "previous": "Vorherige Reiseziele",
+      "next": "Nächste Reiseziele",
+      "hide": "Reiseziele ausblenden",
+      "show": "Reiseziele einblenden"
+    },
+    "featured": {
+      "reframe": "Auf das Reiseziel zentrieren"
+    },
+    "tools": {
+      "label": "Kartenwerkzeuge",
+      "threeD": "3D-Relief",
+      "threeDShort": "3D",
+      "threeDNotice": "Beim Einschalten fordert Ihr Browser das Relief von Amazon Web Services an, das dabei Ihre IP-Adresse erhält.",
+      "layersOpen": "Ebenen und Legende"
+    },
+    "sheet": {
+      "open": "{title}: Karteninformationen öffnen",
+      "close": "{title}: Karteninformationen schließen"
+    },
+    "panel": {
+      "toggle": "Informationsbereich ein- oder ausblenden"
+    },
+    "hud": {
+      "railLabel": "Kartenfilter und Ebenen",
+      "searchRegionLabel": "Reiseziel-Suche",
+      "carouselLabel": "Reiseziel-Karussell",
+      "mapUnavailable": "Nicht verfügbar: Die Karte ist nicht aktiv."
     }
   },
   "Destinations": {
@@ -273,6 +333,7 @@
       "UNAVAILABLE": "Nicht verfügbar",
       "ERROR": "Fehler bei der Prüfung"
     },
+    "geometryLabel": "Geometrie",
     "observation": {
       "geoCounty": "Distriktgrenze aus OpenStreetMap abgeleitet, nicht offiziell.",
       "geoRegionCountyLocality": "Provinz, Distrikt und Ort: drei verschiedene Einheiten, aus OpenStreetMap abgeleitet.",

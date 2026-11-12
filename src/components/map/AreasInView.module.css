@@ -3,7 +3,7 @@
 }
 
 .heading {
-  font-size: var(--text-l);
+  composes: eyebrow from '../../styles/glass.module.css';
 }
 
 .help,
@@ -14,12 +14,14 @@
 
 .list {
   list-style: none;
-  margin: 0;
-  padding: 0;
   display: grid;
   gap: var(--space-2);
   max-block-size: 18rem;
   overflow-y: auto;
+  /* La lista desplaza: su caja recorta el anillo de foco (contorno + halo, ≈ 8 px) de los botones a todo el ancho y de
+     la primera y la última fila (r2:N5). El relleno le da sitio y el margen negativo deja el contenido donde estaba. */
+  padding: var(--space-2);
+  margin: calc(-1 * var(--space-2));
 }
 
 .item {

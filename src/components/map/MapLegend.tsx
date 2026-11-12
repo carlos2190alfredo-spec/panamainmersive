@@ -73,7 +73,8 @@ function Legend({ terrainAllowed }: { terrainAllowed: boolean }) {
   );
   return (
     <section className={styles.legend} aria-labelledby="map-legend-heading">
-      <h2 id="map-legend-heading" className={styles.heading}>
+      {/* El título visible es el del grupo plegable del carril; este encabezado da nombre a la región «Leyenda». */}
+      <h2 id="map-legend-heading" className="visually-hidden">
         {t('heading')}
       </h2>
       <ul className={styles.list}>

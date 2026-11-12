@@ -1,0 +1,117 @@
+/*
+ * Superficies de vidrio del HUD de Explorar (ADR-0025 §5), compartidas por CLASE (`composes`) para no repetir las mismas
+ * reglas en cada panel. Reglas que se vigilan (tests/unit/design/hud-css.test.ts):
+ *  - el relleno por defecto es la base OPACA del token (`--color-glass-base`): es lo que ven los móviles, `forced-colors`
+ *    y los navegadores sin `color-mix`. La translucidez (`--surface-glass`, opacidad ≥ 0,85 verificada sobre el peor
+ *    fondo posible) solo se activa desde 56rem;
+ *  - `backdrop-filter` solo como mejora progresiva: `@supports` + ≥ 56rem + puntero fino con hover, y SOLO en la clase
+ *    `.blur`. Repinta en cada fotograma de WebGL, así que como MÁXIMO tres superficies lo piden a la vez (la prueba
+ *    cuenta los `composes: blur` de toda la interfaz de Explorar);
+ *  - radio ≤ 12 px (`--radius-glass`): con desenfoque, las esquinas redondeadas grandes se ven mal en Safari.
+ * Con `prefers-reduced-transparency` o `prefers-contrast: more` los tokens ya valen opaco y sin desenfoque
+ * (`--glass-alpha: 1`, `--glass-blur: 0px`), así que aquí no hace falta ningún caso aparte.
+ */
+.surface {
+  background: var(--color-glass-base);
+  color: var(--color-ink);
+  border: var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-depth-2);
+}
+
+@media (min-width: 56rem) {
+  .surface {
+    background: var(--surface-glass);
+  }
+}
+
+@media (min-width: 56rem) and (hover: hover) and (pointer: fine) {
+  @supports (backdrop-filter: blur(1px)) {
+    .blur {
+      backdrop-filter: blur(var(--glass-blur));
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .surface {
+    background: Canvas;
+    border: 1px solid CanvasText;
+  }
+}
+
+/*
+ * Barra de desplazamiento de los paneles del HUD que desplazan (carril, panel, carrusel): visible SIEMPRE y fina, con
+ * tokens. Sin ella, en macOS la barra «superpuesta» desaparece y nada avisa de que el panel sigue más abajo.
+ * Chrome y Safari: `::-webkit-scrollbar` (ocupa sitio, no se oculta). Firefox: las propiedades estándar.
+ */
+@supports selector(::-webkit-scrollbar) {
+  .scroll::-webkit-scrollbar {
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+  }
+
+  .scroll::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border: 2px solid transparent;
+    border-radius: var(--radius-pill);
+    background-clip: content-box;
+  }
+
+  .scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+/*
+ * Indicio de que hay MÁS contenido abajo (r1:V-08), sin degradados (el HUD no pinta ninguno: ver hud-css.test.ts) y sin
+ * JavaScript: un `::after` de alto 0 PEGADO al borde inferior del panel (`position: sticky`) cuya sombra difusa, del color de
+ * la superficie, funde las últimas líneas. Solo se pinta cuando el panel puede desplazar hacia abajo (consulta de estado de
+ * desplazamiento del contenedor: `scrollable: bottom`; sin soporte no hay nada que pintar y queda la barra de desplazamiento,
+ * que es siempre visible y fina más arriba). Al llegar al final deja de poder desplazar y la sombra desaparece, así que
+ * nunca atenúa la última línea de un panel que cabe entero.
+ */
+@supports (container-type: scroll-state) {
+  .cue {
+    container-type: scroll-state;
+  }
+
+  .cue::after {
+    content: '';
+    display: block;
+    position: sticky;
+    inset-block-end: 0;
+    block-size: 0;
+    box-shadow: 0 -0.25rem 0.75rem 0.75rem var(--color-glass-base);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @container scroll-state(scrollable: bottom) {
+    .cue::after {
+      opacity: 1;
+    }
+  }
+}
+
+/*
+ * Rótulo de grupo del HUD (r1:V-21): los títulos de grupo («Tipo de destino», «Capas», «Leyenda», «Destinos», el panel de
+ * información) eran Playfair de ≈ 22 px, MÁS grandes que el `<h1>` «Explorar Panamá» (≈ 21 px): cinco títulos del mismo
+ * peso competían. Ahora son rótulos pequeños en mayúsculas espaciadas (Montserrat 700, como el rótulo del tablero de marca
+ * y el de la ficha) y el único título en Playfair del carril es el `<h1>`. `text-transform` no cambia el texto accesible.
+ */
+.eyebrow {
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: var(--leading-tight);
+  text-transform: uppercase;
+}

@@ -1,65 +1,333 @@
+/*
+ * Cabecera fija de ALTURA EXACTA (ADR-0025 §7): `block-size: var(--header-height)` —no `min-block-size`— y una sola fila
+ * sin `flex-wrap` en todos los anchos, porque Explorar mide `100dvh − var(--header-height)` y una cabecera que crece
+ * con el idioma desbordaría el mapa. Montserrat es ≈ 12 % más ancha que la fuente anterior y el alemán o el francés
+ * alargan los rótulos: lo que no cabe NO baja de línea, se reorganiza por anchura (de menos a más espacio).
+ *
+ * La anchura que decide NO es la de la ventana sino la de la PROPIA cabecera, medida con una CONSULTA DE CONTENEDOR
+ * (`container-type: inline-size`): las `rem` de una consulta de contenedor son las del tamaño de letra REAL del documento,
+ * así que con el texto agrandado (WCAG 1.4.4: ajuste de la persona, o `html { font-size: 150 % }`) el espacio disponible
+ * en `rem` se encoge y la cabecera pasa antes a la disposición reducida. Con `@media` no ocurría (r2:F7): sus `rem` valen
+ * siempre el tamaño inicial del navegador, y a 390 px con el texto al 200 % el rótulo se partía letra a letra, se salía de
+ * los 4 rem y la portada ganaba desplazamiento horizontal. Anchos del CONTENIDO de la cabecera (sin el relleno lateral):
+ *   < 16rem  solo la marca P (el rótulo se oculta; el nombre accesible ya lo da el `aria-label` del enlace) + menú + globo
+ *   < 28rem  rótulo sin filetes rojos
+ *   < 34rem  el selector de idioma es solo un globo (LocaleSwitcher.module.css)
+ *   ≥ 34rem  el selector vuelve a mostrar el nombre del idioma
+ *   ≥ 46rem  aparece la llamada a la acción «Abrir el mapa»
+ *   ≥ 61rem  los tres enlaces se muestran en línea y el botón del menú desaparece
+ * Lo que cada nivel necesita, MEDIDO en un navegador (Chromium 156, a 100 %, suma de las cajas más los huecos): marca + rótulo
+ * + menú + globo ≈ 246 px = 15,4rem; con el nombre del idioma y la llamada a la acción, 31,5–32,8rem (es, de, pt, fr); con los
+ * tres enlaces en línea, 47,2–49,8rem. Los umbrales de arriba dejan siempre más que eso; la prueba E2E recorre anchos × tamaños
+ * de letra y comprueba que nada se sale de la cabecera. El relleno lateral sí sigue las `@media` (la cabecera no puede cambiar su propio relleno desde una
+ * consulta sobre sí misma); es cosmético.
+ *
+ * Variables locales (todo sale de tokens semánticos que YA cambian con el tema, así que valen en los tres ámbitos:
+ * claro, oscuro e inmersivo —siempre oscuro, `:root:has([data-immersive])`—; tests/unit/design/shell-css.test.ts mide
+ * cada par en los tres):
+ *   --header-bg / --header-fg      fondo y texto (≥ 4,5:1)
+ *   --header-fg-muted              texto secundario del rótulo (≥ 4,5:1)
+ *   --header-line                  raya inferior (decorativa)
+ *   --header-control-line          borde de los controles (≥ 3:1: 1.4.11)
+ *   --header-current               marca de la página actual (≥ 3:1). El rojo NO vale: sobre fondo oscuro da ≈ 2,7:1.
+ * La página actual no se indica solo con el color: lleva además una barra inferior y `aria-current="page"`.
+ */
 .header {
+  --header-bg: var(--color-surface);
+  --header-fg: var(--color-ink);
+  --header-fg-muted: var(--color-ink-muted);
+  --header-line: var(--color-line-soft);
+  --header-control-line: var(--color-line-strong);
+  --header-current: var(--color-accent-strong);
+
   position: sticky;
   inset-block-start: 0;
   z-index: var(--z-header);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-5);
-  min-block-size: var(--header-height);
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-surface);
-  border-block-end: 1px solid var(--color-line-soft);
+  gap: var(--space-2);
+  block-size: var(--header-height);
+  padding-inline: var(--space-3);
+  background: var(--header-bg);
+  color: var(--header-fg);
+  border-block-end: 1px solid var(--header-line);
+  /* Los umbrales de abajo se miden sobre el ancho de ESTA caja (ver el comentario de arriba). Sin nombre: así la consulta
+     del selector de idioma (otro archivo) alcanza a su contenedor más cercano, que es esta cabecera. */
+  container-type: inline-size;
 }
 
+@media (min-width: 30rem) {
+  .header {
+    gap: var(--space-3);
+    padding-inline: var(--space-4);
+  }
+}
+
+@media (min-width: 64rem) {
+  .header {
+    gap: var(--space-4);
+    padding-inline: var(--space-5);
+  }
+}
+
+/* Marca + rótulo vivo «PANAMÁ / IMMERSIVE». El nombre accesible lo da el aria-label del enlace. */
 .brand {
   display: inline-flex;
   align-items: center;
+  flex: 0 1 auto;
   gap: var(--space-2);
+  min-inline-size: 0;
   min-block-size: var(--target-min);
-  color: var(--color-ink);
+  color: var(--header-fg);
   text-decoration: none;
+}
+
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  text-transform: uppercase;
+  /*
+   * Un nombre propio es UNA línea: ni con guion ni letra a letra (r2:F7: con el texto al 200 % se apilaba en una columna de
+   * 42 px de ancho y 402 de alto y se salía de la cabecera). Cuando no cabe, no se parte: se OCULTA entero con la consulta de
+   * contenedor de más abajo (queda la marca P; el nombre accesible lo da el `aria-label` del enlace).
+   */
+  white-space: nowrap;
+  hyphens: none;
+  overflow-wrap: normal;
+}
+
+.primary {
   font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 700;
-  font-size: var(--text-l);
+  letter-spacing: 0.1em;
+  text-align: center;
 }
 
-/* Marca provisional: dos mares separados por un istmo (no es un logotipo definitivo) */
-.mark {
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
-  border-radius: 50%;
-  background: linear-gradient(
-    90deg,
-    var(--color-accent) 0 42%,
-    var(--color-ink) 42% 58%,
-    var(--color-accent-strong) 58%
-  );
+/* «IMMERSIVE» en caja pequeña y espaciada, flanqueada por dos filetes rojos (adorno: el rojo no es texto). */
+.secondary {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-block-start: 0.25rem;
+  color: var(--header-fg-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
 }
 
+.secondary::before,
+.secondary::after {
+  content: '';
+  flex: 1 1 0;
+  min-inline-size: 0.5rem;
+  border-block-start: 2px solid var(--color-cta);
+}
+
+/* El último carácter lleva también el espaciado: se compensa para que ambos filetes queden a la misma distancia. */
+.secondary::after {
+  margin-inline-start: -0.3em;
+}
+
+@container (max-width: 27.99rem) {
+  .secondary::before,
+  .secondary::after {
+    display: none;
+  }
+}
+
+/* Sin sitio para el rótulo (< 16rem de cabecera: texto agrandado en un teléfono): solo la marca P, en un objetivo de 44 px. */
+@container (max-width: 15.99rem) {
+  .wordmark {
+    display: none;
+  }
+
+  .brand {
+    justify-content: center;
+    min-inline-size: var(--target-min);
+  }
+}
+
+/* Botón del menú: solo con soporte de popover y por debajo de 64rem (más abajo). Icono de tres barras con bordes. */
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  margin-inline-start: auto;
+  padding: 0;
+  border: 1px solid var(--header-control-line);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--header-fg);
+  cursor: pointer;
+}
+
+.menuButton:has(+ .nav:popover-open) {
+  background: var(--color-sunken);
+}
+
+.menuIcon {
+  position: relative;
+  display: block;
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+  border-block: 2px solid currentcolor;
+}
+
+.menuIcon::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 50%;
+  border-block-start: 2px solid currentcolor;
+  transform: translateY(-50%);
+}
+
+/*
+ * Navegación. Es un `[popover]`: la hoja del agente de usuario le da posición fija centrada, borde, relleno, color y
+ * fondo propios y la oculta mientras no está abierta. Aquí se anulan TODOS (la regla de autor gana al agente de
+ * usuario) para que en línea sea una fila normal; el modo desplegable se activa más abajo solo con soporte.
+ */
 .nav {
+  display: flex;
   flex: 1 1 auto;
+  align-items: center;
+  min-inline-size: 0;
+  position: static;
+  inset-block: auto;
+  inset-inline: auto;
+  inline-size: auto;
+  block-size: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  color: inherit;
 }
 
 .list {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-4);
-  list-style: none;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 .link {
   display: inline-flex;
   align-items: center;
   min-block-size: var(--target-min);
-  padding-inline: var(--space-1);
-  color: var(--color-ink);
-  font-weight: 500;
+  padding-inline: var(--space-2);
+  border-block: 3px solid transparent;
+  color: var(--header-fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
 }
 
 .link[aria-current='page'] {
-  color: var(--color-accent-strong);
-  font-weight: 700;
+  border-block-end-color: var(--header-current);
+}
+
+/* Llamada a la acción: oculta en pantallas estrechas (el menú ya lleva «Explorar»). `.header .cta` gana a `.button`. */
+.header .cta {
+  display: none;
+  flex: none;
+  padding-inline: var(--space-4);
+  white-space: nowrap;
+}
+
+@container (min-width: 46rem) {
+  .header .cta {
+    display: inline-flex;
+  }
+}
+
+/*
+ * En Explorar la llamada «Abrir el mapa» enlazaría a la propia pantalla y, roja, sería lo más saturado de la vista del mapa
+ * (r1:V-17). `data-explore` lo pone esa página en su contenedor —NO `data-immersive`, que también lleva la portada, donde la
+ * llamada SÍ es la entrada al mapa—; «Explorar» sigue en el menú y la marca sigue llevando a la portada, así que no se pierde
+ * ninguna ruta ni cambia el orden de tabulación del resto. Especificidad (0,3,1) frente a (0,2,0): gana a cualquier ancho.
+ */
+body:has([data-explore]) .header .cta {
+  display: none;
+}
+
+/* Menú desplegable: solo bajo 61rem de cabecera y solo si el navegador conoce `:popover-open`. */
+@container (max-width: 60.99rem) {
+  @supports selector(:popover-open) {
+    .menuButton {
+      display: inline-flex;
+    }
+
+    .nav:not(:popover-open) {
+      display: none;
+    }
+
+    .nav:popover-open {
+      display: block;
+      position: fixed;
+      inset-block-start: var(--header-height);
+      inset-inline: 0;
+      max-block-size: calc(100dvh - var(--header-height));
+      padding: var(--space-2) var(--space-3) var(--space-4);
+      overflow-y: auto;
+      background: var(--header-bg);
+      border-block-end: 1px solid var(--header-line);
+      box-shadow: var(--shadow-depth-3);
+    }
+
+    .nav:popover-open .list {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    /* En vertical la marca de la página actual es una barra a un lado (la inferior no se distinguiría entre filas). */
+    .nav:popover-open .link {
+      border-block: 0;
+      border-inline-start: 4px solid transparent;
+      padding-inline: var(--space-3);
+    }
+
+    .nav:popover-open .link[aria-current='page'] {
+      border-inline-start-color: var(--header-current);
+    }
+  }
+
+  /* Sin popover (navegadores antiguos): los enlaces quedan en línea y la fila se desplaza en vez de desbordar la página. */
+  @supports not selector(:popover-open) {
+    .nav {
+      flex-basis: 0;
+      overflow-x: auto;
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .link {
+    border-block-color: Canvas;
+  }
+
+  .link[aria-current='page'] {
+    border-block-end-color: Highlight;
+  }
+
+  .nav:popover-open .link {
+    border-inline-start-color: Canvas;
+  }
+
+  .nav:popover-open .link[aria-current='page'] {
+    border-inline-start-color: Highlight;
+  }
 }

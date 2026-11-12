@@ -26,7 +26,9 @@ export default async function SourcesPage() {
       <h1>{t('title')}</h1>
       <p className="lead">{t('lead')}</p>
 
-      <section aria-labelledby="used-title">
+      {/* Sin `aria-labelledby`: el encabezado ya nombra la REGIÓN desplazable de la tabla, y dos hitos con el mismo nombre
+          (la sección y la región) incumplen `landmark-unique` (r2:F1). Sin nombre, una `<section>` no es un hito. */}
+      <section>
         <h2 id="used-title">{t('usedHeading')}</h2>
         <ScrollRegion labelledBy="used-title">
           <table className={styles.table}>

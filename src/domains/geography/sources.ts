@@ -1,6 +1,9 @@
 /**
  * Fuentes de datos mostradas en la página «Fuentes y atribuciones» (docs/data-sources.md).
- * Los nombres, licencias y atribuciones conservan su texto ORIGINAL: no se traducen.
+ * Los nombres, licencias y atribuciones conservan su texto ORIGINAL: no se traducen. La página los pinta con `lang="en"`
+ * (el idioma de las licencias y de las atribuciones de esas fuentes), así que TODO lo que se escriba aquí debe estar
+ * en inglés: una explicación en español dentro de una celda `lang="en"` la leería un lector de pantalla con la voz
+ * equivocada (r0:F-14; las traducciones al idioma de la interfaz van en las claves `Sources.*` de messages/).
  * Hoy ninguna política de derechos está `verified` (docs/provider-rights.md).
  */
 export type RightsStatus = 'verified' | 'provisional';
@@ -28,7 +31,7 @@ export const USED_SOURCES: readonly UsedSource[] = [
     id: 'overture',
     name: 'Overture Maps Foundation, release 2026-09-23.1',
     useKey: 'overture',
-    license: 'ODbL (datos derivados de OpenStreetMap); Places: CDLA-Permissive-2.0',
+    license: 'ODbL (data derived from OpenStreetMap); Places: CDLA-Permissive-2.0',
     rights: 'provisional',
     attribution: '© OpenStreetMap contributors, Overture Maps Foundation',
   },
@@ -42,7 +45,7 @@ export const USED_SOURCES: readonly UsedSource[] = [
   },
   {
     id: 'noto-sans-glyphs',
-    name: 'Noto Sans (glifos SDF de openmaptiles/fonts v2.0)',
+    name: 'Noto Sans (SDF glyphs from openmaptiles/fonts v2.0)',
     useKey: 'glyphs',
     license: 'SIL Open Font License 1.1',
     rights: 'provisional',

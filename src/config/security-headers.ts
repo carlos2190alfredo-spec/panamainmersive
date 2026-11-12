@@ -56,10 +56,12 @@ export function securityHeaders(opts: SecurityHeadersOptions): HeaderEntry[] {
     { key: 'Content-Security-Policy', value: buildCsp(opts) },
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-    // La geolocalización solo se pide con consentimiento explícito y desde este origen.
+    // Ninguna capacidad sensible del navegador: el producto no pide ubicación (ADR-0025 §9: sin botón de «mi ubicación»),
+    // cámara, micrófono, pagos ni USB. Si algún día se añade una función así, se abre aquí, solo para este origen
+    // (`geolocation=(self)`), a la vez que su botón, su aviso de privacidad y su prueba (r3:N-03).
     {
       key: 'Permissions-Policy',
-      value: 'geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()',
+      value: 'geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()',
     },
     { key: 'X-Frame-Options', value: 'DENY' },
     { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },

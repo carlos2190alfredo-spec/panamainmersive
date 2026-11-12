@@ -1,0 +1,128 @@
+/*
+ * Panel derecho del HUD (el único <aside>). En móvil es una tarjeta más de la pila bajo el mapa (siempre abierta, sin
+ * botón). Desde 56rem flota sobre el mapa, anclado ABAJO a la derecha (encima del carrusel), y se pliega a un botón de
+ * 44 px. Su colocación en la rejilla la da la página (`className`); aquí solo su forma y sus estados.
+ * Vidrio por clase compartida (`composes`): sin desenfoque propio (el tope es de tres superficies, ver glass.module.css).
+ */
+.panel {
+  composes: surface from '../../styles/glass.module.css';
+
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: var(--target-min);
+}
+
+.title {
+  composes: eyebrow from '../../styles/glass.module.css';
+
+  margin: 0;
+  color: var(--color-ink);
+  max-inline-size: none;
+}
+
+.body {
+  composes: scroll cue from '../../styles/glass.module.css';
+
+  min-block-size: 0;
+  /* Holgura lateral para el anillo de foco (≈ 8 px: contorno + halo) de lo que llega al borde del cuerpo, que desplaza y lo
+     recortaría (r2:N5); el margen negativo devuelve el contenido a su sitio. */
+  padding-inline: var(--space-2);
+  margin-inline: calc(-1 * var(--space-2));
+}
+
+/* El botón solo existe desde 56rem (en móvil el panel no se pliega). */
+.toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: none;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+
+.toggle:hover,
+.toggle[aria-expanded='true'] {
+  background: var(--color-sunken);
+}
+
+/* Icono de «panel lateral»: un marco con una divisoria a la derecha (todo en `currentcolor`). */
+.icon {
+  position: relative;
+  display: block;
+  inline-size: 1.25rem;
+  block-size: 1rem;
+  border: 2px solid currentcolor;
+  border-radius: 3px;
+}
+
+.toggleText {
+  font-size: var(--text-s);
+}
+
+.icon::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0.3rem;
+  border-inline-start: 2px solid currentcolor;
+}
+
+@media (min-width: 56rem) {
+  .panel {
+    inline-size: var(--hud-panel-w);
+    max-block-size: 100%;
+    padding: var(--space-1) var(--space-3) var(--space-3);
+    pointer-events: auto;
+  }
+
+  .body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .toggle {
+    display: inline-flex;
+  }
+
+  /* Sin JavaScript no hay botón: el panel no se ofrece (el pie ya enlaza a Fuentes y Accesibilidad). */
+  .panel[data-state='pending'] {
+    display: none;
+  }
+
+  /* Plegado: una píldora con el icono y el rótulo («Información del mapa») sobre el mismo vidrio. */
+  .panel[data-state='closed'] {
+    padding: 0; /* el ancho de la píldora lo da la página (`max-content`) */
+  }
+
+  .panel[data-state='closed'] .title,
+  .panel[data-state='closed'] .body {
+    display: none;
+  }
+
+  .panel[data-state='closed'] .head {
+    min-block-size: 0;
+  }
+
+  .panel[data-state='closed'] .toggle {
+    padding-inline: var(--space-3);
+    border-color: transparent;
+  }
+}

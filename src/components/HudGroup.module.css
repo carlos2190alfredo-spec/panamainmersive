@@ -1,0 +1,61 @@
+/*
+ * Grupo plegable del carril del HUD (`<details>` nativo). Objetivo ≥ 44 px en el `<summary>`; el marcador de la
+ * plataforma se sustituye por un chevron dibujado con bordes (hereda `currentcolor`, no hace falta ningún icono ni
+ * color propio). El cuerpo no recorta nada (WCAG 1.4.12).
+ */
+.group {
+  border-block-start: 1px solid var(--color-line-soft);
+}
+
+.group:first-child {
+  border-block-start: 0;
+}
+
+.summary {
+  composes: eyebrow from '../styles/glass.module.css';
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-1);
+  color: var(--color-ink);
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.title {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.chevron {
+  flex: none;
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  margin-inline-end: var(--space-1);
+  border-inline-end: 2px solid currentcolor;
+  border-block-end: 2px solid currentcolor;
+  transform: rotate(45deg);
+  translate: 0 -0.15rem;
+}
+
+.group[open] > .summary > .chevron {
+  transform: rotate(-135deg);
+  translate: 0 0.1rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chevron {
+    transition: transform var(--motion-medium) var(--ease-out);
+  }
+}
+
+.body {
+  padding: var(--space-1) var(--space-1) var(--space-3);
+}

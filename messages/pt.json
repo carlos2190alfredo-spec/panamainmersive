@@ -2,7 +2,7 @@
   "Meta": {
     "home": {
       "title": "{siteName}: explore o Panamá com dados abertos e verificáveis",
-      "description": "Mapa, relevo e fontes com procedência visível para descobrir e organizar viagens pelo Panamá. Versão de desenvolvimento."
+      "description": "Mapa, relevo e fontes com procedência visível para descobrir e compreender o Panamá a partir de dados abertos e verificáveis. Versão de desenvolvimento."
     },
     "explore": {
       "title": "Explorar o Panamá",
@@ -26,6 +26,9 @@
     },
     "notFound": {
       "title": "Página não encontrada"
+    },
+    "og": {
+      "alt": "Logotipo de {siteName}: uma letra P com uma paisagem e uma bússola."
     }
   },
   "Common": {
@@ -43,18 +46,23 @@
     "explore": "Explorar",
     "destinations": "Destinos",
     "sources": "Fontes",
-    "accessibility": "Acessibilidade"
+    "accessibility": "Acessibilidade",
+    "menu": "Menu",
+    "cta": "Abrir o mapa"
+  },
+  "Brand": {
+    "tagline": "Um país, infinitas histórias."
   },
   "Language": {
     "label": "Idioma",
     "menu": "Selecionar idioma",
     "current": "Idioma atual: {name}",
-    "help": "Mudar de idioma mantém o destino, o mapa e os filtros."
+    "help": "Mudar de idioma mantém o destino, a vista do mapa e as camadas ativas."
   },
   "Home": {
     "eyebrow": "Versão de desenvolvimento",
     "title": "O Panamá, explorado com mapas e dados que podem ser verificados",
-    "lead": "Uma plataforma para descobrir, compreender e organizar viagens pelo Panamá. Ela se apoia em fontes abertas e mostra sempre de onde vem cada dado.",
+    "lead": "Uma plataforma para descobrir e compreender o Panamá a partir de fontes abertas e verificáveis. Cada dado mostra de onde vem.",
     "ctaExplore": "Abrir o mapa",
     "ctaDestinations": "Ver os nove destinos",
     "principlesHeading": "Como trabalhamos",
@@ -69,11 +77,21 @@
       },
       "languages": {
         "title": "Cinco idiomas",
-        "body": "Espanhol, inglês, português, francês e alemão. Mudar de idioma mantém o que você estava vendo."
+        "body": "Espanhol, inglês, português, francês e alemão. Mudar de idioma mantém o destino e as camadas do mapa."
       }
     },
     "statusHeading": "Estado atual",
     "statusBody": "Esta é uma versão de desenvolvimento. As fichas dos destinos estão em preparação e as traduções aguardam revisão humana."
+  },
+  "Search": {
+    "label": "Buscar um destino",
+    "placeholder": "Nome do destino",
+    "submit": "Buscar",
+    "scope": "A busca cobre apenas os nove destinos iniciais, pelo nome em qualquer um dos cinco idiomas; não reconhece outros nomes de uso corrente. Não inclui atrações, hospedagens nem atividades.",
+    "resultsLabel": "Resultados da busca",
+    "results": "{count, plural, =0 {Nenhum destino corresponde a «{query}».} one {# destino corresponde a «{query}».} other {# destinos correspondem a «{query}».}}",
+    "viewOnMap": "Ver no mapa",
+    "viewOnMapLabel": "Ver no mapa: {name}"
   },
   "Explore": {
     "title": "Explorar o Panamá",
@@ -159,7 +177,7 @@
       "waterways": "Rio ou canal",
       "places": "Localidade (ponto)"
     },
-    "attribution": "Mapa base: © OpenStreetMap contributors, Overture Maps Foundation (versão {release}). Cartografia de referência: não contém limites oficiais.",
+    "attribution": "Mapa base: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (versão {release}). Cartografia de referência: não contém limites oficiais.",
     "controls": {
       "zoomIn": "Aproximar",
       "zoomOut": "Afastar",
@@ -223,6 +241,48 @@
       "layerOff": "Ative a camada «Áreas protegidas» para escolher áreas.",
       "waiting": "Aguardando o mapa terminar de desenhar.",
       "mapUnavailable": "O mapa não está disponível, por isso não há áreas para listar."
+    },
+    "filter": {
+      "heading": "Tipo de destino",
+      "all": "Todos",
+      "count": "{count, plural, one {# destino} other {# destinos}}",
+      "announce": "{count, plural, =0 {Nenhum destino corresponde ao filtro.} one {Mostrando # destino.} other {Mostrando # destinos.}}"
+    },
+    "search": {
+      "label": "Buscar destinos",
+      "placeholder": "Nome do destino",
+      "count": "{count, plural, one {# destino corresponde à busca.} other {# destinos correspondem à busca.}}",
+      "empty": "Nenhum destino corresponde à busca.",
+      "clear": "Limpar a busca"
+    },
+    "carousel": {
+      "previous": "Destinos anteriores",
+      "next": "Próximos destinos",
+      "hide": "Ocultar os destinos",
+      "show": "Mostrar os destinos"
+    },
+    "featured": {
+      "reframe": "Recentrar no destino"
+    },
+    "tools": {
+      "label": "Ferramentas do mapa",
+      "threeD": "Relevo em 3D",
+      "threeDShort": "3D",
+      "threeDNotice": "Ao ativá-lo, o seu navegador pedirá o relevo à Amazon Web Services, que receberá o seu endereço IP.",
+      "layersOpen": "Camadas e legenda"
+    },
+    "sheet": {
+      "open": "{title}: abrir as informações do mapa",
+      "close": "{title}: fechar as informações do mapa"
+    },
+    "panel": {
+      "toggle": "Mostrar ou ocultar o painel de informações"
+    },
+    "hud": {
+      "railLabel": "Filtros e camadas do mapa",
+      "searchRegionLabel": "Busca de destinos",
+      "carouselLabel": "Carrossel de destinos",
+      "mapUnavailable": "Indisponível: o mapa não está ativo."
     }
   },
   "Destinations": {
@@ -273,6 +333,7 @@
       "UNAVAILABLE": "Indisponível",
       "ERROR": "Erro ao verificar"
     },
+    "geometryLabel": "Geometria",
     "observation": {
       "geoCounty": "Limite de distrito derivado do OpenStreetMap, não oficial.",
       "geoRegionCountyLocality": "Província, distrito e localidade: três entidades distintas, derivadas do OpenStreetMap.",

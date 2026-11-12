@@ -1,29 +1,110 @@
+/*
+ * Pie de marca (ADR-0025 §7): Azul Profundo con texto Arena (11,88:1) en TODOS los temas —es un color de marca, no un
+ * semántico que cambie con el tema—. Sobre ese fondo el anillo de foco azul del tema claro no se ve (1,4:1), así que el
+ * ámbito del pie redefine el anillo y su halo con los colores de marca (Arena sobre Azul Profundo: 11,88:1).
+ * Todos los colores salen de tokens; tests/unit/design/shell-css.test.ts mide los pares en los tres ámbitos.
+ * Sin alturas fijas ni recortes: el texto debe poder crecer (WCAG 1.4.12).
+ */
 .footer {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-4);
-  background: var(--color-sunken);
-  border-block-start: 1px solid var(--color-line-soft);
+  --footer-bg: var(--color-brand-deep);
+  --footer-fg: var(--color-brand-sand);
+  --color-focus: var(--color-brand-sand);
+  --color-focus-halo: var(--color-brand-deep);
+
+  padding: var(--space-6) var(--space-4);
+  background: var(--footer-bg);
+  color: var(--footer-fg);
   font-size: var(--text-s);
+}
+
+.inner {
+  display: grid;
+  gap: var(--space-5);
+  max-inline-size: 72rem;
+  margin-inline: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+/*
+ * La silueta del país sobre una PLACA clara (Arena, como en las «versiones alternativas» del tablero de marca; r1:V-12): sus
+ * zonas azules se confundían con el Azul Profundo del pie y la marca se leía como una cinta rota. La imagen mide 2,5 rem de
+ * alto dentro de la placa (3,5 rem con el relleno): ≈ 80 px de ancho (proporción 2,01). Decorativa (alt vacío).
+ */
+.mark {
+  block-size: 3.5rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-brand-sand);
+  border-radius: var(--radius-m);
+}
+
+.tagline {
+  margin: 0;
+  max-inline-size: none;
+  min-inline-size: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-l);
+  font-weight: 600;
+  line-height: var(--leading-tight);
 }
 
 .list {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-5);
-  list-style: none;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
-.list a {
+/* Enlaces claros y subrayados sobre el fondo oscuro (objetivo ≥ 44 px). */
+.link {
   display: inline-flex;
   align-items: center;
   min-block-size: var(--target-min);
+  color: var(--footer-fg);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.25em;
+}
+
+.link:hover {
+  text-decoration-thickness: 0.18em;
 }
 
 .note {
   margin: 0;
   max-inline-size: none;
-  color: var(--color-ink-muted);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--color-line-strong);
+  color: var(--footer-fg);
+}
+
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .note {
+    border-block-start-color: color-mix(in srgb, var(--footer-fg) 30%, transparent);
+  }
+}
+
+/* En pantallas anchas: marca y enlaces en una fila, la nota debajo. */
+@media (min-width: 48rem) {
+  .footer {
+    padding-inline: var(--space-5);
+  }
+
+  .inner {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: var(--space-6);
+  }
+
+  .note {
+    grid-column: 1 / -1;
+  }
 }

@@ -104,6 +104,13 @@ export default tseslint.config(
       ],
     },
   },
+  // Marca de la interfaz (ADR-0025): `<img>` NATIVO a propósito. `next/image` emite `style="color:transparent"` en el HTML y
+  // la CSP de producción (`style-src 'self'`) lo bloquea (en `next dev` pasa desapercibido: allí es 'unsafe-inline').
+  // Solo este archivo; brand-mark.test.tsx falla si el HTML lleva `style=`.
+  {
+    files: ['src/components/BrandMark.tsx'],
+    rules: { '@next/next/no-img-element': 'off' },
+  },
   // Configuración de ESLint (JS sin tipos): sin reglas que exigen información de tipos.
   { files: ['**/*.mjs'], ...tseslint.configs.disableTypeChecked },
   // Scripts y configuraciones: relajar solo lo estrictamente necesario.

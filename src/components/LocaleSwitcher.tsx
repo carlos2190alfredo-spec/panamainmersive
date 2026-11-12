@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Suspense, useEffect, useRef } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LOCALES, LOCALE_INFO } from '@/i18n/locales';
+import { closesOnFocusOut } from '@/lib/focus-out';
 import { queryFromSearchParams, switchTarget, type Query } from '@/lib/locale-switch';
 import styles from './LocaleSwitcher.module.css';
 
@@ -53,7 +54,9 @@ export function LocaleSwitcher() {
   const locale = useLocale();
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
-  // Escape cierra el menú y devuelve el foco al botón; un clic fuera también lo cierra.
+  // Escape cierra el menú y devuelve el foco al botón; un clic fuera también lo cierra. Y también se cierra cuando el
+  // foco SALE de él con Tab (r2:F2): la lista es más ancha que el globo y, en un teléfono, tapaba por entero lo que recibía
+  // el foco a continuación (zoom, brújula, marcadores del mapa), que quedaba enfocado sin verse (WCAG 2.4.11).
   useEffect(() => {
     const el = detailsRef.current;
     if (!el) return;
@@ -66,11 +69,16 @@ export function LocaleSwitcher() {
     const onPointer = (e: PointerEvent) => {
       if (el.open && e.target instanceof Node && !el.contains(e.target)) el.open = false;
     };
+    const onFocusOut = (e: FocusEvent) => {
+      if (el.open && closesOnFocusOut(el, e.relatedTarget)) el.open = false;
+    };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointer);
+    el.addEventListener('focusout', onFocusOut);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onPointer);
+      el.removeEventListener('focusout', onFocusOut);
     };
   }, []);
 

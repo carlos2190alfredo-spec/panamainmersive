@@ -54,7 +54,10 @@ export const FONT_REGULAR = 'NotoSans-Regular';
 export const FONT_BOLD = 'NotoSans-Bold';
 
 export const BASEMAP_ATTRIBUTION = '© OpenStreetMap contributors, Overture Maps Foundation';
-export const TERRAIN_ATTRIBUTION = 'Relieve: AWS Terrain Tiles (SRTM, GMTED, ETOPO1)';
+/** El rótulo («Relieve:») es español en todos los idiomas de la interfaz; el crédito en sí es un nombre propio en inglés. */
+export const TERRAIN_ATTRIBUTION_LABEL = 'Relieve:';
+export const TERRAIN_ATTRIBUTION_CREDIT = 'AWS Terrain Tiles (SRTM, GMTED, ETOPO1)';
+export const TERRAIN_ATTRIBUTION = `${TERRAIN_ATTRIBUTION_LABEL} ${TERRAIN_ATTRIBUTION_CREDIT}`;
 
 export type BasemapSourceLayer = (typeof BASEMAP_SOURCE_LAYERS)[number];
 

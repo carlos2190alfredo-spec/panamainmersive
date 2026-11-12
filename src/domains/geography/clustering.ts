@@ -1,3 +1,5 @@
+import { worldSize, worldX, worldY } from './mercator';
+
 /**
  * Agrupamiento de marcadores por distancia EN PANTALLA. Dos botones de menos de ~44 px que se solapan no se
  * pueden pulsar con fiabilidad (WCAG 2.5.8) y uno oculta al otro; por eso, mientras estén demasiado cerca, se
@@ -82,4 +84,29 @@ export function clusterByScreenDistance(
       lat: members.reduce((sum, m) => sum + m.lat, 0) / n,
     };
   });
+}
+
+/**
+ * Zoom (MapLibre, mundo de 512 px a zoom 0) a partir del cual el punto `key` queda a `radiusPx` o más de CADA otro punto:
+ * por debajo, su marcador se fundiría con un grupo. Sirve de suelo al encuadrar un destino (un encuadre con relleno de HUD
+ * puede dejar un destino vecino —el canal junto a la ciudad— a menos de un radio y «Ver en el mapa» enseñaría un «3» en
+ * lugar de su marcador). Es un suelo, no una garantía: dos vecinos que a su vez se agrupan entre sí desplazan el centro de
+ * su grupo. `-Infinity` si `key` no tiene vecinos (o no existe): no impone nada.
+ */
+export function separationZoom(
+  points: readonly { readonly key: string; readonly lon: number; readonly lat: number }[],
+  key: string,
+  radiusPx: number,
+): number {
+  const own = points.find((p) => p.key === key);
+  if (!own || !(radiusPx > 0)) return Number.NEGATIVE_INFINITY;
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const other of points) {
+    if (other.key === key) continue;
+    const d = Math.hypot(worldX(other.lon) - worldX(own.lon), worldY(other.lat) - worldY(own.lat));
+    nearest = Math.min(nearest, d);
+  }
+  if (!Number.isFinite(nearest)) return Number.NEGATIVE_INFINITY;
+  // Distancia en px a `zoom` = nearest · worldSize(zoom): se despeja el zoom.
+  return Math.log2(radiusPx / (nearest * worldSize(0)));
 }

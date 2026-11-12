@@ -2,7 +2,7 @@
   "Meta": {
     "home": {
       "title": "{siteName}: explore Panama with open, verifiable data",
-      "description": "Maps, terrain and sources with visible provenance to discover and plan trips across Panama. Development version."
+      "description": "Maps, terrain and sources with visible provenance to discover and understand Panama from open, verifiable data. Development version."
     },
     "explore": {
       "title": "Explore Panama",
@@ -26,6 +26,9 @@
     },
     "notFound": {
       "title": "Page not found"
+    },
+    "og": {
+      "alt": "{siteName} logo: a letter P with a landscape and a compass."
     }
   },
   "Common": {
@@ -43,18 +46,23 @@
     "explore": "Explore",
     "destinations": "Destinations",
     "sources": "Sources",
-    "accessibility": "Accessibility"
+    "accessibility": "Accessibility",
+    "menu": "Menu",
+    "cta": "Open the map"
+  },
+  "Brand": {
+    "tagline": "One country, infinite stories."
   },
   "Language": {
     "label": "Language",
     "menu": "Select language",
     "current": "Current language: {name}",
-    "help": "Changing language keeps the destination, the map and the filters."
+    "help": "Changing language keeps the destination, the map view and the active layers."
   },
   "Home": {
     "eyebrow": "Development version",
     "title": "Panama, explored with maps and data you can verify",
-    "lead": "A platform to discover, understand and plan trips across Panama. It relies on open sources and always shows where each piece of data comes from.",
+    "lead": "A platform to discover and understand Panama from open, verifiable sources. Every piece of data shows where it comes from.",
     "ctaExplore": "Open the map",
     "ctaDestinations": "See the nine destinations",
     "principlesHeading": "How we work",
@@ -69,11 +77,21 @@
       },
       "languages": {
         "title": "Five languages",
-        "body": "Spanish, English, Portuguese, French and German. Changing language keeps what you were looking at."
+        "body": "Spanish, English, Portuguese, French and German. Changing language keeps the destination and the map layers."
       }
     },
     "statusHeading": "Current status",
     "statusBody": "This is a development version. The destination pages are in preparation and the translations are pending human review."
+  },
+  "Search": {
+    "label": "Search for a destination",
+    "placeholder": "Destination name",
+    "submit": "Search",
+    "scope": "Search covers only the nine initial destinations, by their name in any of the five languages; it does not recognise other commonly used names. It does not include attractions, accommodation or activities.",
+    "resultsLabel": "Search results",
+    "results": "{count, plural, =0 {No destination matches “{query}”.} one {# destination matches “{query}”.} other {# destinations match “{query}”.}}",
+    "viewOnMap": "Show on map",
+    "viewOnMapLabel": "Show on map: {name}"
   },
   "Explore": {
     "title": "Explore Panama",
@@ -159,7 +177,7 @@
       "waterways": "River or canal",
       "places": "Place (dot)"
     },
-    "attribution": "Base map: © OpenStreetMap contributors, Overture Maps Foundation (release {release}). Reference cartography: contains no official boundaries.",
+    "attribution": "Base map: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (release {release}). Reference cartography: contains no official boundaries.",
     "controls": {
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
@@ -223,6 +241,48 @@
       "layerOff": "Turn on the “Protected areas” layer to choose areas.",
       "waiting": "Waiting for the map to finish drawing.",
       "mapUnavailable": "The map is not available, so there are no areas to list."
+    },
+    "filter": {
+      "heading": "Destination type",
+      "all": "All",
+      "count": "{count, plural, one {# destination} other {# destinations}}",
+      "announce": "{count, plural, =0 {No destination matches the filter.} one {Showing # destination.} other {Showing # destinations.}}"
+    },
+    "search": {
+      "label": "Search destinations",
+      "placeholder": "Destination name",
+      "count": "{count, plural, one {# destination matches the search.} other {# destinations match the search.}}",
+      "empty": "No destination matches the search.",
+      "clear": "Clear the search"
+    },
+    "carousel": {
+      "previous": "Previous destinations",
+      "next": "Next destinations",
+      "hide": "Hide destinations",
+      "show": "Show destinations"
+    },
+    "featured": {
+      "reframe": "Recenter on the destination"
+    },
+    "tools": {
+      "label": "Map tools",
+      "threeD": "3D terrain",
+      "threeDShort": "3D",
+      "threeDNotice": "When turned on, your browser will request the terrain from Amazon Web Services, which will receive your IP address.",
+      "layersOpen": "Layers and legend"
+    },
+    "sheet": {
+      "open": "{title}: open map information",
+      "close": "{title}: close map information"
+    },
+    "panel": {
+      "toggle": "Show or hide the information panel"
+    },
+    "hud": {
+      "railLabel": "Map filters and layers",
+      "searchRegionLabel": "Destination search",
+      "carouselLabel": "Destination carousel",
+      "mapUnavailable": "Unavailable: the map is not active."
     }
   },
   "Destinations": {
@@ -273,6 +333,7 @@
       "UNAVAILABLE": "Unavailable",
       "ERROR": "Error while checking"
     },
+    "geometryLabel": "Geometry",
     "observation": {
       "geoCounty": "District boundary derived from OpenStreetMap, not official.",
       "geoRegionCountyLocality": "Province, district and locality: three distinct entities, derived from OpenStreetMap.",

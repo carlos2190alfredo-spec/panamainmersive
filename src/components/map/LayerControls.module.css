@@ -1,16 +1,9 @@
+/* Dentro de un grupo plegable del carril del HUD: sin caja propia (la caja es el vidrio del carril). */
 .fieldset {
   margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-m);
-  background: var(--color-surface);
-}
-
-.legend {
-  padding-inline: var(--space-2);
-  font-family: var(--font-display);
-  font-size: var(--text-l);
-  font-weight: 600;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
 }
 
 .list {
@@ -18,7 +11,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .label {
@@ -26,30 +19,39 @@
   gap: var(--space-3);
   align-items: center;
   min-block-size: var(--target-min);
+  font-size: 0.9375rem;
   font-weight: 600;
+  line-height: 1.25;
   cursor: pointer;
 }
 
 .checkbox {
-  inline-size: 1.4rem;
-  block-size: 1.4rem;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
   accent-color: var(--color-accent);
   flex: none;
 }
 
 .hint {
   margin: 0;
-  padding-inline-start: calc(1.4rem + var(--space-3));
+  padding-inline-start: calc(1.5rem + var(--space-3));
+  color: var(--color-ink-muted);
+  font-size: 0.78125rem;
+  line-height: 1.35;
+}
+
+/* Sin mapa: el motivo va escrito arriba y las casillas se ven apagadas. */
+.unavailable {
+  margin: 0 0 var(--space-2);
   color: var(--color-ink-muted);
   font-size: var(--text-s);
 }
 
-.thirdParty {
-  margin: var(--space-3) 0 0;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-notice-bg);
-  color: var(--color-notice-fg);
-  border-inline-start: 4px solid var(--color-notice-fg);
-  border-radius: var(--radius-s);
-  font-size: var(--text-s);
+.fieldset:disabled .label {
+  cursor: not-allowed;
+}
+
+.fieldset:disabled .label,
+.fieldset:disabled .hint {
+  color: var(--color-ink-muted);
 }

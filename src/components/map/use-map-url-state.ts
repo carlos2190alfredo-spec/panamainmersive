@@ -3,6 +3,8 @@
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useSyncExternalStore } from 'react';
 import {
+  DEFAULT_MAP_LAYERS,
+  allowedLayers,
   applyMapUrlState,
   paramsFromSearch,
   parseMapUrlState,
@@ -22,6 +24,18 @@ export type UrlWriteMode = 'push' | 'replace';
 
 export function readMapUrlState(search: string): ParsedMapUrlState {
   return parseMapUrlState(paramsFromSearch(new URLSearchParams(search)));
+}
+
+/**
+ * Las capas que pide la URL EN ESTE MOMENTO (con las de terceros ya filtradas por derechos). Se lee de `window.location`, NO
+ * del render: `useSearchParams` llega a React con retraso (con la máquina cargada, cientos de ms) y quien actúa sobre el mapa
+ * o sobre el botón «Relieve en 3D» debe obrar sobre lo último que la persona pidió, no sobre una copia vieja (r3:F-02).
+ */
+export function currentUrlLayers(thirdPartyAllowed: boolean): readonly MapLayerId[] {
+  return allowedLayers(
+    readMapUrlState(window.location.search).state.layers ?? DEFAULT_MAP_LAYERS,
+    thirdPartyAllowed,
+  );
 }
 
 function writeMapUrlState(change: (current: MapUrlState) => MapUrlState, mode: UrlWriteMode): void {

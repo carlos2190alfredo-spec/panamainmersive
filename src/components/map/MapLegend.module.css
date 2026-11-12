@@ -1,10 +1,5 @@
 .legend {
-  margin-block-start: var(--space-4);
-}
-
-.heading {
-  font-size: var(--text-l);
-  margin-block-end: var(--space-2);
+  margin: 0;
 }
 
 .list {

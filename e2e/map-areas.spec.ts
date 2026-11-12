@@ -1,7 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { PATHS, watchPage } from './helpers';
-import { MAP_DATA_PRESENT, MAP_DATA_SKIP_REASON, mapCanvas, openMap } from './map-helpers';
+import {
+  MAP_DATA_PRESENT,
+  MAP_DATA_SKIP_REASON,
+  mapCanvas,
+  openAreasPanel,
+  openLayers,
+  openMap,
+} from './map-helpers';
 
 /**
  * Selección de áreas protegidas (F3.d, ADR-0018) con el mapa REAL y SIN base de datos: se prueba lo que no
@@ -19,8 +26,13 @@ const listButtons = (page: Page) => listRegion(page).getByRole('button');
 const selectedName = (page: Page) => page.locator('#selected-area-name');
 const selectedId = (page: Page) => AREA_PARAM.exec(page.url())?.[1] ?? null;
 
+/**
+ * La lista de áreas vive en el panel derecho, que en escritorio arranca PLEGADO (el mapa manda; se abre solo cuando hay
+ * un área elegida en la URL). Abrirlo a mano es lo que haría una persona con teclado o ratón.
+ */
 async function openCoiba(page: Page): Promise<void> {
   await openMap(page, COIBA);
+  await openAreasPanel(page);
   await expect.poll(() => listButtons(page).count(), { timeout: 30_000 }).toBeGreaterThan(0);
 }
 
@@ -83,9 +95,19 @@ test.describe('selección de áreas protegidas', () => {
     page,
   }) => {
     await openCoiba(page);
-    const box = await mapCanvas(page).boundingBox();
-    if (!box) throw new Error('El lienzo no tiene caja');
-    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.3);
+    // Antes se pulsaba el 50 % × 30 % del lienzo (Coiba, encuadrada con relleno simétrico, ocupaba el centro). Con el HUD,
+    // Coiba se encuadra en el hueco libre y ese píxel ya no cae sobre el parque: se pulsa un punto POR ENCIMA de su
+    // marcador (que está en el centro del hueco), comprobando que lo que recibe el clic es el lienzo y no un panel.
+    const marker = await page.locator('button[data-destination="coiba"]').boundingBox();
+    if (!marker) throw new Error('El marcador de Coiba no tiene caja');
+    const x = marker.x + marker.width / 2;
+    const y = marker.y + marker.height / 2 - 45;
+    const target = await page.evaluate(
+      ([px, py]) => document.elementFromPoint(px as number, py as number)?.tagName,
+      [x, y],
+    );
+    expect(target, 'el punto del clic debe caer sobre el lienzo, no sobre un panel').toBe('CANVAS');
+    await page.mouse.click(x, y);
     await expect.poll(() => selectedId(page), { timeout: 10_000 }).not.toBeNull();
     await expect(selectedName(page)).toContainText('Coiba');
     // El resalte existe en el estilo que MapLibre aplicó de verdad
@@ -180,6 +202,7 @@ test.describe('selección de áreas protegidas', () => {
     page,
   }) => {
     await openCoiba(page);
+    await openLayers(page);
     await listButtons(page).first().click();
     await expect.poll(() => selectedId(page)).not.toBeNull();
 

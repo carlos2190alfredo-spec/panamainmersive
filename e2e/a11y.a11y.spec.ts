@@ -4,11 +4,17 @@ import { TEXT_SPACING_CSS, applyCss, clippedText, hiddenFocus } from './a11y-pro
 import { LOCALES, PAGE_NAMES, PATHS } from './helpers';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+/** Plazo (ms) de las pruebas de axe que recorren Explorar en los cinco idiomas (mapa WebGL por software; el CI de GitHub es más lento). */
+const EXPLORE_AXE_TIMEOUT_MS = 90_000;
 
 test.describe('WCAG 2.2 AA con axe (todas las páginas × cinco idiomas × tema claro/oscuro)', () => {
   for (const scheme of ['light', 'dark'] as const) {
     for (const name of PAGE_NAMES) {
       test(`${name} (${scheme})`, async ({ page }) => {
+        // Explorar dibuja un mapa WebGL (por software en CI y aquí) y axe recorre cinco idiomas dentro de UNA prueba:
+        // con un solo trabajador tarda 18–27 s de los 30 s por defecto y con carga normal de CI lo supera. El plazo es
+        // solo de ESTA página (las demás no lo necesitan); no es una espera: cada paso sigue esperando a su condición.
+        if (name === 'explore') test.setTimeout(EXPLORE_AXE_TIMEOUT_MS);
         await page.emulateMedia({ colorScheme: scheme });
         for (const locale of LOCALES) {
           await page.goto(PATHS[name][locale]);
@@ -28,6 +34,7 @@ test.describe('WCAG 2.2 AA con axe (todas las páginas × cinco idiomas × tema 
   }
 
   test('con el menú de idioma abierto tampoco hay violaciones', async ({ page }) => {
+    test.setTimeout(EXPLORE_AXE_TIMEOUT_MS); // Explorar × cinco idiomas con el mapa: ver el plazo de arriba
     for (const locale of LOCALES) {
       await page.goto(PATHS.explore[locale]);
       await page.locator('summary').first().click();

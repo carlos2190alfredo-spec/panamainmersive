@@ -9,13 +9,17 @@ import {
   allowedLayers,
   type MapLayerId,
 } from '@/domains/geography/map-url-state';
-import { usesTerrain } from '@/domains/geography/map-style';
 import styles from './LayerControls.module.css';
+import { useHudStore } from './hud-store';
 import { useHydrated, useMapUrlState, writeLayers } from './use-map-url-state';
 
 function Controls({ terrainAllowed }: { terrainAllowed: boolean }) {
   const t = useTranslations('Map.layers');
+  const hud = useTranslations('Map.hud');
   const hydrated = useHydrated();
+  // Las capas cambian el estilo del MAPA: sin mapa (sin WebGL, sin datos, bloqueado, con error) no hacen nada y se
+  // ofrecen desactivadas con su motivo. Mientras carga siguen disponibles (la URL manda cuando el mapa esté listo).
+  const unavailable = useHudStore().mapStatus === 'unavailable';
   const { state } = useMapUrlState();
   const fromUrl = allowedLayers(state.layers ?? DEFAULT_MAP_LAYERS, terrainAllowed);
   const urlKey = fromUrl.join(',');
@@ -34,8 +38,18 @@ function Controls({ terrainAllowed }: { terrainAllowed: boolean }) {
   }
 
   return (
-    <fieldset className={styles.fieldset} disabled={!hydrated}>
-      <legend className={styles.legend}>{t('heading')}</legend>
+    <fieldset
+      className={styles.fieldset}
+      disabled={!hydrated || unavailable}
+      aria-describedby={unavailable ? 'layers-map-unavailable' : undefined}
+    >
+      {/* El título visible es el del grupo plegable del carril («Capas»); la leyenda nombra el grupo para quien no lo ve. */}
+      <legend className="visually-hidden">{t('heading')}</legend>
+      {unavailable ? (
+        <p id="layers-map-unavailable" className={styles.unavailable}>
+          {hud('mapUnavailable')}
+        </p>
+      ) : null}
       <ul className={styles.list}>
         {MAP_LAYER_IDS.map((id) => (
           <li key={id} className={styles.item}>
@@ -60,11 +74,6 @@ function Controls({ terrainAllowed }: { terrainAllowed: boolean }) {
           </li>
         ))}
       </ul>
-      {usesTerrain(active) ? (
-        <p className={styles.thirdParty} role="status">
-          {t('thirdPartyNotice')}
-        </p>
-      ) : null}
     </fieldset>
   );
 }

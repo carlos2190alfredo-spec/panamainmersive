@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { DestinationList } from '@/components/DestinationList';
+import { DestinationGrid } from '@/components/DestinationGrid';
 import { SITE } from '@/config/site';
 import { assertLocale, type LocaleParams } from '@/lib/params';
 import { pageMetadata } from '@/lib/seo';
@@ -23,7 +23,7 @@ export default async function DestinationsPage() {
     <div className="page">
       <h1>{t('indexTitle')}</h1>
       <p className="lead">{t('indexLead')}</p>
-      <DestinationList />
+      <DestinationGrid />
     </div>
   );
 }

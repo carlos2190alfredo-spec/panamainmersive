@@ -1,5 +1,6 @@
-import '@fontsource-variable/fraunces/index.css';
-import '@fontsource-variable/figtree/index.css';
+import '@fontsource-variable/playfair-display/index.css';
+import '@fontsource-variable/montserrat/index.css';
+import '@/styles/fonts.css';
 import '@/styles/tokens.css';
 import '@/styles/base.css';
 import type { Metadata, Viewport } from 'next';
@@ -12,6 +13,7 @@ import { SkipLink } from '@/components/SkipLink';
 import { SITE } from '@/config/site';
 import { LOCALES, LOCALE_INFO } from '@/i18n/locales';
 import { assertLocale, type LocaleParams } from '@/lib/params';
+import { THEME_COLORS } from '@/lib/seo';
 import { getEnv } from '@/config/env';
 
 export function generateStaticParams() {
@@ -22,9 +24,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   colorScheme: 'light dark',
+  // Los hexadecimales viven en un solo sitio (src/lib/seo.ts) y una prueba los compara con tokens.css: aquí no hay
+  // ninguno suelto. Es el color de la cabecera; las páginas de ámbito inmersivo (siempre oscuras) lo sustituyen con su
+  // propio `viewport` (THEME_COLORS.dark).
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f4efe4' },
-    { media: '(prefers-color-scheme: dark)', color: '#0d1a20' },
+    { media: '(prefers-color-scheme: light)', color: THEME_COLORS.light },
+    { media: '(prefers-color-scheme: dark)', color: THEME_COLORS.dark },
   ],
 };
 

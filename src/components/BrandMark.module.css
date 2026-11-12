@@ -1,0 +1,21 @@
+/*
+ * La marca es una ilustración con transparencia: sin bordes ni fondo. El ancho sale de la proporción intrínseca (los
+ * atributos width/height del HTML) en cuanto algo fija el alto, y `max-inline-size` evita que desborde su contenedor.
+ */
+.mark {
+  display: block;
+  flex: none;
+  inline-size: auto;
+  max-inline-size: 100%;
+  object-fit: contain;
+}
+
+/* Cabecera: cabe holgada en los 4 rem de --header-height (el contenedor aporta el margen). */
+.header {
+  block-size: 2.5rem;
+}
+
+/* Héroe: grande pero acotado; la proporción de la P es ≈ 0,94, la del país ≈ 2. */
+.hero {
+  block-size: clamp(9rem, 26vw, 18rem);
+}

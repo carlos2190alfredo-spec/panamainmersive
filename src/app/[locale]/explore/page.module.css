@@ -1,68 +1,66 @@
-/* Mapa primero: ≈ 70 % mapa / 30 % panel en escritorio; en móvil, mapa arriba y panel debajo. */
+/*
+ * Explorar inmersivo (ADR-0025 §8). El mapa ocupa toda la pantalla bajo la cabecera y el HUD (`.hud`) flota encima sin
+ * interceptar punteros (cada superficie, no el HUD, los recibe). Dos presentaciones con el MISMO DOM:
+ *  - base (< 56rem, móvil): el mapa a sangre y, abajo, la HOJA INFERIOR (`HudSheet`) de dos detentes con todo el HUD que
+ *    no flota sobre el mapa. `.hud` es una columna alineada abajo: el hueco libre (`.safe`) ocupa lo que la hoja deja y
+ *    por eso SIGUE a la hoja cuando se abre o crece (el mapa lo mide al volar). Las herramientas flotan bajo el zoom;
+ *  - ≥ 56rem: la rejilla de abajo; la hoja no es una caja (`display: contents`) y sus zonas son celdas de la rejilla.
+ * El HUD (`--z-hud`) va por ENCIMA del aviso de estado del mapa (`.overlay`, z-index 5) y por debajo de la cabecera y los
+ * menús.
+ *
+ * Medidas del HUD (variables locales; el color sale SIEMPRE de tokens):
+ *   --hud-rail-w   ancho del carril izquierdo     --hud-panel-w  ancho del panel derecho abierto (16rem; 18rem desde 80rem:
+ *                                                                  a 1024 px un panel más ancho tapaba la etiqueta del destino, r1:V-16)
+ *   --hud-tools-w  carril de herramientas         --hud-strip    franja inferior libre para la escala y los créditos
+ *                                                                  de MapLibre (obligatorios por la licencia ODbL)
+ *   --hud-search-h alto del buscador (lo reserva su zona: la isla llega tras hidratar y no debe mover nada)
+ *   --filter-rows  filas del filtro por tipo (Todos + los tipos reales): reserva el alto de su caja (una prueba lo
+ *                  compara con el registro de destinos)
+ *   --sheet-body-h alto del cuerpo de la hoja abierta (móvil): ≈ 60dvh en total con su cabecera, sin dejar menos de
+ *                  14rem (cabecera de la página + cabecera de la hoja + un trozo de mapa) a un teléfono apaisado y con
+ *                  un SUELO propio: con muy poca altura la hoja cubre el mapa en lugar de abrirse con 0 px de cuerpo
+ *
+ * Rejilla (desde 56rem), columnas  carril | centro | panel | herramientas  y filas  título+buscador | hueco | dock:
+ *   · `.safe` (data-hud-safe) ocupa centro × hueco: el espacio que NINGÚN panel tapa. Lo calcula el navegador a partir del
+ *     tamaño real de cada zona (sigue al dock, al carrusel plegado, al panel abierto…) y el mapa lo mide al volar.
+ *   · `.dock` es la fila inferior: ficha del destino (solo con selección) y carrusel UNO AL LADO DEL OTRO. Así la altura
+ *     que el HUD le quita al mapa no cambia al elegir un destino (apilados, en un portátil bajo el hueco quedaba en
+ *     ≈ 110 px) y el encuadre no «salta» al aparecer la ficha.
+ *   · filas con contenido que puede faltar (título) NO llevan `gap`: el respiro va en margen del contenido, así una
+ *     zona vacía no deja un hueco fantasma.
+ * Nada de `overflow: hidden` con texto dentro ni alturas fijas (WCAG 1.4.12): las zonas que pueden quedarse cortas de
+ * alto (carril, panel, cuerpo de la hoja) llevan `max-block-size`/`block-size` y `overflow-y: auto`.
+ */
 .shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(40dvh, 50dvh) auto;
-  min-block-size: calc(100dvh - var(--header-height));
-}
+  --hud-rail-w: 16.5rem;
+  --hud-panel-w: 16rem;
+  --hud-tools-w: var(--target-min);
+  --hud-panel-col: 0px; /* columna del panel: 0 plegado (la píldora desborda hacia la izquierda), `--hud-panel-w` abierto */
+  --hud-strip: 2.75rem; /* 2.25rem hasta r1:V-08: el carril (que baja hasta aquí desde 80rem) quedaba a 6 px de la escala del mapa */
+  --hud-search-h: 3.5rem;
+  --filter-rows: 8;
+  /* El segundo término de `max()` es el SUELO (r2:F4): a ≤ 288 px de alto (zoom 400 % = 320×256) `100dvh − 14rem` es ≤ 0 y la
+     hoja «se abría» con un cuerpo de 0 px (buscador, filtro y lista inalcanzables, el foco en controles invisibles). Con muy poca
+     altura la hoja abierta cubre casi todo el mapa: 8rem de cuerpo (tres filas) si caben, o todo lo que deja la cabecera de la
+     página y la de la hoja. 8rem no toca a un teléfono apaisado de 393 px (ahí manda el primer término y sigue quedando mapa). */
+  --sheet-body-h: max(
+    min(calc(60dvh - 5.5rem), calc(100dvh - var(--header-height) - 14rem)),
+    min(calc(100dvh - var(--header-height) - 7rem), 8rem)
+  );
 
-@media (min-width: 56rem) {
-  .shell {
-    grid-template-columns: minmax(0, 1fr) minmax(var(--panel-min), var(--panel-width));
-    grid-template-rows: none;
-    block-size: calc(100dvh - var(--header-height));
-  }
+  position: relative;
+  block-size: calc(100dvh - var(--header-height));
+  background: var(--color-paper);
+  /* Sin guionado silábico en el HUD (r1:V-06): `base.css` activa `hyphens: auto` y en un panel estrecho partía
+     «coin-/ciden», «destin-/os»; aquí una palabra se parte (si hace falta) solo donde ya hay un espacio. */
+  hyphens: manual;
 }
 
 .map {
-  position: relative;
+  position: absolute;
+  inset: 0;
   background: var(--color-sunken);
   overflow: hidden;
-  min-block-size: 18rem;
-}
-
-.panel {
-  padding: var(--space-5) var(--space-4);
-  background: var(--color-paper);
-  border-inline-start: 1px solid var(--color-line-soft);
-  overflow-y: auto;
-}
-
-.title {
-  font-size: var(--text-xl);
-}
-
-.listHeading {
-  font-size: var(--text-l);
-  margin-block-start: var(--space-4);
-}
-
-.count {
-  color: var(--color-ink-muted);
-  font-family: var(--font-text);
-  font-weight: 500;
-}
-
-.help {
-  color: var(--color-ink-muted);
-  font-size: var(--text-s);
-}
-
-.section {
-  margin-block-start: var(--space-4);
-}
-
-.attribution {
-  margin-block-start: var(--space-4);
-  color: var(--color-ink-muted);
-  font-size: var(--text-s);
-}
-
-.sourcesLink {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: var(--target-min);
-  font-weight: 700;
 }
 
 .noscript {
@@ -72,4 +70,324 @@
   place-items: center;
   padding: var(--space-4);
   background: var(--color-sunken);
+}
+
+/* ---------- Móvil: el HUD es una columna sobre el mapa; la hoja (HudSheet) va abajo y el hueco libre ocupa el resto ---------- */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-hud);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-inline-size: 0;
+  pointer-events: none;
+}
+
+.title {
+  composes: surface from '../../../styles/glass.module.css';
+
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xl);
+}
+
+/* El buscador es una isla de cliente: su zona reserva el alto para que, al llegar, nada se mueva (CLS 0). */
+.search {
+  min-block-size: var(--hud-search-h);
+}
+
+/* El hueco libre: lo que la hoja deja sobre el mapa, sin la columna del zoom y la brújula (derecha) ni la fila de herramientas (arriba). */
+.safe {
+  display: block;
+  flex: 1 1 0;
+  min-block-size: 0;
+  margin-block-start: calc(var(--hud-gap) + var(--target-min));
+  margin-inline-end: calc(var(--target-min) + var(--hud-gap));
+  /* La escala y los créditos del mapa se montan SOBRE la hoja (MapStage.module.css): un destino encuadrado no debe quedar
+     debajo de ellos (a 320 px la pastilla «i» tapaba parte del grupo «3»: r1:V-18). */
+  margin-block-end: 2.5rem;
+  pointer-events: none;
+}
+
+.tools:empty {
+  display: none;
+}
+
+/* Dentro de la hoja el dock no es una caja: ficha y carrusel son hijos directos de su cuerpo. */
+.dock {
+  display: contents;
+}
+
+.rail {
+  composes: surface blur scroll cue from '../../../styles/glass.module.css';
+
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Filtro por tipo: lo pinta una isla de cliente; su caja reserva el alto de su contenido (una fila de chips que
+   desplaza en horizontal en móvil; una columna de `--filter-rows` filas en escritorio). Sin JavaScript no hay isla, y
+   un filtro sin función no se muestra: el grupo entero se retira. */
+.filterSlot {
+  /* `flow-root`: el margen negativo de la fila de chips (relleno para su anillo de foco: FilterChips.module.css) se COLAPSARÍA con
+     el de esta caja y todo el carril subiría 8 px sobre el título del grupo. */
+  display: flow-root;
+  min-block-size: calc(var(--target-min) + var(--space-1) + 0.625rem);
+}
+
+@media (scripting: none) {
+  .filterGroup,
+  .search {
+    display: none;
+  }
+}
+
+/* Móvil: las herramientas flotan sobre el mapa, en una píldora horizontal arriba a la izquierda (la esquina derecha es del zoom y la brújula nativos). */
+.tools {
+  position: absolute;
+  inset-block-start: var(--hud-gap);
+  inset-inline-start: var(--hud-gap);
+  z-index: var(--z-hud);
+}
+
+/*
+ * Sin JavaScript no hay hoja que abrir ni mapa: el HUD vuelve a ser la pila de siempre bajo el mapa (el cuerpo de la hoja
+ * se muestra entero, ver HudSheet.module.css) y la página se desplaza. Las herramientas (isla de cliente) no existen.
+ */
+@media (max-width: 55.999rem) and (scripting: none) {
+  .shell {
+    display: grid;
+    grid-template-rows: minmax(40dvh, 50dvh) auto;
+    block-size: auto;
+    min-block-size: calc(100dvh - var(--header-height));
+  }
+
+  .map {
+    position: relative;
+    min-block-size: 18rem;
+  }
+
+  .hud {
+    position: static;
+    display: block;
+    padding: var(--space-4);
+  }
+
+  .safe,
+  .tools {
+    display: none;
+  }
+}
+
+.carouselHeading {
+  composes: eyebrow from '../../../styles/glass.module.css';
+
+  margin: 0;
+}
+
+.count {
+  color: var(--color-ink-muted);
+  font-family: var(--font-text);
+  font-weight: 500;
+}
+
+/* Un carrusel estrecho (la ficha ocupa la mitad del dock) no tiene sitio para el recuento: el título ya dice «Destinos». */
+@container (max-width: 40rem) {
+  .count {
+    display: none;
+  }
+}
+
+.attribution {
+  margin-block: var(--space-3) var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  font-weight: 700;
+}
+
+/* ---------- Escritorio: el mapa a sangre y el HUD flotando encima ---------- */
+
+@media (min-width: 56rem) {
+  .shell {
+    min-block-size: 30rem;
+  }
+
+  .hud {
+    display: grid;
+    grid-template-columns: var(--hud-rail-w) minmax(0, 1fr) var(--hud-panel-col) var(--hud-tools-w);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: var(--hud-gap);
+    row-gap: 0;
+    padding: var(--hud-gap) var(--hud-gap) var(--hud-strip);
+    pointer-events: none;
+  }
+
+  /* El título y el carril forman UNA tarjeta: el título se pega al carril (esquinas inferiores rectas y sin separación). */
+  .title {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    border-block-end: 0;
+    box-shadow: none;
+    font-size: 1.5rem;
+    text-wrap: balance;
+    pointer-events: auto;
+  }
+
+  /* El buscador se centra sobre las columnas del centro y del panel JUNTAS: su suma no cambia al abrir o plegar el panel
+     (la del centro cede lo que la del panel gana), así el campo no salta de sitio (r1:V-07: 144 px). Nunca invade la
+     columna de las herramientas (la tercera columna termina donde empieza la gutter que la separa). */
+  .search {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    justify-self: center;
+    inline-size: min(32rem, 100%);
+    margin-block-end: var(--hud-gap);
+  }
+
+  .filterSlot {
+    min-block-size: calc(
+      var(--filter-rows) * var(--target-min) + (var(--filter-rows) - 1) * var(--space-1)
+    );
+  }
+
+  .rail {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+    min-block-size: 0;
+    max-block-size: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+  }
+
+  .safe {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  /* Fila inferior: ficha (si hay destino) y carrusel, lado a lado y alineados por abajo. Llega hasta la columna del panel y
+     NO ocupa la de las herramientas (r2:F5): esa columna (zoom, brújula, «Relieve en 3D», «Capas y leyenda») mide ≈ 15 rem desde
+     arriba y, con poca altura o texto agrandado, bajaba hasta el dock y las dos filas de controles se tapaban. */
+  .dock {
+    display: flex;
+    grid-column: 1 / 4;
+    grid-row: 3;
+    align-items: flex-end;
+    gap: var(--hud-gap);
+    min-inline-size: 0;
+    margin-block-start: var(--hud-gap);
+  }
+
+  .featured {
+    flex: 0 0 min(34rem, 42%);
+    min-inline-size: 0;
+  }
+
+  /* Sin destino elegido la región en vivo sigue en el DOM pero no ocupa nada (ni deja un hueco doble en el dock). */
+  .featured:empty {
+    flex-basis: 0;
+    margin-inline-end: calc(-1 * var(--hud-gap));
+  }
+
+  .carousel {
+    flex: 1 1 0;
+    min-inline-size: 0;
+  }
+
+  /*
+   * El panel va SIEMPRE en la columna 3, en la fila del hueco, pegado abajo (a ras del dock) y a la derecha, a la izquierda
+   * de las herramientas: plegado es una píldora y abierto crece sobre el mismo borde derecho, sin saltar. Así NUNCA comparte
+   * columna con «Relieve en 3D» y «Capas y leyenda» (r2:F5: con poca altura o texto agrandado la píldora, que vivía en la
+   * columna de las herramientas, las tapaba). La columna mide 0 plegado (la píldora, de ancho `max-content`, desborda hacia
+   * la izquierda sin ocupar sitio) y `--hud-panel-w` abierto (`.hud:has(…)` más abajo).
+   */
+  .panel {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: end;
+    justify-self: end;
+  }
+
+  .panel[data-state='closed'] {
+    inline-size: max-content;
+  }
+
+  /* En `.shell` (no en `.hud`): los avisos del mapa (`MapStage`, hermano del HUD) también necesitan saber si el panel está abierto. */
+  .shell:has([data-hud-zone='panel'][data-state='open']) {
+    --hud-panel-col: var(--hud-panel-w);
+  }
+
+  /* Carril de herramientas: bajo el zoom y la brújula nativos de MapLibre (3 botones de 44 px + holgura). */
+  .tools {
+    position: static;
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    align-self: start;
+    padding-block-start: calc(3 * var(--target-min) + var(--space-3));
+    pointer-events: none;
+    z-index: auto;
+  }
+
+  .tools:empty {
+    display: none;
+  }
+}
+
+/*
+ * Pantallas anchas (≥ 80rem): el carril BAJA hasta la franja inferior (filas 2 y 3) y el dock empieza a su derecha.
+ * El filtro lleva ocho filas de 44 px y, limitado a la fila del hueco (sobre el dock), a 1280×800 dejaba fuera la última
+ * y los dos grupos plegados (backlog F2-11): ahora cabe entero. Un elemento que cruza una fila flexible no cuenta para el
+ * alto de las filas automáticas, así que el carril no engorda el dock y, si aun así no cabe (portátiles bajos), desplaza
+ * por dentro (`overflow-y: auto`), nunca recorta. La ficha toma más ancho (34rem) para que el nombre no se parta en dos y
+ * su alto siga siendo el del carrusel; con selección el carrusel queda más estrecho (una tarjeta y media, con flechas).
+ * Por debajo de 80rem el dock empieza en el borde izquierdo (bajo el carril) y el carril se queda en la fila del hueco: ahí la
+ * ficha no cabría. En los dos casos el dock termina en la columna del panel: la de las herramientas es solo de ellas.
+ */
+@media (min-width: 80rem) {
+  .shell {
+    --hud-panel-w: 18rem;
+  }
+
+  .rail {
+    grid-row: 2 / -1;
+  }
+
+  .dock {
+    grid-column: 2 / 4;
+  }
+
+  .featured {
+    flex-basis: min(34rem, 56%);
+  }
+}
+
+/* Estrecho: el buscador lleva la etiqueta encima del campo (dos filas) y su zona reserva ese alto. */
+@media (max-width: 30rem) {
+  .shell {
+    --hud-search-h: 5.25rem;
+  }
 }
