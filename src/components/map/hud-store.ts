@@ -8,7 +8,9 @@ import type { DestinationKey } from '@/domains/tourism/destinations';
  *    habrá mapa: sin WebGL, sin datos, bloqueado por derechos),
  *  - una orden de «volver a encuadrar este destino» (la cámara explícita `c` manda sobre `d`, así que volver a
  *    elegir el mismo destino no hace nada; esto sí vuela). Lleva un `nonce` para que dos órdenes iguales seguidas
- *    se distingan.
+ *    se distingan,
+ *  - el recorrido 3D (ADR-0027 A1): la ficha lo pide o lo detiene (`tourRequest`) y el lienzo, que lo ejecuta, publica
+ *    en qué punto va (`tour`). Un recorrido es una animación de la cámara, no un estado del enlace: no va en la URL.
  */
 export type HudMapStatus = 'loading' | 'ready' | 'unavailable';
 
@@ -20,9 +22,23 @@ export interface HudSnapshot {
   readonly frameRequest: { readonly key: DestinationKey; readonly nonce: number } | null;
   /** Orden de inclinar (o enderezar) la cámara, que da el botón «Relieve en 3D»; se atiende una vez por `nonce`. */
   readonly pitchRequest: { readonly pitch: number; readonly nonce: number } | null;
+  /** Orden de empezar el recorrido de un destino (`key`) o de detener el que haya (`null`); una vez por `nonce`. */
+  readonly tourRequest: { readonly key: DestinationKey | null; readonly nonce: number } | null;
+  /** El recorrido en curso (lo publica el lienzo): de qué destino y en qué paso va. `null` = ninguno. */
+  readonly tour: {
+    readonly key: DestinationKey;
+    readonly step: number;
+    readonly total: number;
+  } | null;
 }
 
-const INITIAL: HudSnapshot = { mapStatus: 'loading', frameRequest: null, pitchRequest: null };
+const INITIAL: HudSnapshot = {
+  mapStatus: 'loading',
+  frameRequest: null,
+  pitchRequest: null,
+  tourRequest: null,
+  tour: null,
+};
 
 let snapshot: HudSnapshot = INITIAL;
 const listeners = new Set<() => void>();
@@ -49,6 +65,36 @@ export function requestFrameDestination(key: DestinationKey): void {
  */
 export function requestPitch(pitch: number): void {
   emit({ ...snapshot, pitchRequest: { pitch, nonce: (snapshot.pitchRequest?.nonce ?? 0) + 1 } });
+}
+
+/** La ficha pide el recorrido 3D de un destino (el lienzo lo ignora si el mapa no está listo). */
+export function requestTour(key: DestinationKey): void {
+  emit({ ...snapshot, tourRequest: { key, nonce: (snapshot.tourRequest?.nonce ?? 0) + 1 } });
+}
+
+/**
+ * Detiene el recorrido en curso: lo pide la ficha («Detener el recorrido») y cualquier otra orden que mueva la cámara
+ * (inclinar, volver a encuadrar). Sin recorrido en curso no emite nada.
+ */
+export function requestStopTour(): void {
+  if (snapshot.tour === null && snapshot.tourRequest?.key == null) return;
+  emit({ ...snapshot, tourRequest: { key: null, nonce: (snapshot.tourRequest?.nonce ?? 0) + 1 } });
+}
+
+/** El lienzo publica el paso del recorrido (o `null` al terminar, al detenerse o al interrumpirlo la persona). */
+export function publishTour(tour: HudSnapshot['tour']): void {
+  const current = snapshot.tour;
+  if (
+    current === tour ||
+    (current !== null &&
+      tour !== null &&
+      current.key === tour.key &&
+      current.step === tour.step &&
+      current.total === tour.total)
+  ) {
+    return;
+  }
+  emit({ ...snapshot, tour });
 }
 
 /** Al desmontar el mapa: el HUD no debe quedarse con el estado ni con órdenes de un lienzo que ya no existe. */

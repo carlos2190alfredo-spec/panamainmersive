@@ -264,6 +264,13 @@
     "featured": {
       "reframe": "Auf das Reiseziel zentrieren"
     },
+    "tour": {
+      "start": "3D-Rundflug",
+      "stop": "Rundflug beenden",
+      "description": "Ein Flug von weniger als einer halben Minute um das Reiseziel, über dem Geländerelief. Keine Ansicht auf Straßenhöhe.",
+      "notice": "Der Rundflug lädt das Relief von Amazon Web Services, das Ihre IP erhält.",
+      "rightsPending": "3D-Rundflug deaktiviert, bis die Rechte an den Reliefdaten überprüft sind."
+    },
     "tools": {
       "label": "Kartenwerkzeuge",
       "threeD": "3D-Relief",

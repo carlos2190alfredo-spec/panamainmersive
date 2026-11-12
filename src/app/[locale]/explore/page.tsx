@@ -216,7 +216,11 @@ export default async function ExplorePage({ params }: LocaleParams) {
               </HudGroup>
             </section>
             <div className={styles.dock}>
-              <SelectedDestinationCard items={selectedItems} className={styles.featured} />
+              <SelectedDestinationCard
+                items={selectedItems}
+                className={styles.featured}
+                terrainAllowed={terrainAllowed}
+              />
               <HudCarousel
                 className={styles.carousel}
                 headingId={CAROUSEL_HEADING_ID}

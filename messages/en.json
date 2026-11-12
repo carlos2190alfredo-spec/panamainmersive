@@ -264,6 +264,13 @@
     "featured": {
       "reframe": "Recenter on the destination"
     },
+    "tour": {
+      "start": "3D tour",
+      "stop": "Stop the tour",
+      "description": "A flight of under half a minute around the destination, over the terrain relief. It is not a street-level view.",
+      "notice": "The tour requests terrain from Amazon Web Services, which gets your IP.",
+      "rightsPending": "3D tour turned off until the rights to the terrain data are verified."
+    },
     "tools": {
       "label": "Map tools",
       "threeD": "3D terrain",

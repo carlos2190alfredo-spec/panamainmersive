@@ -264,6 +264,13 @@
     "featured": {
       "reframe": "Recentrar no destino"
     },
+    "tour": {
+      "start": "Percurso 3D",
+      "stop": "Parar o percurso",
+      "description": "Um voo de menos de meio minuto à volta do destino, sobre o relevo do terreno. Não é uma vista ao nível da rua.",
+      "notice": "O percurso pede o relevo à Amazon Web Services, que receberá o seu IP.",
+      "rightsPending": "Percurso 3D desativado até que os direitos do relevo sejam verificados."
+    },
     "tools": {
       "label": "Ferramentas do mapa",
       "threeD": "Relevo em 3D",

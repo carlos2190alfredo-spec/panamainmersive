@@ -264,6 +264,13 @@
     "featured": {
       "reframe": "Volver a encuadrar el destino"
     },
+    "tour": {
+      "start": "Recorrido 3D",
+      "stop": "Detener el recorrido",
+      "description": "Un vuelo de menos de medio minuto alrededor del destino, sobre el relieve del terreno. No es una vista a pie de calle.",
+      "notice": "El recorrido pide el relieve a Amazon Web Services, que recibirá tu IP.",
+      "rightsPending": "Recorrido 3D desactivado hasta verificar los derechos del relieve."
+    },
     "tools": {
       "label": "Herramientas del mapa",
       "threeD": "Relieve en 3D",

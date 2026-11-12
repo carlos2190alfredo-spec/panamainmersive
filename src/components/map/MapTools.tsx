@@ -2,16 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 import { Suspense, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
-import {
-  DEFAULT_MAP_LAYERS,
-  MAP_LAYER_IDS,
-  allowedLayers,
-  type MapLayerId,
-} from '@/domains/geography/map-url-state';
-import { usesTerrain } from '@/domains/geography/map-style';
-import { CAROUSEL_UNAVAILABLE_ID, requestPitch, useHudStore } from './hud-store';
+import { DEFAULT_MAP_LAYERS, allowedLayers } from '@/domains/geography/map-url-state';
+import { CAROUSEL_UNAVAILABLE_ID, requestPitch, requestStopTour, useHudStore } from './hud-store';
 import { LAYERS_GROUP_ID, LEGEND_GROUP_ID } from './hud-ids';
 import styles from './MapTools.module.css';
+import { disableRelief, enableRelief, forgetReliefMemory, reliefInUse } from './relief';
 import {
   isMobileLayout,
   isSheetOpen,
@@ -19,7 +14,7 @@ import {
   useMobileLayout,
   useSheetOpen,
 } from './sheet-store';
-import { currentUrlLayers, useHydrated, useMapUrlState, writeLayers } from './use-map-url-state';
+import { currentUrlLayers, useHydrated, useMapUrlState } from './use-map-url-state';
 
 /** Cabeceo (grados) al activar el relieve en 3D: lo justo para que se distinga sin perder el mapa de vista. */
 const TILT_DEGREES = 55;
@@ -58,8 +53,8 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
   const mobile = useMobileLayout();
   const sheetOpen = useSheetOpen();
   const layersOpen = useLayersGroupOpen() && (!mobile || sheetOpen);
-  /** Si el botón añadió el sombreado (no lo había pedido la persona), al apagar el 3D se retira con él. */
-  const addedHillshade = useRef(false);
+  // La memoria de «el sombreado lo añadió el encendido» (ver `relief.ts`) no sobrevive a la pantalla.
+  useEffect(() => forgetReliefMemory, []);
   // Aviso PREVIO de privacidad (r3:F-01): antes de pulsar, el botón dice a quién llegará la dirección IP. Descripción accesible
   // SIEMPRE (también para quien no pasa el cursor) y texto visible al pasar el cursor o enfocar con el teclado; Escape lo
   // descarta mientras siga el cursor o el foco (WCAG 1.4.13) y el cursor puede pasar sobre él sin que se cierre.
@@ -96,7 +91,7 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
   // ¿Ya se está pidiendo el relieve de AWS? Con el 3D encendido, pero también con solo «Sombreado» (usa la misma fuente): entonces
   // el aviso de estado del mapa ya lo dice y pulsar el 3D no suma ningún tercero. El aviso previo («al activarlo…») no tiene
   // sentido y, visible a la vez que el de estado, lo tapaba.
-  const reliefInUse = threeD || usesTerrain(active);
+  const reliefOn = threeD || reliefInUse(active);
   const unavailable = mapStatus === 'unavailable';
   // Sin mapa listo no hay nada que inclinar; sin derechos tampoco. El motivo va como descripción y como `title`.
   const reason = !terrainAllowed
@@ -106,33 +101,19 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
       : null;
   const threeDDisabled = !hydrated || mapStatus !== 'ready' || !terrainAllowed;
 
-  /** Capas actuales LEÍDAS DE LA URL (no del render): dos pulsaciones seguidas no pueden usar un estado viejo. */
-  const currentLayers = (): readonly MapLayerId[] => currentUrlLayers(terrainAllowed);
-
   /**
-   * Solo al pulsar (nunca por defecto): el relieve de AWS se pide cuando `l` lleva `terrain3d`. Se añade también el
-   * sombreado, sin el cual el relieve en 3D casi no se distingue (el terreno se dibuja sin luz), y se inclina la cámara.
+   * Solo al pulsar (nunca por defecto): el relieve de AWS se pide cuando `l` lleva `terrain3d` (con el sombreado: ver
+   * `relief.ts`) y se inclina la cámara. Las capas se leen de la URL (no del render): dos pulsaciones seguidas no pueden usar
+   * un estado viejo. Inclinar o enderezar es mover la cámara a mano: detiene un recorrido en curso.
    */
   function toggleThreeD(): void {
-    const current = currentLayers();
-    if (current.includes('terrain3d')) {
-      const dropHillshade = addedHillshade.current;
-      addedHillshade.current = false;
-      writeLayers(
-        MAP_LAYER_IDS.filter(
-          (id) =>
-            current.includes(id) && id !== 'terrain3d' && !(dropHillshade && id === 'hillshade'),
-        ),
-      );
+    requestStopTour();
+    if (currentUrlLayers(terrainAllowed).includes('terrain3d')) {
+      disableRelief(terrainAllowed);
       requestPitch(0);
       return;
     }
-    addedHillshade.current = !current.includes('hillshade');
-    writeLayers(
-      MAP_LAYER_IDS.filter(
-        (id) => current.includes(id) || id === 'terrain3d' || id === 'hillshade',
-      ),
-    );
+    enableRelief(terrainAllowed);
     requestPitch(TILT_DEGREES);
   }
 
@@ -162,7 +143,7 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
   // lo dice, y desactivado no enviará nada a nadie) y, si lo hay, el motivo por el que no se puede usar.
   const reasonId =
     reason === null ? null : !terrainAllowed ? 'layer-hint-terrain3d' : CAROUSEL_UNAVAILABLE_ID;
-  const describedBy = [reliefInUse || threeDDisabled ? null : noticeId, reasonId]
+  const describedBy = [reliefOn || threeDDisabled ? null : noticeId, reasonId]
     .filter(Boolean)
     .join(' ');
 
@@ -179,7 +160,7 @@ function Tools({ terrainAllowed }: { terrainAllowed: boolean }) {
           type="button"
           className={`${styles.tool} ${styles.threeD}`}
           aria-pressed={threeD}
-          data-relief-in-use={reliefInUse ? 'true' : undefined}
+          data-relief-in-use={reliefOn ? 'true' : undefined}
           // El nombre accesible CONTIENE el texto visible («3D», WCAG 2.5.3).
           aria-label={t('tools.threeD')}
           aria-describedby={describedBy === '' ? undefined : describedBy}
