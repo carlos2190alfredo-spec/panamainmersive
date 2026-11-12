@@ -17,6 +17,8 @@ const FILES = {
   grid: 'src/components/DestinationGrid.module.css',
   search: 'src/components/DestinationSearch.module.css',
   glyph: 'src/components/DestinationGlyph.module.css',
+  travesia: 'src/components/Travesia.module.css',
+  isthmus: 'src/components/IsthmusMap.module.css',
 } as const;
 
 const NO_PREFERENCE = '(prefers-reduced-motion: no-preference)';
@@ -228,49 +230,41 @@ describe('portada: reglas que las herramientas no ven', () => {
     expect(withGradient.length).toBeGreaterThan(0);
   });
 
-  it('las dos tarjetas del héroe son SÓLIDAS en todos los anchos (sin vidrio) y el rótulo no lleva «chapa» propia (r1:V-11)', () => {
-    const base = rule('.copy, .frame');
-    expect(decl(base, 'background')).toBe('var(--color-glass-base)');
-    expect(decl(base, 'border-radius')).toBe('var(--radius-glass)');
-    expect(decl(base, 'border')).toBe('var(--glass-border)');
-    // Ninguna regla de la portada vuelve a hacer translúcido el marco ni desenfoca lo de detrás
+  it('el texto del héroe va sobre UNA tarjeta SÓLIDA en todos los anchos (sin vidrio) y el crédito del istmo también es sólido (r1:V-11)', () => {
+    const copy = rule('.copy');
+    expect(decl(copy, 'background')).toBe('var(--color-glass-base)');
+    expect(decl(copy, 'border-radius')).toBe('var(--radius-glass)');
+    expect(decl(copy, 'border')).toBe('var(--glass-border)');
+    expect(decl(rule('.credit'), 'background')).toBe('var(--color-glass-base)');
+    // Ninguna regla de la portada vuelve translúcida una superficie con texto ni desenfoca lo de detrás
     expect(page.filter((r) => decl(r, 'background') === 'var(--surface-glass)')).toEqual([]);
     expect(page.filter((r) => r.declarations.some((d) => /backdrop-filter/.test(d.prop)))).toEqual(
       [],
     );
-    // El rótulo va directamente sobre la tarjeta: sin fondo ni relleno propios (era un rectángulo más oscuro dentro del marco)
-    const wordmark = page.filter((r) => r.selector === '.wordmark');
-    expect(wordmark.length).toBeGreaterThan(0);
-    for (const r of wordmark) {
-      expect(decl(r, 'background'), '.wordmark background').toBeUndefined();
-      expect(decl(r, 'background-color'), '.wordmark background-color').toBeUndefined();
-      expect(decl(r, 'padding'), '.wordmark padding').toBeUndefined();
-    }
   });
 
-  it('control: con la «chapa» o el marco translúcido de antes la comprobación SÍ falla', () => {
-    const withPlate = read(FILES.page).replace(
-      '.wordmark {\n  display: grid;',
-      '.wordmark {\n  background: var(--color-glass-base);\n  display: grid;',
+  it('control: con la tarjeta translúcida la comprobación SÍ falla', () => {
+    const glassy = read(FILES.page).replace(
+      '.copy {\n  background: var(--color-glass-base);',
+      '.copy {\n  background: var(--surface-glass);',
     );
-    expect(withPlate).not.toBe(read(FILES.page));
-    const chapa = flatten(withPlate).find((r) => r.selector === '.wordmark');
-    expect(decl(chapa as FlatRule, 'background')).toBeDefined();
+    expect(glassy).not.toBe(read(FILES.page));
+    expect(
+      flatten(glassy).filter((r) => r.declarations.some((d) => d.value === 'var(--surface-glass)')),
+    ).not.toEqual([]);
   });
 
-  it('la tarjeta de la marca no se muestra en teléfonos (< 40rem), va arriba de 40 a 64rem y es columna desde 64rem (r1:V-04, r1:V-10)', () => {
-    expect(decl(rule('.brand', '(min-width'), 'display')).toBe('block');
-    const base = page.find((r) => r.selector === '.brand' && r.context.length === 0);
-    expect(decl(base as FlatRule, 'display')).toBe('none');
-    const shown = page.find((r) => r.selector === '.brand' && decl(r, 'display') === 'block');
-    expect(shown?.context.join(' ')).toContain('(min-width: 40rem)');
-    // Dos columnas SOLO desde 64rem: a 768 px la segunda columna apretaba el formulario
+  it('el istmo es la segunda columna SOLO desde 64rem (texto 5fr, istmo 7fr) y debajo del texto en pantallas menores (r1:V-10)', () => {
+    expect(rule('.isthmus')).toBeDefined();
     const columns = page.filter(
       (r) => r.selector === '.heroInner' && decl(r, 'grid-template-columns'),
     );
     const two = columns.find((r) => /7fr/.test(decl(r, 'grid-template-columns') ?? ''));
+    expect(decl(two as FlatRule, 'grid-template-columns')).toBe('minmax(0, 5fr) minmax(0, 7fr)');
     expect(two?.context.join(' ')).toContain('(min-width: 64rem)');
     expect(page.some((r) => /\(min-width: 48rem\)/.test(r.context.join(' ')))).toBe(false);
+    // Sin `order`: el orden del DOM (texto y llamada principal primero) es el visual en un teléfono
+    expect(page.filter((r) => decl(r, 'order') !== undefined).map((r) => r.selector)).toEqual([]);
   });
 
   it('en el héroe el título no se guioniza y el texto de apoyo se reduce en teléfonos para que la llamada principal entre en el pliegue', () => {
@@ -280,20 +274,29 @@ describe('portada: reglas que las herramientas no ven', () => {
     expect(decl(rule('.hero'), 'padding-block')).toBe('var(--space-4) var(--space-6)');
   });
 
-  it('la inclinación en perspectiva solo ocurre al pasar el cursor o enfocar, y dentro de `no-preference`', () => {
-    const tilt = page.filter((r) => decl(r, 'transform')?.includes('perspective'));
-    expect(tilt).toHaveLength(1);
-    expect(tilt[0]?.selector).toBe('.frame:hover, .frame:focus-within');
-    expect(tilt[0]?.context.join(' ')).toContain(NO_PREFERENCE);
-    expect(tilt[0]?.context.join(' ')).toContain('(hover: hover)');
-    expect(decl(tilt[0] as FlatRule, 'transform')).toBe(
-      'perspective(900px) rotateX(2deg) rotateY(-3deg) translateY(-4px)',
+  it('la profundidad espacial: las capas `data-depth` del istmo solo se desplazan con `no-preference` y solo con translate', () => {
+    const isthmus = flatten(read(FILES.isthmus));
+    const moving = isthmus.filter((r) => /\[data-depth/.test(r.selector) && decl(r, 'translate'));
+    expect(moving.map((r) => r.selector).sort()).toEqual([
+      ".hero [data-depth='far']",
+      ".hero [data-depth='mid']",
+      ".hero [data-depth='near']",
+    ]);
+    for (const r of moving) {
+      expect(r.context.join(' ')).toContain(NO_PREFERENCE);
+      expect(decl(r, 'translate')).toMatch(/var\(--depth-x, 0\).*var\(--depth-y, 0\)/);
+    }
+    // Y el escenario solo publica la posición con puntero fino, hover y sin movimiento reducido
+    const stage = read('src/components/DepthStage.tsx');
+    expect(stage).toContain(
+      "'(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'",
     );
+    expect(page.filter((r) => decl(r, 'transform')?.includes('perspective'))).toEqual([]);
   });
 
   it('la entrada del héroe es finita: cada animación ≤ 1 s contando su retraso, y solo con translate/scale', () => {
     const entry = page.filter(
-      (r) => r.context.join(' ').includes(NO_PREFERENCE) && /^\.(copy|frame)\b/.test(r.selector),
+      (r) => r.context.join(' ').includes(NO_PREFERENCE) && /^\.(copy|isthmus)\b/.test(r.selector),
     );
     expect(entry.length).toBeGreaterThanOrEqual(7);
     let longest = 0;
@@ -318,7 +321,7 @@ describe('portada: reglas que las herramientas no ven', () => {
     );
     expect(keyframes).toEqual({
       '@keyframes heroRise': ['scale', 'translate'],
-      '@keyframes frameSettle': ['scale', 'translate'],
+      '@keyframes isthmusSettle': ['scale', 'translate'],
       '@keyframes sectionReveal': ['translate'],
     });
   });

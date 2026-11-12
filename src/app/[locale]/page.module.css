@@ -245,16 +245,7 @@
   min-inline-size: 0;
 }
 
-.isthmusMap {
-  filter: drop-shadow(0 18px 30px rgb(0 0 0 / 45%));
-}
-
-/* Desde 64rem el istmo se sale un poco del contenedor por la derecha: es el protagonista del héroe. */
-@media (min-width: 64rem) {
-  .isthmus {
-    margin-inline-end: calc(-1 * var(--space-7));
-  }
-}
+/* El istmo NO se sale del contenedor: con un margen negativo la página desbordaba 14–45 px de 1024 a 1440 px (y al 125–200 %). */
 
 .credit {
   justify-self: end;

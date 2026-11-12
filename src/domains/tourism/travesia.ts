@@ -1,4 +1,4 @@
-import isthmus from './isthmus.generated.json';
+import isthmus from './isthmus.generated.json' with { type: 'json' };
 import { DESTINATIONS, type DestinationEntry, type DestinationKey } from './destinations';
 
 /**

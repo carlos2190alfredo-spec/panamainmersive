@@ -37,6 +37,8 @@
   inset-block-start: var(--header-height);
   z-index: 5;
   display: grid;
+  /* `minmax(0, 1fr)`: sin él la lista desplazable fija el ancho de la pista a su contenido y ensancha la página (775 px a 393). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
   margin-block: var(--space-6) var(--space-5);
   padding: var(--space-3) var(--space-4) var(--space-2);
@@ -83,6 +85,8 @@
   position: relative;
   display: flex;
   gap: var(--space-1);
+  /* Con márgenes `auto` un elemento de rejilla se ajusta a su contenido: sin `inline-size: 100%` la lista medía 1 152 px. */
+  inline-size: 100%;
   max-inline-size: 72rem;
   margin: 0 auto;
   padding: 0;
@@ -136,6 +140,9 @@
 .stop {
   position: relative;
   display: grid;
+  /* `minmax(0, 1fr)` y `overflow-wrap`: con el texto al 200 % el panel no puede ensanchar la escena (1.4.4, reflow). */
+  grid-template-columns: minmax(0, 1fr);
+  overflow-wrap: anywhere;
   align-items: center;
   scroll-margin-block-start: calc(var(--header-height) + 9rem);
 }
