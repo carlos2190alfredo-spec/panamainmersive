@@ -1703,4 +1703,6 @@ Cuatro revisores independientes auditaron la entrega 5j (honestidad/idiomas/docu
 
 **Otros cambios.** ESLint, Prettier y `tsc` excluyen `.claude/` (los árboles de trabajo de otras sesiones rompían `pnpm lint`). Producción tras el PR #8: el registro de compilación dice «Node.js version changed from 26.x to 22.x» y `/api/health` y `/es` responden (leídos con el enlace temporal de Vercel).
 
+**CI del PR #9** (`42f49f1`): 489 E2E pasaron y 3 fallaron, todas pruebas nuevas mías: el control de 2.4.11 (en Linux, con otras fuentes, 30 pulsaciones de Mayús+Tab no dan con el caso «a medio ver → alineado arriba», así que el control no veía el defecto antiguo; ahora es determinista: `scrollIntoView({ block: 'start' })` de cada enlace de escena, 0 tapados con el arreglo y ≥ 15 de 18 sin él) y la del anillo de foco de la barra (`networkidle` en la segunda visita del contexto: ahora `load`).
+
 **Qué queda.** La suite E2E completa no se ha corrido en local (la máquina está cargada: la corre el CI del PR); el `test:e2e:content` solo corre en CI. Fotos con derechos, revisión humana de los textos nuevos en en/pt/fr/de y L-01 siguen en manos de la persona propietaria. Sin verificar: Safari y Firefox (el `<use>` con `vector-effect` y `r` como propiedad CSS se han visto solo en Chromium), lectores de pantalla reales.

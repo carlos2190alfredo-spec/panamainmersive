@@ -221,19 +221,52 @@ test.describe('2.4.11 en la portada: la barra de paradas pegada no tapa el foco 
     expect(hidden).toEqual([]);
   });
 
-  test('control: sin el margen de la barra en las escenas, Mayús+Tab SÍ deja enlaces tapados', async ({
+  // Mayús+Tab (arriba) es el recorrido real, pero si cae en el caso «a medio ver → alineado arriba» depende de la altura
+  // de las escenas, es decir, de las FUENTES: en macOS sí y en el CI de Linux no (los dos con Chromium 156). Un control
+  // que depende de la geometría no sirve, así que el mecanismo se comprueba de forma determinista: `scrollIntoView` con
+  // `block: 'start'` aplica el mismo `scroll-padding` + `scroll-margin` que usa el navegador al llevar el foco a la vista.
+  const coveredAtStart = (page: Page): Promise<string[]> =>
+    page.evaluate(async () => {
+      const out: string[] = [];
+      for (const a of document.querySelectorAll<HTMLElement>('[data-travesia-stop] a')) {
+        a.scrollIntoView({ block: 'start' });
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));
+        const b = a.getBoundingClientRect();
+        const hits = [0.1, 0.5, 0.9].flatMap((fx) =>
+          [0.1, 0.5, 0.9].map((fy) =>
+            document.elementFromPoint(b.left + b.width * fx, b.top + b.height * fy),
+          ),
+        );
+        if (!hits.some((h) => h !== null && (a.contains(h) || h.contains(a))))
+          out.push(
+            `${a.closest('[data-travesia-stop]')?.id ?? '?'} «${(a.textContent ?? '').trim()}»`,
+          );
+      }
+      return out;
+    });
+
+  test('cada enlace de las escenas, alineado arriba como al enfocarlo, queda bajo la barra y no debajo de ella', async ({
     page,
   }) => {
-    // Siempre a 1280 × 800 (también en el proyecto móvil): en el teléfono, con escenas más altas que la pantalla, Chromium
-    // CENTRA el destino que no se ve y en 30 pulsaciones no se da el caso «a medio ver → alineado arriba» que lo tapa.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await fromEnd(page);
+    expect(await coveredAtStart(page)).toEqual([]);
+  });
+
+  test('control: sin el margen de la barra en las escenas, alineados arriba quedan TAPADOS', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await fromEnd(page);
     await applyCss(
       page,
       '[data-travesia-stop],[data-travesia-stop] a{scroll-margin-block-start:0 !important}',
     );
-    const { hidden } = await hiddenFocus(page, 30, 'Shift+Tab');
-    expect(hidden.length, 'el detector tiene que ver el defecto antiguo').toBeGreaterThan(0);
+    // Los últimos enlaces de la página no siempre se pueden alinear arriba (no queda página debajo): 17 de 18 en macOS.
+    expect(
+      (await coveredAtStart(page)).length,
+      'el detector tiene que ver el defecto antiguo',
+    ).toBeGreaterThanOrEqual(15);
   });
 });
 

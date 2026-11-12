@@ -221,7 +221,9 @@ test.describe('travesía: de oeste a este, con la barra de paradas', () => {
     ]) {
       await page.setViewportSize(size);
       await page.goto(PATHS.home.es);
-      await hydrated(page);
+      // `load` y no `networkidle`: en la segunda visita del contexto no llega (ISR de Explorar) y `focus()` no necesita
+      // la página hidratada
+      await page.waitForLoadState('load');
       const stops = travesiaStops();
       for (const key of [stops[0]!.entry.key, stops.at(-1)!.entry.key]) {
         const link = page.locator(`a[data-travesia-link="${key}"]`);
