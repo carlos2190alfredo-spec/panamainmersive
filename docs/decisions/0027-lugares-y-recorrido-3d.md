@@ -4,7 +4,7 @@
 - Fecha: 2026-11-11
 - Completa a: ADR-0004 (sus tres condiciones para activar Cesium **no cambian**), ADR-0007 (derechos y cobertura), ADR-0014 (relieve opt-in), ADR-0024 (Experience Resolver); PROMPT-MAESTRO §3, §8–10 y §22 (Fases 5–7)
 - Numeración: el 0026 queda para la Travesía (rama `feat/travesia`, citado en `src/domains/tourism/travesia.ts`)
-- Evidencia: E-101 a E-105 (`docs/research/evidence-log.md`) y `docs/research/places-probe-2026-11-11.json`
+- Evidencia: E-102 a E-105 y E-107 (`docs/research/evidence-log.md`; la E-106 es la corrección del ancla de Santa Catalina, PR #10) y `docs/research/places-probe-2026-11-11.json`
 
 ## Contexto
 
@@ -14,12 +14,12 @@ Petición de la persona propietaria (2026-11-11): que la plataforma sea un mapa 
 
 **Hechos que condicionan la decisión** (fiabilidad entre paréntesis):
 
-1. **La cobertura fotorrealista de Google en Panamá es `UNKNOWN`** (E-30 sigue vigente). Google habla de «más de 49 países» sin publicar la lista; la página de cobertura de 3D Maps distingue el terreno (mundial) de la superficie fotorrealista (solo en zonas marcadas). Solo se resuelve con una clave y un sondeo por destino (E-103, S).
-2. **Los lugares de Google Places solo pueden mostrarse sobre un mapa de Google**: su página de políticas prohíbe usarlos en un mapa que no lo sea (E-103, S). Con el mapa base de MapLibre, Places queda fuera.
-3. **Las teselas 3D de Google** se dibujan con CesiumJS o deck.gl; admiten datos propios encima si la atribución de Google no queda tapada, y no se pueden cachear ni usar sin conexión (E-31, E-103, S).
-4. **Precios** (E-104, S; sin confirmar para 2026): Map Tiles API, 1 000 solicitudes de tesela raíz gratis al mes y después 6 USD por cada 1 000; Cesium ion Community solo para uso no comercial, Commercial desde 149 USD al mes.
-5. **Overture Places en Panamá** (E-101, P, sondeo propio): hay volumen en los destinos urbanos y de playa, **nada útil** en Coiba ni en la cumbre del Barú, el 96 % viene de un solo proveedor (Meta), casi ningún registro dice si el negocio sigue abierto y la mayoría trae teléfono o correo (datos personales).
-6. **Afiliados** (E-105, S): Viator da acceso básico gratuito e inmediato (la compra se completa en viator.com); la Demand API de Booking.com exige un contrato de afiliado gestionado; la Content API de Tripadvisor da 5 000 llamadas gratis al mes con requisitos de presentación estrictos.
+1. **La cobertura fotorrealista de Google en Panamá es `UNKNOWN`** (E-30 sigue vigente). Google habla de «más de 49 países» sin publicar la lista; la página de cobertura de 3D Maps distingue el terreno (mundial) de la superficie fotorrealista (solo en zonas marcadas). Solo se resuelve con una clave y un sondeo por destino (E-104, S).
+2. **Los lugares de Google Places solo pueden mostrarse sobre un mapa de Google**: su página de políticas prohíbe usarlos en un mapa que no lo sea (E-104, S). Con el mapa base de MapLibre, Places queda fuera.
+3. **Las teselas 3D de Google** se dibujan con CesiumJS o deck.gl; admiten datos propios encima si la atribución de Google no queda tapada, y no se pueden cachear ni usar sin conexión (E-31, E-104, S).
+4. **Precios** (E-105, S; sin confirmar para 2026): Map Tiles API, 1 000 solicitudes de tesela raíz gratis al mes y después 6 USD por cada 1 000; Cesium ion Community solo para uso no comercial, Commercial desde 149 USD al mes.
+5. **Overture Places en Panamá** (E-102, P, sondeo propio): hay volumen en los destinos urbanos y de playa, **nada útil** en Coiba ni en la cumbre del Barú, el 96 % viene de un solo proveedor (Meta), casi ningún registro dice si el negocio sigue abierto y la mayoría trae teléfono o correo (datos personales).
+6. **Afiliados** (E-107, S): Viator da acceso básico gratuito e inmediato (la compra se completa en viator.com); la Demand API de Booking.com exige un contrato de afiliado gestionado; la Content API de Tripadvisor da 5 000 llamadas gratis al mes con requisitos de presentación estrictos.
 
 ## Decisión
 
@@ -38,10 +38,10 @@ Petición de la persona propietaria (2026-11-11): que la plataforma sea un mapa 
 ### A2 — Lugares: actividades, dónde comer y dónde dormir (Overture Places)
 
 1. **Pestañas en la ficha y una capa en el mapa.** Cada lugar se muestra como **«Sin verificar»**, con su fuente (proveedor y licencia por registro).
-2. **Sin teléfonos, correos ni redes sociales** hasta la revisión de privacidad (L-04). **Sin horarios ni «abierto ahora»**: la fuente casi nunca dice si el negocio sigue funcionando (E-101).
-3. **Por clave estable** (`id` de Overture) y una proximidad **declarada** al ancla del destino, **nunca por nombre** (hay homónimos: E-102).
+2. **Sin teléfonos, correos ni redes sociales** hasta la revisión de privacidad (L-04). **Sin horarios ni «abierto ahora»**: la fuente casi nunca dice si el negocio sigue funcionando (E-102).
+3. **Por clave estable** (`id` de Overture) y una proximidad **declarada** al ancla del destino, **nunca por nombre** (hay homónimos: E-103).
 4. **Filtro mínimo** (propuesta, sin validar): categorías de una **lista cerrada** (la del sondeo, `pipelines/spikes/places_probe.py`) y una confianza mínima por decidir mirando una muestra a mano. `historic_site` (1 216 en Panamá) no entra sin revisión.
-5. **Sin datos, se dice**: en Coiba, Santa Catalina (hasta corregir su ancla, E-102) o la cumbre del Barú la pestaña dice que no hay datos; no se rellena.
+5. **Sin datos, se dice**: en Coiba, Santa Catalina (hasta corregir su ancla, E-103) o la cumbre del Barú la pestaña dice que no hay datos; no se rellena.
 6. **Datos estáticos** como el mapa base: el pipeline genera la capa (PMTiles, ADR-0005/0014) con una puerta de verificación. Las tablas `businesses` y `activities` (Fases 6–7) siguen siendo para lo **verificado**: Overture es la semilla, no el catálogo.
 7. **Producción bloqueada** mientras la política de Overture Places sea `provisional` (L-01).
 
@@ -60,11 +60,11 @@ Se activa en un destino **solo si se cumplen todas**:
 
 Un solo visor pesado a la vez; en móvil, nunca Cesium y MapLibre completos juntos (rector §8).
 
-**Sondeo previo** (necesita una clave de Google Maps Platform con facturación: decisión de la persona propietaria): para cada ancla, recorrer el árbol de teselas hasta el punto y registrar el menor error geométrico alcanzado, más una captura revisada a mano. Son ≈ 9–20 solicitudes de tesela raíz, dentro del tramo gratuito declarado (E-104, sin confirmar).
+**Sondeo previo** (necesita una clave de Google Maps Platform con facturación: decisión de la persona propietaria): para cada ancla, recorrer el árbol de teselas hasta el punto y registrar el menor error geométrico alcanzado, más una captura revisada a mano. Son ≈ 9–20 solicitudes de tesela raíz, dentro del tramo gratuito declarado (E-105, sin confirmar).
 
 ### Orden de trabajo
 
-1. Sondeo de Overture Places (**hecho**, E-101).
+1. Sondeo de Overture Places (**hecho**, E-102).
 2. Sondeo de Google 3D (bloqueado por la clave).
 3. A1, el recorrido sobre el relieve (**hecho en local**, 2026-11-11: ver `docs/progress.md`; sin dispositivo real ni CI todavía).
 4. A2, los lugares sin verificar.
@@ -74,7 +74,7 @@ Un solo visor pesado a la vez; en móvil, nunca Cesium y MapLibre completos junt
 ## Alternativas descartadas
 
 - **C — Todo Google** (3D Maps de Maps JavaScript API + Places + Street View). Es lo más rápido para ver fotorrealismo y fichas con fotos y horarios, pero vuelve a Google **indispensable** (rector §2: el producto debe sobrevivir sin él); Places obliga a un mapa de Google y eso supone **rehacer Explorar** (MapLibre, PMTiles, HUD y cientos de pruebas); y sus datos no se pueden guardar ni pasar por el modelo de contenido con evidencia (ADR-0019).
-- **Google Places sobre nuestro mapa**: prohibido por su política (E-103).
+- **Google Places sobre nuestro mapa**: prohibido por su política (E-104).
 - **Captura propia** (drones, fotogrametría, _Gaussian splats_, 360): prohibida por el rector §2.
 - **deck.gl (`Tile3DLayer`) dentro de MapLibre en vez de Cesium.** Sería un solo visor y más ligero, pero mezcla las teselas de Google con nuestro mapa base en el mismo lienzo. Queda como **variante de B** que se evalúa cuando los términos estén leídos en la fuente primaria.
 
@@ -101,7 +101,7 @@ Moviendo cada peso un ±20 % el orden se mantiene, pero entre A y B solo hay 3 p
 - **Una capa nueva en el registro** (ADR-0017) con su leyenda y sus clases CSS; los lugares son **entrada hostil**: nombres limpios y pintados como texto (ADR-0018).
 - **Privacidad**: el extracto completo de Overture Places trae teléfonos y correos; **no se versiona** (el repositorio es público) y el pipeline los descarta antes de teselar.
 - **Costo**: A ≈ 0 de infraestructura; B crece de forma lineal con las sesiones 3D (`docs/costs.md`, sensibilidad A).
-- **Hallazgo colateral** (E-102): el ancla de `santa-catalina` apunta a una localidad homónima a ≈ 56 km del pueblo turístico. Hay que corregirla, por ID, antes de enseñar lugares allí.
+- **Hallazgo colateral** (E-103): el ancla de `santa-catalina` apunta a una localidad homónima a ≈ 56 km del pueblo turístico. Hay que corregirla, por ID, antes de enseñar lugares allí.
 
 ## Revisar cuando
 
