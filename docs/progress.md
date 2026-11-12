@@ -1581,7 +1581,7 @@ Cuatro revisores independientes auditaron la entrega 5j (honestidad/idiomas/docu
 
 <!-- pending-review-keys:start -->
 
-**Nuevas (54 claves × 5 idiomas = 270 textos).** Respecto de `6193226` (el último commit anterior a la interfaz inmersiva), con el commit o paso de origen:
+**Nuevas (59 claves × 5 idiomas = 295 textos).** Respecto de `6193226` (el último commit anterior a la interfaz inmersiva), con el commit o paso de origen:
 
 - Marca, cabecera y vista previa (`30ed83a`): `Brand.tagline`, `Nav.cta`, `Nav.menu`, `Meta.og.alt` (4).
 - Buscador de la portada (`30ed83a`; `Search.placeholder` y `Search.scope` reescritas en la revisión): `Search.label`, `Search.placeholder`, `Search.results`, `Search.resultsLabel`, `Search.scope`, `Search.submit`, `Search.viewOnMap`, `Search.viewOnMapLabel` (8).
@@ -1594,6 +1594,7 @@ Cuatro revisores independientes auditaron la entrega 5j (honestidad/idiomas/docu
 - Hoja móvil y panel de información (`30ed83a`; `Map.sheet.open` y `Map.sheet.close` reescritas con `{title}` en la revisión): `Map.sheet.open`, `Map.sheet.close`, `Map.panel.toggle` (3).
 - Insignia de cobertura (revisión): `Coverage.geometryLabel` (1).
 - Portada «Travesía» (entrega 5k, `e4f7f17`; `lead`, `credit` y `reference` reescritas tras la revisión independiente, que retiró «posición real» y «Ubicación»): `Home.travesia.heading`, `Home.travesia.lead`, `Home.travesia.caribbean`, `Home.travesia.pacific`, `Home.travesia.west`, `Home.travesia.east`, `Home.travesia.navLabel`, `Home.travesia.stop`, `Home.travesia.reference`, `Home.travesia.coordinates`, `Home.travesia.credit`, `Home.travesia.hemisphere.north`, `Home.travesia.hemisphere.south`, `Home.travesia.hemisphere.east`, `Home.travesia.hemisphere.west` (15).
+- Recorrido 3D de la ficha de Explorar (ADR-0027 A1, rama `feat/lugares-3d`; traducción mía en en/pt/fr/de): `Map.tour.start`, `Map.tour.stop`, `Map.tour.description`, `Map.tour.notice`, `Map.tour.rightsPending` (5).
 
 **Cambiadas en los cinco idiomas (5 claves × 5 = 25 textos):** `Home.lead`, `Home.principles.languages.body`, `Language.help`, `Map.attribution`, `Meta.home.description`. `Map.attribution` conserva el texto y añade la marca `<en>…</en>` (X2); `Language.help` y `Home.principles.languages.body` dejan de prometer que el cambio de idioma conserva el filtro y la búsqueda (X2); `Home.lead` y `Meta.home.description` dejan de prometer «organizar viajes» (X3).
 
@@ -1706,3 +1707,81 @@ Cuatro revisores independientes auditaron la entrega 5j (honestidad/idiomas/docu
 **CI del PR #9** (`42f49f1`): 489 E2E pasaron y 3 fallaron, todas pruebas nuevas mías: el control de 2.4.11 (en Linux, con otras fuentes, 30 pulsaciones de Mayús+Tab no dan con el caso «a medio ver → alineado arriba», así que el control no veía el defecto antiguo; ahora es determinista: `scrollIntoView({ block: 'start' })` de cada enlace de escena, 0 tapados con el arreglo y ≥ 15 de 18 sin él) y la del anillo de foco de la barra (`networkidle` en la segunda visita del contexto: ahora `load`).
 
 **Qué queda.** La suite E2E completa no se ha corrido en local (la máquina está cargada: la corre el CI del PR); el `test:e2e:content` solo corre en CI. Fotos con derechos, revisión humana de los textos nuevos en en/pt/fr/de y L-01 siguen en manos de la persona propietaria. Sin verificar: Safari y Firefox (el `<use>` con `vector-effect` y `r` como propiedad CSS se han visto solo en Chromium), lectores de pantalla reales.
+
+## Decisión de lugares y recorrido 3D + sondeo de Overture Places (2026-11-11, rama `feat/lugares-3d`)
+
+**Qué se decidió** (ADR-0027, opción elegida por la persona propietaria: «A, luego B»): un **recorrido 3D** como vuelo de cámara guiado sobre el relieve de MapLibre y **lugares** (actividades, dónde comer, dónde dormir) de Overture Places marcados «sin verificar», ahora; el **3D fotorrealista** de Google con Cesium, solo en los destinos cuya cobertura se verifique, con tope de gasto y el Experience Resolver cableado. Descartados: todo Google (Google indispensable y rehacer Explorar), Google Places sobre nuestro mapa (lo prohíbe su política, E-104) y la captura propia (rector §2). Matriz ponderada: A 74, B 71, C 53; el margen A–B es estrecho y decide la reversibilidad (B incluye A).
+
+**Qué se hizo (VERIFIED como sondeo, no como producto).** `pipelines/spikes/places_probe.py` leyó Overture Places (`2026-09-23.1`) en el rectángulo de Panamá: 35 996 lugares, 96 % de Meta, casi ninguno con estado de funcionamiento y la mayoría con teléfono o correo. A 5 km del ancla hay volumen en Ciudad de Panamá, Casco Antiguo, Boquete, Bocas del Toro y el Canal; poco en El Valle; **nada útil en Coiba, la cumbre del Barú ni Santa Catalina** (E-102). Resumen agregado en `docs/research/places-probe-2026-11-11.json`; el extracto con contactos quedó **fuera del repositorio**.
+
+**Hallazgo (E-103): el ancla de `santa-catalina` es otra localidad homónima**, a 56 km del pueblo de surf y buceo (8,14 frente a ≈ 7,63 de latitud). Lo corroboran 13 lugares con «Santa Catalina» en el nombre y 61 a 5 km del segundo punto de división de E-23c, frente a 0 junto al ancla actual. Es una corroboración por nombre, no una asignación: corregirla por ID es F5-9.
+
+**Cómo ejecutarlo.** Ver `pipelines/spikes/README.md` (dos pasos: `extract` y `summarize`, con el entorno de `pipelines/requirements.txt`; ≈ 50 s de lectura por HTTP Range).
+
+**Pruebas ejecutadas** (no hay código de aplicación nuevo). El sondeo de punta a punta, Prettier sobre `docs/` (limpio) y la suite unitaria: **2414 de 2416**. Las 2 que fallan son las de siempre en macOS (`e2e-run` y `pg-sweep`, que leen `/proc`), confirmadas al repetirlas solas. El script de sondeo **no** tiene pruebas unitarias, como el resto de `pipelines/spikes/`.
+
+**No verificado.** Ninguna muestra de lugares se revisó a mano (las cifras dicen cuánto hay, no si es correcto); la cobertura de Google 3D sigue `UNKNOWN` (F5-5, necesita clave); los términos y precios de Google, Cesium ion, Viator, Booking.com y Tripadvisor se leyeron en resúmenes de un buscador, no en la página completa (E-104, E-105 y E-107).
+
+**Siguiente acción.** F5-6 (recorrido sobre el relieve) no depende de nada externo; F5-5 y F5-8 esperan una clave de Google y una cuenta de afiliado; F5-9 (ancla de Santa Catalina) es una corrección editorial con evidencia.
+
+## «Recorrido 3D» sobre el relieve (ADR-0027 A1, 2026-11-11, rama `feat/lugares-3d`)
+
+**Qué funciona (VERIFIED en local, macOS, Chromium 156).**
+
+- **Botón «Recorrido 3D»** en la ficha del destino de Explorar, bajo «Abrir la ficha». Es un **vuelo de cámara** de 27,5 s sobre el relieve de AWS: aproximación al ancla del destino y una vuelta completa, inclinada a 60°. **No** es un paseo a pie de calle ni un recorrido por interiores, y no inventa paradas: solo usa el ancla y el zoom del destino.
+- **Con movimiento reducido**: cuatro vistas por **cortes** (sin animación), 5 s cada una.
+- **El destino queda a la vista**: el ancla cae en el centro del hueco que el HUD deja libre. Se usa el `offset` de MapLibre, medido al empezar cada paso, y **no** su `padding`, que persistiría y cambiaría lo que significa `c` en la URL.
+- **En móvil** el botón vive en la hoja inferior: al pulsarlo la hoja se **pliega** y el foco pasa al asa (el botón queda inerte); abrirla de nuevo da «Detener el recorrido».
+- **Opt-in**: sin pulsar, cero peticiones a AWS. Pulsar escribe el relieve en `l` (3D y sombreado, con la misma memoria que «Relieve en 3D» para retirar el sombreado al apagar). Antes de pulsar, un **aviso visible** («El recorrido pide el relieve a Amazon Web Services, que recibirá tu IP.») describe al botón; con el relieve ya en uso no se muestra.
+- **Detener**: mientras dura, el mismo botón dice «Detener el recorrido».
+  - También lo detienen elegir otro destino o quitar la selección, «Relieve en 3D», «Volver a encuadrar», el filtro o la búsqueda, y Atrás o Adelante.
+  - Lo **interrumpe** cualquier gesto sobre el mapa (puntero, rueda, toque o una tecla de navegación con el foco en él), escuchado en captura antes que MapLibre; desde ese momento la cámara es de la persona.
+- **No va en la URL** (es una animación, no un estado); la cámara final se escribe como siempre.
+- **Desactivado con su motivo** sin mapa listo o sin derechos sobre el relieve.
+- **Código**:
+  - `src/domains/experience/tour.ts`: guion puro, sin reloj.
+  - `src/components/map/tour-runner.ts`: ejecutor, tipado con un `Pick` de los métodos públicos de `Map`.
+  - `src/components/map/relief.ts`: encender y apagar el relieve, compartido con «Relieve en 3D».
+  - `tourOffset` en `MapStage`: dónde cae el ancla.
+  - Órdenes `requestTour`/`requestStopTour`/`publishTour` en `hud-store.ts`, y el botón en `SelectedDestinationCard`.
+- **Mensajes**: cinco claves nuevas en los cinco idiomas, `Map.tour.*`, traducidas por mí y registradas como pendientes de revisión.
+
+**Lo que se encontró (honestamente).**
+
+1. **La primera versión se rompía al detenerse.**
+   - Usaba `map.isEasing()`, que en MapLibre 6.15 existe en la cámara interna pero **no** en `Map`. Lo «arreglé» con una conversión de tipo, el build lo aceptó, y en el navegador `e.isEasing is not a function` tumbaba la página entera al pulsar «Detener».
+   - Lo vio la primera ejecución de la E2E (3 de 4 en rojo); las unitarias no, porque el ejecutor vivía dentro de `MapStage`.
+   - **Arreglo**: `isMoving()`, que es pública y que `_afterEase` pone a `false` antes del `moveend` final.
+   - **Para que no se repita**: el ejecutor pasó a su propio módulo, con un parámetro `Pick<Map, …>` (usar algo que `Map` no expone es un error de compilación). Tiene pruebas contra un mapa simulado que imita ese orden de eventos.
+2. **El destino quedaba fuera del hueco libre.** Al mirarlo con **relieve real** de AWS en el navegador integrado (GPU real, 1024×768), el volcán Barú giraba pegado al borde de la ficha y el carrusel, porque el centro de la órbita era el del lienzo. Con el `offset`, x = 603–618 frente a 614, el centro del hueco. En vertical queda algo más arriba: el marcador se dibuja a la altura de la cumbre.
+3. **En móvil el vuelo no se veía.**
+   - Con la hoja abierta (donde está el botón) solo quedaba visible la franja superior del mapa, y el aviso de estado de AWS tapaba justo el destino.
+   - Plegar la hoja no bastó a la primera: con WebGL por software la hoja tarda **segundos** en encogerse y el primer paso medía su borde a medio plegar (traza: borde en y = 434 en lugar de 614; ancla en y = 165, bajo el aviso).
+   - **Arreglo**: con la hoja en estado «closed», se descuenta lo que aún mide su cuerpo.
+   - La E2E móvil nueva **falla con esa mutación** («el destino no queda bajo el aviso de AWS») y pasa sin ella.
+4. **Alto de la ficha.**
+   - A 1280 y 1440 px medía ≈ 210 px antes del cambio; el botón le suma 13 px (va en la columna derecha, bajo «Abrir la ficha»).
+   - El aviso, en su primera redacción, ocupaba dos líneas y llevaba la ficha a 260 px, por encima del carrusel (254 px): el dock crecía. Se acortó a una línea: **243 px**, y el dock ya no crece en pantallas anchas.
+   - A 1024 px la ficha **ya** era más alta que el carrusel (293 px, por el nombre en dos líneas) y el aviso, a dos líneas, le suma 38 px: **331 px**. A 1024×700 el hueco del mapa pasa de ≈ 228 a ≈ 190 px mientras el relieve está apagado (backlog F5-11).
+
+**Pruebas ejecutadas.**
+
+- Unitarias nuevas:
+  - Guion: 15.
+  - Botón, relieve compartido, órdenes del almacén y hoja móvil: 19.
+  - Ejecutor con mapa simulado: 14.
+- Siete mutaciones del botón, del almacén y de la hoja: **todas muertas**, con restauración comprobada.
+- Suite unitaria completa, al final: **2462 de 2464**; fallan solo las 2 de siempre en macOS (`e2e-run` y `pg-sweep`, que leen `/proc`). Una pasada anterior, con carga 60–80 de otras sesiones, dio 3 fallos más en guiones de procesos que, repetidos solos, pasaron.
+- `typecheck`, `lint` y `format`: limpios.
+- E2E nuevas: 4 de escritorio (`e2e/explore-tour.spec.ts`) y 1 de móvil (`e2e/explore-tour.mobile.spec.ts`): **5 de 5**.
+- Techo de omitidas: con el mapa base oculto, **5 omitidas de 5** → techo **114 → 119** en `ci.yml`, `CLAUDE.md` y `docs/testing.md`.
+- `pnpm check:bundle`:
+  - Explorar: **205,6 → 206,1 KB** de JS inicial (de 210) y 15,2 → 15,3 KB de CSS.
+  - Mapa diferido: 463,0 → 464,3 KB (de 500).
+  - Islas del HUD: 4,6 KB, sin cambios.
+- **Regresión de Explorar** (HUD, interacciones, hoja móvil, mapa y axe): la primera pasada coincidió con otras **dos suites de Playwright de otras sesiones** (carga 60–80). Dio 205 verdes y 21 fallos, casi todos por plazo al cargar el mapa, y se cortó. La **segunda pasada** (carga ≈ 16–30, dos trabajadores, 316 pruebas de escritorio y móvil): **315 de 316**. La que falló (axe de Fuentes en claro, sin mapa ni nada de este cambio) venció el plazo de 30 s y, repetida sola, pasa en 11,9 s.
+
+**No verificado.**
+
+- En un **dispositivo real**, en el **CI de Linux** y, en **móvil**, con relieve real: el navegador integrado estaba oculto y la página en segundo plano no dibuja; la E2E móvil usa la tesela plana de 0 m.
+- Las traducciones (en/pt/fr/de) no tienen revisión humana.

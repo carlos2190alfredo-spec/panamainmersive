@@ -8,6 +8,7 @@ Pruebas técnicas pequeñas ejecutadas el 2026-10-20 para resolver riesgos que p
 | `ov_schema.py` | Volumen y columnas por tema de Overture para el bbox de Panamá. | E-24 |
 | `ov_names.py` | Búsqueda por nombre (sin acentos) de los nueve destinos en Overture. | E-23 |
 | `terrain_probe.py` | Elevación, fuentes y metadatos del terreno AWS Terrarium en puntos de sondeo. | E-25 |
+| `places_probe.py` | Lugares de Overture Places por destino y categoría, con procedencia, confianza y presencia de contactos (sin guardarlos). El extracto no se versiona; el resumen agregado está en `docs/research/places-probe-2026-11-11.json`. | E-102, E-103 |
 
 Los puntos de `terrain_probe.py` son **aproximados y solo para sondear**; no son geometrías ni se publican.
 
@@ -19,6 +20,8 @@ python3 -m venv .venv && .venv/bin/pip install -r pipelines/requirements.txt
   id,geometry,country,subtype,admin_level,class,names,region,division_id,version,sources,is_land,is_territorial,bbox
 .venv/bin/python -I pipelines/spikes/ov_names.py base land_use /tmp/names_land_use.jsonl
 .venv/bin/python -I pipelines/spikes/terrain_probe.py
+.venv/bin/python -I pipelines/spikes/places_probe.py extract /tmp/places_pa.jsonl   # contiene contactos: NO versionar
+.venv/bin/python -I pipelines/spikes/places_probe.py summarize /tmp/places_pa.jsonl docs/research/places-probe-2026-11-11.json
 ```
 
 La release de Overture está fijada en `REL` dentro de `ov_extract.py` (`2026-09-23.1`).

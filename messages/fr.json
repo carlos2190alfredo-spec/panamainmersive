@@ -283,6 +283,13 @@
     "featured": {
       "reframe": "Recadrer la destination"
     },
+    "tour": {
+      "start": "Survol 3D",
+      "stop": "Arrêter le survol",
+      "description": "Un vol de moins d’une demi-minute autour de la destination, au-dessus du relief. Ce n’est pas une vue au niveau de la rue.",
+      "notice": "Le survol demande le relief à Amazon Web Services, qui recevra votre IP.",
+      "rightsPending": "Survol 3D désactivé tant que les droits sur le relief ne sont pas vérifiés."
+    },
     "tools": {
       "label": "Outils de la carte",
       "threeD": "Relief en 3D",

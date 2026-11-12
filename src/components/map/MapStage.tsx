@@ -49,8 +49,9 @@ import {
   useAreaStore,
 } from './area-selection-store';
 import { useExploreFilter } from './explore-filter-store';
-import { publishMapStatus, resetHudStore, useHudStore } from './hud-store';
-import { isMobileLayout } from './sheet-store';
+import { publishMapStatus, publishTour, resetHudStore, useHudStore } from './hud-store';
+import { SHEET_BODY_SELECTOR, isMobileLayout } from './sheet-store';
+import { runTour, type TourEnd } from './tour-runner';
 import type { MapDestination } from './map-data';
 import {
   currentUrlLayers,
@@ -144,6 +145,34 @@ function hudPadding(container: HTMLElement, margin: number): FramePadding {
     safe ? safe.getBoundingClientRect() : null,
     margin,
   );
+}
+
+/**
+ * Dónde cae el ancla del recorrido 3D, como desplazamiento (px) respecto al centro del lienzo: el centro del hueco que el HUD deja
+ * libre. En escritorio, la celda central de la rejilla (`[data-hud-safe]`, la misma que mide `hudPadding`); en móvil, lo que
+ * queda del mapa POR ENCIMA de la hoja inferior (el botón vive dentro de ella y, abierta, tapa más de la mitad del mapa).
+ */
+function tourOffset(container: HTMLElement): readonly [number, number] {
+  const box = container.getBoundingClientRect();
+  if (isMobileLayout()) {
+    const sheet = document.querySelector<HTMLElement>('[data-hud-zone="sheet"]');
+    const rect = sheet?.getBoundingClientRect();
+    let bottom = box.bottom;
+    if (sheet && rect && rect.height > 0) {
+      // Plegada, su borde es el de la cabecera aunque el cuerpo aún se esté encogiendo (la transición dura ≈ 240 ms y, con
+      // WebGL por software, segundos: medida, el primer paso dejaba el ancla bajo el aviso de AWS): se descuenta el cuerpo.
+      const shrinking =
+        sheet.dataset.state === 'open'
+          ? 0
+          : (sheet.querySelector(SHEET_BODY_SELECTOR)?.getBoundingClientRect().height ?? 0);
+      bottom = Math.min(box.bottom, rect.top + shrinking);
+    }
+    // nunca más arriba que un objetivo (44 px) bajo el borde superior, aunque la hoja ocupe casi todo
+    const visibleCenter = Math.max(box.top + 44, (box.top + bottom) / 2);
+    return [0, visibleCenter - (box.top + box.bottom) / 2];
+  }
+  const padding = hudPadding(container, 0);
+  return [(padding.left - padding.right) / 2, (padding.top - padding.bottom) / 2];
 }
 
 /** Lado mínimo (px) de un objetivo que se puede pulsar (WCAG 2.5.8, nivel AA). */
@@ -480,7 +509,7 @@ export function MapStage({
   const cameraText = state.camera ? formatCamera(state.camera) : null;
   const selectedAreaId = state.area ?? null;
   const { frameRequest } = useAreaStore();
-  const { frameRequest: destinationFrame, pitchRequest } = useHudStore();
+  const { frameRequest: destinationFrame, pitchRequest, tourRequest, tour } = useHudStore();
   // Filtro por tipo y búsqueda (estado local, no en la URL): los marcadores muestran solo lo que coincide, y el destino
   // SELECCIONADO nunca se retira (sin marcador, la ficha quedaría suelta).
   const filter = useExploreFilter();
@@ -493,6 +522,12 @@ export function MapStage({
   const appliedDestinationRef = useRef<DestinationKey | undefined>(undefined);
   const handledFrameRef = useRef(0);
   const handledPitchRef = useRef(0);
+  const handledTourRef = useRef(0);
+  /** Detiene el recorrido en curso (si lo hay). Toda orden que mueva la cámara lo llama antes de moverla. */
+  const stopTourRef = useRef<(reason: Exclude<TourEnd, 'done'>) => void>(() => undefined);
+  const stopTour = (): void => {
+    stopTourRef.current('stopped');
+  };
   // «Vista de conjunto»: la cámara sigue donde la dejó `frameOverview` (nadie la movió: ni la persona, ni la URL, ni un
   // vuelo a un destino). Mientras sea así, cambiar el tamaño de la ventana vuelve a encuadrar el conjunto en el hueco nuevo.
   const overviewRef = useRef(false);
@@ -936,6 +971,7 @@ export function MapStage({
 
     return () => {
       disposed = true;
+      stopTourRef.current('stopped');
       attributionWatcher?.disconnect();
       window.clearTimeout(debounce);
       for (const { marker } of store.values()) marker.remove();
@@ -961,6 +997,7 @@ export function MapStage({
     if (!map || !container || status !== 'ready') return;
     if (state.camera && cameraText !== null && cameraText !== lastWrittenRef.current) {
       leaveOverview();
+      stopTour();
       lastWrittenRef.current = cameraText;
       appliedDestinationRef.current = state.destination;
       const view = toMapView(state.camera, container.clientHeight || 600);
@@ -978,6 +1015,7 @@ export function MapStage({
       const destination = destinationsRef.current.find((d) => d.key === state.destination);
       if (destination) {
         leaveOverview();
+        stopTour();
         frame(map, container, destination, shownDestinations());
       }
     }
@@ -1013,6 +1051,7 @@ export function MapStage({
     const container = containerRef.current;
     if (!map || !container || status !== 'ready' || !frameRequest) return;
     leaveOverview();
+    stopTour();
     frameBox(map, container, frameRequest.bounds, {
       margin: FRAME_MARGIN_PX,
       maxZoom: 12,
@@ -1035,6 +1074,7 @@ export function MapStage({
     const destination = destinationsRef.current.find((d) => d.key === destinationFrame.key);
     if (destination) {
       leaveOverview();
+      stopTour();
       frame(map, container, destination, shownDestinations());
     }
   }, [destinationFrame, status]);
@@ -1052,6 +1092,7 @@ export function MapStage({
     if (pitchRequest.nonce <= handledPitchRef.current) return;
     handledPitchRef.current = pitchRequest.nonce;
     leaveOverview();
+    stopTour();
     // El relieve sigue a la URL ANTES de mover la cámara (r3:F-02): apagado, se retira ya, no cuando llegue el render.
     applyStyleRef.current();
     map.easeTo({
@@ -1059,6 +1100,46 @@ export function MapStage({
       duration: prefersReducedMotion() ? 0 : PITCH_DURATION_MS,
     });
   }, [pitchRequest, status]);
+
+  // Recorrido 3D (ADR-0027 A1): la ficha lo pide (o lo detiene) y aquí se ejecuta. Lo pide SOLO la persona al pulsar; la ficha
+  // ya escribió en `l` el relieve (opt-in, con su aviso previo) y aquí se aplica ANTES de mover la cámara, como al inclinar.
+  // Cada orden lleva un `nonce` y se atiende una sola vez; empezar uno nuevo detiene el anterior.
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!tourRequest) {
+      handledTourRef.current = 0;
+      return;
+    }
+    if (!map || !container || status !== 'ready') return;
+    if (tourRequest.nonce <= handledTourRef.current) return;
+    handledTourRef.current = tourRequest.nonce;
+    stopTour();
+    const destination = destinationsRef.current.find((d) => d.key === tourRequest.key);
+    if (!destination) return;
+    leaveOverview();
+    applyStyleRef.current();
+    const key = destination.key;
+    stopTourRef.current = runTour(
+      map,
+      container,
+      { lon: destination.lon, lat: destination.lat, zoom: destination.defaultZoom },
+      prefersReducedMotion() ? 'reduced' : 'animated',
+      () => tourOffset(container),
+      (step, total) => {
+        publishTour({ key, step, total });
+      },
+      () => {
+        stopTourRef.current = () => undefined;
+        publishTour(null);
+      },
+    );
+  }, [tourRequest, status]);
+
+  // Un recorrido es del destino elegido: elegir otro (o quitar la selección) lo detiene; también si el mapa deja de estar listo.
+  useEffect(() => {
+    if (tour && (tour.key !== state.destination || status !== 'ready')) stopTour();
+  }, [tour, state.destination, status]);
 
   // El filtro por tipo o la búsqueda cambian qué marcadores se ven: se reagrupan (la agrupación solo se recalculaba al
   // cargar, al redimensionar y al terminar un movimiento).
@@ -1078,6 +1159,7 @@ export function MapStage({
     if (shownKey === lastFramedRef.current) return;
     const timer = window.setTimeout(() => {
       lastFramedRef.current = shownKey;
+      stopTour();
       const shown = shownDestinations();
       const duration = prefersReducedMotion() ? 0 : FLY_DURATION_MS;
       if (!isFiltering(filter)) {

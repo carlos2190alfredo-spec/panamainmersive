@@ -5,7 +5,8 @@
  * datos (ADR-0025 §9).
  *
  * Compacta a propósito (≈ 200 px de alto, como el carrusel que tiene al lado): nombre y tipo a la izquierda, la acción
- * principal a la derecha, la nota de procedencia debajo y las dos acciones secundarias en una fila. Nada recorta texto.
+ * principal a la derecha con «Recorrido 3D» debajo (ADR-0027 A1: en la columna de la derecha, a la altura del nombre, para no
+ * sumar una fila), las notas debajo y las dos acciones secundarias en una fila. Nada recorta texto.
  */
 .region {
   min-inline-size: 0;
@@ -18,9 +19,12 @@
   grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 10.5rem);
   grid-template-areas:
     'text link'
+    'text tour'
     'note note'
     'actions actions';
   gap: var(--space-2) var(--space-4);
+  /* La descripción del recorrido es `.visually-hidden` (absoluta): que se mida dentro de la ficha y no de la página. */
+  position: relative;
   padding: var(--space-3) var(--space-4);
   /* El HUD no recibe punteros (`pointer-events: none`): cada superficie los pide para sí. */
   pointer-events: auto;
@@ -63,8 +67,14 @@
   font-size: var(--text-s);
 }
 
-.note {
+/* La nota de procedencia y, si pulsar «Recorrido 3D» va a pedir el relieve a AWS, su aviso previo (r3:F-01). */
+.notes {
+  display: grid;
   grid-area: note;
+  gap: var(--space-1);
+}
+
+.note {
   margin: 0;
   color: var(--color-ink-muted);
   font-size: 0.75rem;
@@ -126,6 +136,16 @@
   cursor: not-allowed;
 }
 
+/* «Recorrido 3D» (o «Detener el recorrido» mientras dura): la segunda acción del destino, bajo la principal (va tras
+   `.secondary`, que compone). */
+.tour {
+  composes: secondary;
+
+  grid-area: tour;
+  align-self: start;
+  font-weight: 700;
+}
+
 .reason {
   grid-column: 1 / -1;
   margin: 0;
@@ -136,12 +156,16 @@
 /* Móvil (pila bajo el mapa): una sola columna, la acción principal a todo el ancho. */
 @media (max-width: 55.99rem) {
   .card {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
-      'text'
-      'link'
-      'note'
-      'actions';
+      'text text'
+      'link tour'
+      'note note'
+      'actions actions';
+  }
+
+  .tour {
+    align-self: stretch;
   }
 
   .link {
