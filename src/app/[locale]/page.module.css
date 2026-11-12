@@ -60,9 +60,10 @@
 }
 
 /*
- * Mejora progresiva (color-mix: Chrome 111, Safari 16.2, Firefox 113): resplandor azul claro DETRÁS de la marca (fuera de la
- * columna de texto) y curvas de nivel con máscara que las desvanece hacia los bordes. Los centros siguen a la columna de la
- * marca: `min(79%, 50% + 20.8rem)` es su centro en pantallas estrechas (columnas 7fr/5fr) y en las anchas (contenedor de 72rem).
+ * Mejora progresiva (color-mix: Chrome 111, Safari 16.2, Firefox 113): resplandor azul claro DETRÁS del istmo (fuera de la
+ * columna de texto) y una rejilla DECORATIVA de 4rem con máscara que la desvanece hacia los bordes (no son meridianos ni
+ * paralelos: no se alinea con la proyección del istmo). Desde 64rem el resplandor sigue a la columna del istmo (texto 5fr,
+ * istmo 7fr): su centro es el 71 % del contenedor, `min(71%, 50% + 15rem)` con el contenedor de 72rem.
  */
 @supports (background: color-mix(in srgb, red 50%, transparent)) {
   .decor {
@@ -82,28 +83,24 @@
 
   .contours {
     background-image:
-      repeating-radial-gradient(
-        circle at 50% 8rem,
-        transparent 0 1.1rem,
-        color-mix(in srgb, var(--color-on-hero) 22%, transparent) 1.1rem calc(1.1rem + 1px)
+      repeating-linear-gradient(
+        90deg,
+        transparent 0 calc(4rem - 1px),
+        color-mix(in srgb, var(--color-on-hero) 10%, transparent) calc(4rem - 1px) 4rem
       ),
-      repeating-radial-gradient(
-        circle at 88% 90%,
-        transparent 0 1.6rem,
-        color-mix(in srgb, var(--color-brand-sky) 30%, transparent) 1.6rem calc(1.6rem + 1px)
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 calc(4rem - 1px),
+        color-mix(in srgb, var(--color-on-hero) 10%, transparent) calc(4rem - 1px) 4rem
       );
-    mask-image: radial-gradient(
-      ellipse 60% 18rem at 50% 8rem,
-      currentcolor 0 40%,
-      transparent 100%
-    );
+    mask-image: radial-gradient(ellipse 70% 80% at 72% 50%, currentcolor 0 35%, transparent 100%);
   }
 
   @media (min-width: 64rem) {
     .decor {
       background:
         radial-gradient(
-          36rem 28rem at min(79%, calc(50% + 20.8rem)) 50%,
+          36rem 28rem at min(71%, calc(50% + 15rem)) 50%,
           color-mix(in srgb, var(--color-brand-sky) 46%, transparent),
           transparent 72%
         ),
@@ -117,21 +114,17 @@
 
     .contours {
       background-image:
-        repeating-radial-gradient(
-          circle at min(79%, calc(50% + 20.8rem)) 50%,
-          transparent 0 1.1rem,
-          color-mix(in srgb, var(--color-on-hero) 22%, transparent) 1.1rem calc(1.1rem + 1px)
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 calc(4rem - 1px),
+          color-mix(in srgb, var(--color-on-hero) 10%, transparent) calc(4rem - 1px) 4rem
         ),
-        repeating-radial-gradient(
-          circle at 95% 100%,
-          transparent 0 1.6rem,
-          color-mix(in srgb, var(--color-brand-sky) 30%, transparent) 1.6rem calc(1.6rem + 1px)
+        repeating-linear-gradient(
+          0deg,
+          transparent 0 calc(4rem - 1px),
+          color-mix(in srgb, var(--color-on-hero) 10%, transparent) calc(4rem - 1px) 4rem
         );
-      mask-image: radial-gradient(
-        ellipse 42% 54% at min(79%, calc(50% + 20.8rem)) 50%,
-        currentcolor 0 45%,
-        transparent 100%
-      );
+      mask-image: radial-gradient(ellipse 70% 80% at 72% 50%, currentcolor 0 35%, transparent 100%);
     }
   }
 }
@@ -148,25 +141,29 @@
   align-items: center;
 }
 
-/* Dos columnas solo desde 64rem: a 768 px la tarjeta de la marca ocupaba una segunda columna y apretaba el formulario (r1:V-10). */
+/*
+ * Dos columnas solo desde 64rem (a 768 px una segunda columna apretaba el formulario: r1:V-10). Sin istmo (derechos del
+ * contorno denegados en este entorno: ADR-0026) el texto va solo, con su ancho de lectura.
+ */
 @media (min-width: 64rem) {
   .heroInner {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: var(--space-6);
+  }
+
+  .heroInner:not(:has(.isthmus)) {
+    grid-template-columns: minmax(0, 40rem);
   }
 }
 
-/* ---------- Superficies: la columna de texto (sólida) y el marco de la marca (vidrio) ---------- */
+/* ---------- Superficie: la columna de texto (sólida) ---------- */
 
 /*
- * Columna de texto y tarjeta de la marca: SÓLIDAS (--color-glass-base, opaca) y de UNA sola pieza. axe no puede medir el
- * contraste de un texto cuya superficie es translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría.
- * Sobre una superficie opaca sí lo mide (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo
- * posible). La tarjeta de la marca fue vidrio con una «chapa» sólida detrás del rótulo (una caja dentro de otra, r1:V-11):
- * ahora el rótulo va directamente sobre la tarjeta, sin fondo propio.
+ * Columna de texto: SÓLIDA (--color-glass-base, opaca) y de UNA sola pieza. axe no puede medir el contraste de un texto
+ * cuya superficie es translúcida sobre un degradado: quedaría «incompleto» y nadie lo comprobaría. Sobre una superficie
+ * opaca sí lo mide (tests/unit/design calcula además el vidrio de los tokens sobre el peor fondo posible).
  */
-.copy,
-.frame {
+.copy {
   background: var(--color-glass-base);
   border: var(--glass-border);
   border-radius: var(--radius-glass);
@@ -240,93 +237,32 @@
   gap: var(--space-3);
 }
 
-/* ---------- Tarjeta de la marca ---------- */
+/* ---------- Istmo ---------- */
 
 /*
- * La marca ya está en la cabecera y en el pie: la tarjeta del héroe no se muestra en teléfonos (< 40rem), donde empujaba la
- * llamada principal fuera del primer pliegue (r1:V-04). De 40 a 64rem va ARRIBA, compacta y en una fila (el DOM lleva antes el
- * texto, que es lo que lee un lector de pantalla); desde 64rem es la segunda columna.
+ * El istmo (ADR-0026): segunda columna desde 64rem, debajo del texto en pantallas menores (el orden del DOM es el visual: el
+ * texto y la llamada principal van primero en un teléfono). Es una figura DECORATIVA para la tecnología de apoyo salvo su
+ * crédito de datos, que es texto sobre el color sólido del héroe. Las capas del dibujo se mueven con el puntero (DepthStage).
  */
-.brand {
-  display: none;
-  order: -1;
-}
-
-@media (min-width: 40rem) {
-  .brand {
-    display: block;
-  }
-}
-
-.frame {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  padding: var(--space-4);
-}
-
-.mark {
-  block-size: clamp(5.2rem, 22vw, 6.6rem);
-}
-
-/* El rótulo es texto vivo directamente sobre la tarjeta sólida: sin fondo propio (r1:V-11). */
-.wordmark {
-  display: grid;
-  gap: var(--space-1);
+.isthmus {
   margin: 0;
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  /* Su ancho decide el tamaño de rótulos y puntos del dibujo (IsthmusMap.module.css). */
+  container-type: inline-size;
 }
 
-.wordmarkMain {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: var(--text-xl);
-  line-height: var(--leading-tight);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  /* Un nombre propio no se parte con guion (r2:F7). */
-  hyphens: none;
-}
+/* El istmo NO se sale del contenedor: con un margen negativo la página desbordaba 14–45 px de 1024 a 1440 px (y al 125–200 %). */
 
-.wordmarkSub {
+.credit {
+  justify-self: end;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
   color: var(--color-ink-muted);
+  background: var(--color-glass-base);
+  border-radius: var(--radius-s);
   font-size: var(--text-s);
-  font-weight: 700;
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-  hyphens: none;
-}
-
-@media (min-width: 64rem) {
-  .brand {
-    order: 0;
-  }
-
-  .frame {
-    flex-direction: column;
-    gap: var(--space-5);
-    padding: var(--space-6);
-    text-align: center;
-  }
-
-  .mark {
-    block-size: clamp(9rem, 20vw, 16rem);
-  }
-
-  /* Filetes rojos del tablero a los lados de «IMMERSIVE»: adorno puro (el rojo no es texto). */
-  .wordmarkSub {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-  }
-
-  .wordmarkSub::before,
-  .wordmarkSub::after {
-    content: '';
-    flex: 1;
-    block-size: 2px;
-    background: var(--color-cta);
-  }
 }
 
 /* ---------- Secciones ---------- */
@@ -381,7 +317,7 @@
   }
 }
 
-@keyframes frameSettle {
+@keyframes isthmusSettle {
   from {
     translate: 0 1.5rem;
     scale: 0.94;
@@ -429,20 +365,8 @@
     animation-delay: 250ms;
   }
 
-  .frame {
-    animation: frameSettle 800ms var(--ease-out) 150ms both;
-  }
-
-  /* Inclinación en perspectiva SOLO al pasar el cursor o enfocar dentro del marco. */
-  @media (hover: hover) {
-    .frame {
-      transition: transform var(--motion-medium) var(--ease-out);
-    }
-
-    .frame:hover,
-    .frame:focus-within {
-      transform: perspective(900px) rotateX(2deg) rotateY(-3deg) translateY(-4px);
-    }
+  .isthmus {
+    animation: isthmusSettle 800ms var(--ease-out) 150ms both;
   }
 
   /* Revelado al desplazarse (atado al scroll, una vez): solo translate. */
@@ -462,13 +386,7 @@
   }
 
   .copy,
-  .frame,
   .principle {
     border-color: CanvasText;
-  }
-
-  .wordmarkSub::before,
-  .wordmarkSub::after {
-    background: CanvasText;
   }
 }

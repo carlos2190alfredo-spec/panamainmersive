@@ -18,6 +18,8 @@ export default tseslint.config(
       'public/**',
       'pipelines/**',
       '.venv/**',
+      // Árboles de trabajo de OTRAS sesiones (`.claude/worktrees/…`): no son este árbol y cambian mientras se ejecuta.
+      '.claude/**',
       'next-env.d.ts',
     ],
   },

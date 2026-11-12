@@ -1,11 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { TEXT_SPACING_CSS, applyCss, clippedText, hiddenFocus } from './a11y-probes';
 import { LOCALES, PAGE_NAMES, PATHS } from './helpers';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 /** Plazo (ms) de las pruebas de axe que recorren Explorar en los cinco idiomas (mapa WebGL por software; el CI de GitHub es más lento). */
 const EXPLORE_AXE_TIMEOUT_MS = 90_000;
+const HOME_AXE_TIMEOUT_MS = 60_000;
 
 test.describe('WCAG 2.2 AA con axe (todas las páginas × cinco idiomas × tema claro/oscuro)', () => {
   for (const scheme of ['light', 'dark'] as const) {
@@ -15,6 +16,10 @@ test.describe('WCAG 2.2 AA con axe (todas las páginas × cinco idiomas × tema 
         // con un solo trabajador tarda 18–27 s de los 30 s por defecto y con carga normal de CI lo supera. El plazo es
         // solo de ESTA página (las demás no lo necesitan); no es una espera: cada paso sigue esperando a su condición.
         if (name === 'explore') test.setTimeout(EXPLORE_AXE_TIMEOUT_MS);
+        // La portada (ADR-0026: diez istmos SVG, nueve escenas, la barra de paradas) se mide en ≈ 4–7 s por idioma con la
+        // máquina cargada (carga 44–61 en 12 núcleos, 2026-11-12): la primera, con el servidor recién arrancado, quedó en
+        // 30 s justos dos veces seguidas con un solo trabajador; la misma en oscuro, ya en caliente, pasó.
+        if (name === 'home') test.setTimeout(HOME_AXE_TIMEOUT_MS);
         await page.emulateMedia({ colorScheme: scheme });
         for (const locale of LOCALES) {
           await page.goto(PATHS[name][locale]);
@@ -175,6 +180,7 @@ test.describe('foco no oculto (WCAG 2.4.11)', () => {
 
   for (const locale of ['es', 'de'] as const) {
     for (const name of [
+      'home',
       'destinations',
       'destination',
       'sources',
@@ -192,6 +198,138 @@ test.describe('foco no oculto (WCAG 2.4.11)', () => {
       });
     }
   }
+});
+
+// La portada lleva, además de la cabecera, la barra de paradas de la travesía PEGADA (ADR-0026). Hacia atrás el enlace
+// enfocado queda encima y el navegador lo alinea arriba: sin contar la barra en el `scroll-padding` quedaba entero debajo.
+test.describe('2.4.11 en la portada: la barra de paradas pegada no tapa el foco (r:A11Y-1)', () => {
+  const fromEnd = async (page: Page): Promise<void> => {
+    await page.goto(PATHS.home.es);
+    // `load` y no `networkidle`: en la segunda visita del contexto no llega (ISR de Explorar); el alto publicado
+    // por TravesiaProgress (abajo) ya prueba que la página está hidratada
+    await page.waitForLoadState('load');
+    await expect(page.locator('#travesia')).toHaveCSS('--travesia-rail-h', /^[1-9]\d*px$/);
+    await page.locator('#parada-panama-city a').nth(1).focus();
+  };
+
+  test('con Mayús+Tab por las nueve escenas, ningún enlace enfocado queda entero bajo cabecera y barra', async ({
+    page,
+  }) => {
+    await fromEnd(page);
+    const { checked, hidden } = await hiddenFocus(page, 30, 'Shift+Tab');
+    expect(checked, 'casi nada se comprobó').toBeGreaterThan(20);
+    expect(hidden).toEqual([]);
+  });
+
+  // Mayús+Tab (arriba) es el recorrido real, pero si cae en el caso «a medio ver → alineado arriba» depende de la altura
+  // de las escenas, es decir, de las FUENTES: en macOS sí y en el CI de Linux no (los dos con Chromium 156). Un control
+  // que depende de la geometría no sirve, así que el mecanismo se comprueba de forma determinista: `scrollIntoView` con
+  // `block: 'start'` aplica el mismo `scroll-padding` + `scroll-margin` que usa el navegador al llevar el foco a la vista.
+  const coveredAtStart = (page: Page): Promise<string[]> =>
+    page.evaluate(async () => {
+      const out: string[] = [];
+      for (const a of document.querySelectorAll<HTMLElement>('[data-travesia-stop] a')) {
+        a.scrollIntoView({ block: 'start' });
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));
+        const b = a.getBoundingClientRect();
+        const hits = [0.1, 0.5, 0.9].flatMap((fx) =>
+          [0.1, 0.5, 0.9].map((fy) =>
+            document.elementFromPoint(b.left + b.width * fx, b.top + b.height * fy),
+          ),
+        );
+        if (!hits.some((h) => h !== null && (a.contains(h) || h.contains(a))))
+          out.push(
+            `${a.closest('[data-travesia-stop]')?.id ?? '?'} «${(a.textContent ?? '').trim()}»`,
+          );
+      }
+      return out;
+    });
+
+  test('cada enlace de las escenas, alineado arriba como al enfocarlo, queda bajo la barra y no debajo de ella', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await fromEnd(page);
+    expect(await coveredAtStart(page)).toEqual([]);
+  });
+
+  test('control: sin el margen de la barra en las escenas, alineados arriba quedan TAPADOS', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await fromEnd(page);
+    await applyCss(
+      page,
+      '[data-travesia-stop],[data-travesia-stop] a{scroll-margin-block-start:0 !important}',
+    );
+    // Los últimos enlaces de la página no siempre se pueden alinear arriba (no queda página debajo): 17 de 18 en macOS.
+    expect(
+      (await coveredAtStart(page)).length,
+      'el detector tiene que ver el defecto antiguo',
+    ).toBeGreaterThanOrEqual(15);
+  });
+});
+
+test.describe('la barra de paradas PEGADA: recorrerla con el teclado no mueve la página (r2)', () => {
+  const stuck = async (page: Page): Promise<void> => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(PATHS.home.es);
+    // `load` y no `networkidle`: en la segunda visita del contexto no llega (ISR de Explorar); el alto publicado
+    // por TravesiaProgress (abajo) ya prueba que la página está hidratada
+    await page.waitForLoadState('load');
+    await page.locator('#parada-coiba').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await expect(page.locator('#travesia')).toHaveCSS('--travesia-rail-h', /^[1-9]\d*px$/);
+  };
+  const jumps = (page: Page): Promise<number[]> =>
+    page.evaluate(async () => {
+      const out: number[] = [];
+      for (const a of document.querySelectorAll<HTMLElement>('[data-travesia-link]')) {
+        const y = scrollY;
+        a.focus();
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)));
+        out.push(Math.round(scrollY - y));
+      }
+      return out;
+    });
+
+  test('enfocar cada enlace de la barra deja la página donde estaba', async ({ page }) => {
+    await stuck(page);
+    expect(await jumps(page)).toEqual(Array<number>(9).fill(0));
+  });
+
+  test('control: con el alto de la barra en el scroll-padding del DOCUMENTO (el arreglo descartado), la página salta', async ({
+    page,
+  }) => {
+    await stuck(page);
+    await applyCss(
+      page,
+      'html{scroll-padding-block-start:calc(var(--header-height) + 140px) !important}',
+    );
+    expect((await jumps(page)).some((dy) => dy !== 0)).toBe(true);
+  });
+
+  test('con poca altura (800 × 400) la barra NO se pega y su alto publicado es 0; con 800 × 900, sí', async ({
+    page,
+  }) => {
+    for (const [height, sticky] of [
+      [400, false],
+      [900, true],
+    ] as const) {
+      await page.setViewportSize({ width: 800, height });
+      await page.goto(PATHS.home.es);
+      // `load` y no `networkidle`: en la segunda visita del contexto no llega (ISR de Explorar); el alto publicado
+      // por TravesiaProgress (abajo) ya prueba que la página está hidratada
+      await page.waitForLoadState('load');
+      await expect(page.locator('nav[data-travesia-rail]')).toHaveCSS(
+        'position',
+        sticky ? 'sticky' : 'relative',
+      );
+      await expect(page.locator('#travesia')).toHaveCSS(
+        '--travesia-rail-h',
+        sticky ? /^[1-9]\d*px$/ : '0px',
+      );
+    }
+  });
 });
 
 test.describe('movimiento', () => {

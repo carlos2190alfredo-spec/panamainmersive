@@ -1,0 +1,433 @@
+/*
+ * «Travesía» (ADR-0026): de oeste a este, una escena por destino. UI espacial: cada escena son dos planos a distinta
+ * profundidad (el localizador del istmo detrás, el panel delante y elevado, solapándolo) que se separan al desplazarse,
+ * y una barra de paradas pegada bajo la cabecera. Reglas de la portada que se mantienen (tests/unit/design/home-css.test.ts):
+ * el texto va SIEMPRE sobre una superficie sólida, solo propiedades lógicas, objetivos ≥ 44 px, nada recortado con texto
+ * dentro (1.4.12), movimiento solo con `no-preference` y atado al scroll (finito), sin animar `opacity` en lo que lleva texto.
+ */
+.section {
+  position: relative;
+  padding-block: var(--space-7) var(--space-8);
+  background-color: var(--color-paper);
+}
+
+.intro {
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+/*
+ * Título de la sección principal: mayor que los h3 de las escenas (`--text-xl`) y MENOR que el h1 en todos los anchos (con
+ * `--text-2xl` era mayor que el h1: r:F8; con `--text-xl` igualaba a los h3: r2:F8b). 375 px: 26,7 frente a 28,2 del h1;
+ * 1280 px: 43,2 frente a 49,6.
+ */
+.heading {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 1.2rem + 2vw, 2.7rem);
+  line-height: 1.1;
+  margin-block: 0 var(--space-3);
+  text-wrap: balance;
+}
+
+.lead {
+  max-inline-size: 40rem;
+  margin-block: 0;
+}
+
+/* ---------- Barra de paradas (pegada bajo la cabecera) ---------- */
+
+.rail {
+  position: sticky;
+  inset-block-start: var(--header-height);
+  z-index: 5;
+  container: travesia-rail / inline-size;
+  display: grid;
+  /* `minmax(0, 1fr)`: sin él la lista desplazable fija el ancho de la pista a su contenido y ensancha la página (775 px a 393). */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  margin-block: var(--space-6) var(--space-5);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  background-color: var(--color-surface);
+  border-block: 1px solid var(--color-line-soft);
+  box-shadow: var(--shadow-depth-2);
+}
+
+/*
+ * Con poca altura (teléfono apaisado, zoom del 400 %: 1.4.10) la barra no se pega: cabecera más barra se comían la mitad
+ * de la pantalla durante toda la travesía (r:A11Y-2). Las consultas de altura usan px CSS de la ventana: el zoom las activa.
+ */
+@media (max-height: 30rem) {
+  .rail {
+    position: relative;
+  }
+}
+
+/* Los extremos y la pista comparten el ancho de la fila de enlaces (la lista lleva un relleno para el anillo de foco). */
+.ends,
+.track {
+  inline-size: calc(100% - 2 * var(--space-2));
+  max-inline-size: calc(72rem - 2 * var(--space-2));
+  margin-inline: auto;
+}
+
+/* En el teléfono, sin los extremos «Oeste / Este» (su sentido está en el texto): la barra mide ≈ 77 px y no ≈ 107. */
+.ends {
+  display: none;
+  justify-content: space-between;
+  margin-block: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+@media (min-width: 48rem) {
+  .ends {
+    display: flex;
+  }
+}
+
+.track {
+  display: block;
+  block-size: 3px;
+  background-color: var(--color-line-soft);
+  border-radius: var(--radius-pill);
+}
+
+.fill {
+  display: block;
+  block-size: 100%;
+  inline-size: 100%;
+  background-color: var(--color-sky);
+  border-radius: inherit;
+  transform-origin: left center;
+  scale: var(--travesia-progress, 0) 1;
+}
+
+/*
+ * La lista desplaza en horizontal cuando no cabe: `overflow-x: auto` convierte también el eje vertical en `auto` y recorta
+ * todo lo que sale de su caja. Sin relleno, el anillo de foco global (≈ 5 px fuera del enlace) quedaba cortado arriba,
+ * abajo y en los extremos (r:F3). El relleno lo deja dentro; el margen negativo de bloque devuelve la altura de antes.
+ */
+.railList {
+  position: relative;
+  display: flex;
+  gap: var(--space-1);
+  /* Con márgenes `auto` un elemento de rejilla se ajusta a su contenido: sin `inline-size: 100%` la lista medía 1 152 px. */
+  inline-size: 100%;
+  max-inline-size: 72rem;
+  margin: calc(-1 * var(--space-2)) auto;
+  padding: var(--space-2);
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: var(--space-2);
+  scrollbar-width: thin;
+}
+
+.railLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-3);
+  color: var(--color-ink-muted);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-s);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.railLink:hover {
+  color: var(--color-ink);
+  background-color: var(--color-sunken);
+}
+
+.railLink[aria-current='step'] {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent);
+}
+
+.railIndex {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 800;
+}
+
+/*
+ * Cuando la barra tiene sitio (≥ 66rem de ancho, en rem REALES: con el texto al 200 % la consulta de contenedor deja de
+ * cumplirse y vuelve la lista que desplaza), las nueve paradas caben a la vez: nueve columnas iguales y el nombre en dos
+ * líneas si hace falta (r:F5: en una fila desplazable, «Casco Antiguo» y «Ciudad de Panamá» quedaban fuera sin indicio).
+ * Cada columna coincide con el relleno de la pista (`TravesiaProgress` lo lleva al CENTRO de la parada actual).
+ */
+@container travesia-rail (min-width: 66rem) {
+  .railList {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  /* Todas las píldoras del mismo alto (con nombres de una y de dos líneas la marca cambiaba de alto: r2:F5b). */
+  .railList > li {
+    display: grid;
+  }
+
+  .railLink {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-m);
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+/* ---------- Escenas ---------- */
+
+.stops {
+  display: grid;
+  gap: var(--space-8);
+  max-inline-size: 72rem;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+  list-style: none;
+}
+
+/*
+ * Foco no oculto (WCAG 2.4.11, r:A11Y-1): la barra está PEGADA bajo la cabecera y el `scroll-padding` del documento solo
+ * cuenta con la cabecera. Las escenas (destino de las anclas `#parada-…`) y sus enlaces llevan un margen de desplazamiento
+ * del alto real de la barra (`--travesia-rail-h`, que publica `TravesiaProgress`; sin JavaScript, una estimación por
+ * encima), que el navegador suma al llevarlos a la vista. NO en el documento entero: los enlaces de la propia barra
+ * caerían dentro del margen y cada Tab por ella subía la página ≈ 360 px (r2, medido), y fuera de la travesía sobraba hueco.
+ */
+.stop,
+.stop a {
+  scroll-margin-block-start: calc(var(--travesia-rail-h, 8rem) + var(--space-3));
+}
+
+.stop {
+  position: relative;
+  display: grid;
+  /* `minmax(0, 1fr)` y `overflow-wrap`: con el texto al 200 % el panel no puede ensanchar la escena (1.4.4, reflow). */
+  grid-template-columns: minmax(0, 1fr);
+  overflow-wrap: anywhere;
+  align-items: center;
+}
+
+.locator {
+  grid-area: 1 / 1;
+  padding: var(--space-4);
+  background-color: var(--color-glass-base);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-l);
+}
+
+.panel {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-block-start: calc(-1 * var(--space-7));
+  margin-inline: var(--space-3);
+  padding: var(--space-5);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-depth-3);
+}
+
+/* Sin localizador (derechos del contorno denegados) o, en el teléfono, con el punto en la franja baja: el panel no sube encima. */
+.stop:not([data-panel-side]) .panel {
+  margin-block-start: var(--space-3);
+}
+
+@media (max-width: 47.999rem) {
+  .stop[data-point-low] .panel {
+    margin-block-start: var(--space-3);
+  }
+}
+
+.stop:not([data-panel-side]) .panel {
+  margin-inline: 0;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+}
+
+.step {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-s);
+}
+
+/* Enlace estirado: el nombre cubre todo el PANEL (el bloque contenedor es `.panel`); «Ver en el mapa» queda por encima. */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-l);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
+.glyph {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.coords {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.coordsLabel {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.mapLink {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  margin-block-start: var(--space-2);
+  padding-inline: var(--space-4);
+  color: var(--color-on-accent);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mapLink:hover {
+  background-color: var(--color-accent-strong);
+}
+
+.stop:has(.link:focus-visible) .panel {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/*
+ * Desde 48rem: el localizador ocupa dos tercios y el panel se superpone a su borde. El panel va al lado CONTRARIO del
+ * punto (`data-panel-side`, del dominio: `along < 0,5` → panel al este): con la alternancia por posición en la lista tapaba
+ * el punto de Boquete y de Coiba (r:F1). Solape: 2 de las 8 columnas del localizador (su 25 %).
+ */
+@media (min-width: 48rem) {
+  .stop {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .locator {
+    grid-area: 1 / 1 / 2 / 9;
+  }
+
+  .panel {
+    grid-area: 1 / 7 / 2 / 13;
+    margin: 0;
+  }
+
+  .stop[data-panel-side='start'] .locator {
+    grid-area: 1 / 5 / 2 / 13;
+  }
+
+  .stop[data-panel-side='start'] .panel {
+    grid-area: 1 / 1 / 2 / 7;
+  }
+
+  .stop:not([data-panel-side]) .panel {
+    grid-area: 1 / 1 / 2 / 9;
+  }
+}
+
+/* Sin transición de color en los enlaces: cambian fondo y texto a la vez y axe mediría el contraste a mitad de camino. */
+
+/* Separación de planos atada al scroll: solo con soporte y sin preferencia de movimiento reducido. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .panel {
+      animation: panelFloat linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .locator {
+      animation: locatorDrift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+}
+
+@keyframes panelFloat {
+  from {
+    translate: 0 var(--space-7);
+    scale: 0.96;
+  }
+
+  to {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes locatorDrift {
+  from {
+    translate: 0 calc(-1 * var(--space-5));
+  }
+
+  to {
+    translate: 0 var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fill {
+    transition: scale var(--motion-medium) var(--ease-out);
+  }
+}
+
+@media (forced-colors: active) {
+  .rail,
+  .panel,
+  .locator {
+    border-color: CanvasText;
+  }
+
+  .fill,
+  .railLink[aria-current='step'],
+  .mapLink {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

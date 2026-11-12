@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   evaluateRights,
+  isthmusRights,
   parsePolicies,
   policiesMatchSources,
   resolveMapExperience,
@@ -94,6 +95,31 @@ describe('Experience Resolver v1 (mapa)', () => {
 
   it('Natural Earth ya no figura como fuente en uso (el basemap es solo Overture)', () => {
     expect(USED_SOURCES.some((s) => s.id === 'natural-earth')).toBe(false);
+  });
+});
+
+describe('istmo de la portada (ADR-0026, r:D-01)', () => {
+  it('derivado de Overture: con la política provisional se deniega en producción y se permite fuera', () => {
+    expect(isthmusRights(MAP_RIGHTS, 'production')).toMatchObject({
+      allowed: false,
+      reason: 'provisional-in-production',
+      subject: 'overture',
+    });
+    expect(isthmusRights(MAP_RIGHTS, 'staging').allowed).toBe(true);
+    expect(isthmusRights(MAP_RIGHTS, 'development').allowed).toBe(true);
+  });
+
+  it('exige mostrar, TRANSFORMAR y redistribuir (es una geometría proyectada y simplificada), y no las tipografías', () => {
+    const overture = MAP_RIGHTS.find((p) => p.subject === 'overture')!;
+    const onlyDisplay = [
+      { ...overture, status: 'verified' as const, allowed: ['display' as const] },
+    ];
+    expect(isthmusRights(onlyDisplay, 'production')).toMatchObject({
+      allowed: false,
+      reason: 'action-not-allowed',
+    });
+    const verifiedOverture = [{ ...overture, status: 'verified' as const }];
+    expect(isthmusRights(verifiedOverture, 'production').allowed).toBe(true);
   });
 });
 

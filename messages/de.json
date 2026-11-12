@@ -81,7 +81,26 @@
       }
     },
     "statusHeading": "Aktueller Stand",
-    "statusBody": "Dies ist eine Entwicklungsversion. Die Seiten der Reiseziele sind in Arbeit und die Übersetzungen warten auf eine menschliche Prüfung."
+    "statusBody": "Dies ist eine Entwicklungsversion. Die Seiten der Reiseziele sind in Arbeit und die Übersetzungen warten auf eine menschliche Prüfung.",
+    "travesia": {
+      "heading": "Die Durchquerung",
+      "lead": "Durchqueren Sie Panama von West nach Ost, zwischen dem Karibischen Meer und dem Pazifik. Jede Station liegt an ihrem Bezugspunkt, abgeleitet aus OpenStreetMap (über Overture).",
+      "caribbean": "Karibisches Meer",
+      "pacific": "Pazifischer Ozean",
+      "west": "West",
+      "east": "Ost",
+      "navLabel": "Stationen der Durchquerung",
+      "stop": "Station {number} von {total}",
+      "reference": "Bezugspunkt",
+      "coordinates": "{y}° {ns} · {x}° {ew}",
+      "credit": "Umriss und Bezugspunkte: <en>© OpenStreetMap contributors, Overture Maps Foundation</en> (Version {release}). Referenzumriss: keine amtliche Grenze.",
+      "hemisphere": {
+        "north": "N",
+        "south": "S",
+        "east": "O",
+        "west": "W"
+      }
+    }
   },
   "Search": {
     "label": "Ein Reiseziel suchen",
