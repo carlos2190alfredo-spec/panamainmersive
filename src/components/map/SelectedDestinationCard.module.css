@@ -129,6 +129,24 @@
   background: var(--color-sunken);
 }
 
+/* Con «Lugares cercanos» (ADR-0027 A2) son TRES acciones. En el HUD de escritorio, en una sola fila de columnas iguales y con
+   menos relleno lateral: con `flex-wrap` la etiqueta larga («Volver a encuadrar el destino») pasaba a tres líneas a 1280 px y la
+   ficha crecía 19 px (más alta que el carrusel: el dock crecía), y a 1024 px los botones bajaban a una segunda fila (+52 px).
+   Medido: +1 px a 1440 y 1280, +18 px a 1024. En móvil (la hoja desplaza) siguen pudiendo partirse en filas. Sin lugares (en
+   producción) la fila es la de siempre. */
+@media (min-width: 56rem) {
+  .actions:has(> :nth-child(3)) {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+
+  .actions:has(> :nth-child(3)) > .secondary {
+    padding-inline: var(--space-2);
+    overflow-wrap: break-word;
+  }
+}
+
 /* Sin mapa listo: se ve que no se puede pulsar (y el motivo, escrito, va debajo si no habrá mapa). */
 .secondary:disabled {
   color: var(--color-ink-muted);

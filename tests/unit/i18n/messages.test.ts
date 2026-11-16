@@ -91,7 +91,17 @@ describe('mensajes de interfaz en los cinco idiomas', () => {
     // «destino/destinos» se escribe igual en portugués y en español (también en el recuento de los
     // chips del filtro por tipo, Map.filter.count); «Mostrando {shown} de {total}.» también.
     // «Parada {number} de {total}» (las paradas de la travesía de la portada) también.
-    pt: ['Explore.count', 'Map.inView.count', 'Map.filter.count', 'Home.travesia.stop'],
+    // «{label} ({count, number})» (pestañas de los lugares cercanos) es solo formato: etiqueta y número se traducen aparte.
+    pt: [
+      'Explore.count',
+      'Map.inView.count',
+      'Map.filter.count',
+      'Home.travesia.stop',
+      'Map.places.tab',
+    ],
+    en: ['Map.places.tab'],
+    fr: ['Map.places.tab'],
+    de: ['Map.places.tab'],
   };
 
   it.each(LOCALES.filter((l) => l !== DEFAULT_LOCALE))(

@@ -341,3 +341,75 @@ describe('leyenda', () => {
     expect(legend.find((e) => e.id === 'protected')?.swatch.line?.dash).toBeDefined();
   });
 });
+
+describe('lugares cercanos sin verificar sobre el mapa (ADR-0027 A2)', () => {
+  const points = [
+    { id: '00000000-0000-4000-8000-000000000001', lon: -82.43, lat: 8.78 },
+    { id: '00000000-0000-4000-8000-000000000002', lon: -82.44, lat: 8.77 },
+  ];
+  const withPlaces = (
+    highlight: string | null,
+    layers: readonly MapLayerId[] = DEFAULT_MAP_LAYERS,
+  ) => buildMapStyle({ ...options(layers), places: { points, highlight } });
+
+  it('sin lugares (o con la lista vacía) no hay ni fuente ni capas: el estilo es el de siempre', () => {
+    const base = JSON.stringify(buildMapStyle(options([...DEFAULT_MAP_LAYERS])));
+    expect(
+      JSON.stringify(buildMapStyle({ ...options([...DEFAULT_MAP_LAYERS]), places: null })),
+    ).toBe(base);
+    expect(
+      JSON.stringify(
+        buildMapStyle({
+          ...options([...DEFAULT_MAP_LAYERS]),
+          places: { points: [], highlight: null },
+        }),
+      ),
+    ).toBe(base);
+  });
+
+  it.each(combinations.map((c) => [c.join('+') || 'ninguna', c] as const))(
+    'con lugares sigue siendo un estilo VÁLIDO (%s) y los puntos van ENCIMA de todo',
+    (_name, layers) => {
+      const style = withPlaces(points[0]?.id ?? null, layers);
+      expect(validateStyleMin(style).map((e) => e.message)).toEqual([]);
+      expect(style.layers.slice(-2).map((l) => l.id)).toEqual([
+        'nearby-places',
+        'nearby-places-highlight',
+      ]);
+      expect(style.sources['nearby-places']).toMatchObject({ type: 'geojson' });
+    },
+  );
+
+  it('cada punto con su id (clave estable) y el resaltado filtra SOLO el elegido', () => {
+    const style = withPlaces('00000000-0000-4000-8000-000000000002');
+    const source = style.sources['nearby-places'] as unknown as {
+      data: { features: { properties: { id: string }; geometry: { coordinates: number[] } }[] };
+      attribution: string;
+    };
+    expect(source.data.features.map((f) => f.properties.id)).toEqual(points.map((p) => p.id));
+    expect(source.data.features[0]?.geometry.coordinates).toEqual([-82.43, 8.78]);
+    expect(source.attribution).toContain('lang="en"');
+    const highlight = style.layers.find((l) => l.id === 'nearby-places-highlight') as {
+      filter?: unknown;
+    };
+    expect(highlight.filter).toEqual(['==', ['get', 'id'], '00000000-0000-4000-8000-000000000002']);
+    // Sin resaltado el filtro no coincide con nada (un id vacío no existe).
+    const none = withPlaces(null).layers.find((l) => l.id === 'nearby-places-highlight') as {
+      filter?: unknown;
+    };
+    expect(none.filter).toEqual(['==', ['get', 'id'], '']);
+  });
+
+  it('se pinta con los tokens de las etiquetas (contraste ya medido) y el resaltado cambia de tamaño, no solo de color', () => {
+    const style = withPlaces(null);
+    const dot = style.layers.find((l) => l.id === 'nearby-places') as {
+      paint: Record<string, unknown>;
+    };
+    const ring = style.layers.find((l) => l.id === 'nearby-places-highlight') as {
+      paint: Record<string, unknown>;
+    };
+    expect(dot.paint['circle-color']).toBe(palette.label);
+    expect(dot.paint['circle-stroke-color']).toBe(palette.halo);
+    expect(Number(ring.paint['circle-radius'])).toBeGreaterThan(Number(dot.paint['circle-radius']));
+  });
+});

@@ -17,7 +17,8 @@ type Tree = { [key: string]: string | Tree };
 
 const START = '<!-- pending-review-keys:start -->';
 const END = '<!-- pending-review-keys:end -->';
-const KEY = /`([A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)+)`/g;
+// Los segmentos admiten `_`: hay claves que repiten un valor de los datos (`Map.places.kind.food_other`, `Map.area.kind.protected_area`).
+const KEY = /`([A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9_]+)+)`/g;
 
 function load(locale: Locale): Tree {
   return JSON.parse(

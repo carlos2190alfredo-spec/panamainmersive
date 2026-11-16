@@ -80,7 +80,11 @@ function setup(
   const user = userEvent.setup();
   render(
     <NextIntlClientProvider locale={locale} messages={{ Map: MESSAGES[locale].Map as never }}>
-      <SelectedDestinationCard items={ITEMS} terrainAllowed={terrainAllowed} />
+      <SelectedDestinationCard
+        items={ITEMS}
+        terrainAllowed={terrainAllowed}
+        placesAllowed={false}
+      />
       <Probe />
     </NextIntlClientProvider>,
   );

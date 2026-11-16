@@ -1,4 +1,8 @@
-import type { SourceSpecification, StyleSpecification } from '@maplibre/maplibre-gl-style-spec';
+import type {
+  LayerSpecification,
+  SourceSpecification,
+  StyleSpecification,
+} from '@maplibre/maplibre-gl-style-spec';
 import { legendFor, styleLayersFor, terrainFor, usesSource, type LegendEntry } from './layers';
 import {
   BASEMAP_ATTRIBUTION,
@@ -36,7 +40,24 @@ export interface MapStyleOptions {
   readonly layers: readonly MapLayerId[];
   /** ID de Overture del área seleccionada: se resalta en el mapa. */
   readonly selectedAreaId?: string | null;
+  /** Lugares cercanos sin verificar que la persona está mirando (ADR-0027 A2); sin ellos, ni la fuente ni las capas existen. */
+  readonly places?: PlacesOverlay | null;
 }
+
+/**
+ * Lugares cercanos sin verificar (ADR-0027 A2) sobre el mapa: puntos del grupo que la persona tiene abierto en el panel y,
+ * resaltado, el que pidió «Ver en el mapa». NO es una capa del registro (ADR-0017): no se elige ni va en la URL (`l`); existe
+ * mientras la lista está abierta, que es su alternativa accesible (el lienzo no lo es). Se pinta con los tokens de las
+ * etiquetas (texto y halo), así que el contraste es el ya medido; nada de rojo (regla de los marcadores).
+ */
+export interface PlacesOverlay {
+  readonly points: readonly { readonly id: string; readonly lon: number; readonly lat: number }[];
+  readonly highlight: string | null;
+}
+export const PLACES_SOURCE_ID = 'nearby-places';
+export const PLACES_LAYER_ID = 'nearby-places';
+export const PLACES_HIGHLIGHT_LAYER_ID = 'nearby-places-highlight';
+export const PLACES_ATTRIBUTION = 'Places: Overture Maps Foundation';
 
 /**
  * La atribución de una fuente la inyecta MapLibre TAL CUAL en su control de créditos (es HTML), y dentro de una página
@@ -73,13 +94,58 @@ export function buildMapStyle(options: MapStyleOptions): StyleSpecification {
     };
   }
 
+  const styleLayers: LayerSpecification[] = [
+    ...styleLayersFor(layers, { palette, language, selectedAreaId: selectedAreaId ?? null }),
+  ];
+  const places = options.places;
+  if (places && places.points.length > 0) {
+    sources[PLACES_SOURCE_ID] = {
+      type: 'geojson',
+      attribution: inLanguage('en', PLACES_ATTRIBUTION),
+      data: {
+        type: 'FeatureCollection',
+        features: places.points.map((p) => ({
+          type: 'Feature',
+          properties: { id: p.id },
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+        })),
+      },
+    };
+    styleLayers.push(
+      {
+        id: PLACES_LAYER_ID,
+        type: 'circle',
+        source: PLACES_SOURCE_ID,
+        paint: {
+          'circle-radius': 6,
+          'circle-color': palette.label,
+          'circle-stroke-color': palette.halo,
+          'circle-stroke-width': 2,
+        },
+      },
+      {
+        // El resaltado es el mismo punto invertido y más grande (no depende solo del color: cambia de tamaño y de borde).
+        id: PLACES_HIGHLIGHT_LAYER_ID,
+        type: 'circle',
+        source: PLACES_SOURCE_ID,
+        filter: ['==', ['get', 'id'], places.highlight ?? ''],
+        paint: {
+          'circle-radius': 10,
+          'circle-color': palette.halo,
+          'circle-stroke-color': palette.label,
+          'circle-stroke-width': 3,
+        },
+      },
+    );
+  }
+
   const style: StyleSpecification = {
     version: 8,
     name: 'panama-immersive',
     glyphs: options.glyphsUrl,
     projection: { type: 'mercator' },
     sources,
-    layers: styleLayersFor(layers, { palette, language, selectedAreaId: selectedAreaId ?? null }),
+    layers: styleLayers,
   };
   const terrain = terrainFor(layers);
   if (terrain) style.terrain = { source: terrain.source, exaggeration: terrain.exaggeration };

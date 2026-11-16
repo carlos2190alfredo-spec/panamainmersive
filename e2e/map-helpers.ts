@@ -283,7 +283,7 @@ export async function closeSheet(page: Page): Promise<void> {
 }
 
 /** Botón que pliega o despliega el panel derecho (`<aside>`). Solo existe en escritorio, tras hidratar. */
-export const panelToggle = (page: Page): Locator => page.locator('aside button[aria-expanded]');
+export const panelToggle = (page: Page): Locator => page.locator('aside [data-panel-toggle]');
 
 /** Abre el panel derecho si está plegado (por defecto lo está en escritorio: el mapa manda). */
 export async function openAreasPanel(page: Page): Promise<void> {

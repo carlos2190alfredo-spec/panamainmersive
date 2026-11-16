@@ -33,6 +33,7 @@
     "map:css": "node --import tsx scripts/trim-maplibre-css.ts",
     "data:anchors": "python3 -I pipelines/anchors/derive_anchors.py",
     "data:build": "python3 -I pipelines/basemap/build_basemap.py",
+    "data:places": "python3 -I pipelines/places/build_places.py",
     "test:pipelines": "python3 -I -m pytest pipelines/tests -q -p no:cacheprovider",
     "data:ingest": "python3 -I pipelines/ingest/import_areas.py --dataset overture-protected-areas && python3 -I pipelines/ingest/import_areas.py --dataset overture-destination-references",
     "db:import-areas": "tsx scripts/db/import-areas.ts",

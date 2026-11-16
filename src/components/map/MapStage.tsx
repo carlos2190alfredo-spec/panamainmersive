@@ -31,6 +31,7 @@ import {
   usesTerrain,
   type LabelLanguage,
   type MapPalette,
+  type PlacesOverlay,
 } from '@/domains/geography/map-style';
 import {
   DEFAULT_MAP_LAYERS,
@@ -50,6 +51,7 @@ import {
 } from './area-selection-store';
 import { useExploreFilter } from './explore-filter-store';
 import { publishMapStatus, publishTour, resetHudStore, useHudStore } from './hud-store';
+import { usePlacesStore, type PlacesSnapshot } from './places-store';
 import { SHEET_BODY_SELECTOR, isMobileLayout } from './sheet-store';
 import { runTour, type TourEnd } from './tour-runner';
 import type { MapDestination } from './map-data';
@@ -117,6 +119,54 @@ function readPalette(): MapPalette {
 
 const isNotFound = (error: unknown): boolean =>
   error instanceof Error && /\b404\b/.test(error.message);
+
+/**
+ * Cuántas lecturas iguales seguidas del hueco libre hacen falta para darlo por asentado, y cuántos cuadros se espera como mucho.
+ * Al elegir un destino aparece su ficha en el dock y, durante unos cuadros, la fila del hueco mide 0 px de alto (la del dock
+ * aún no se ha recolocado): un encuadre medido entonces no ve hueco, centra el destino en el LIENZO y lo deja bajo el carril.
+ * Medido a 1280×720 (Bocas del Toro, movimiento reducido): 310 → 0 → 254 px de alto en ≈ 200 ms, y el destino en x = 177 con el
+ * hueco empezando en 296. Pasaba antes de ADR-0027 A2 sin verse (la carrera solía ganarse); con la ficha de tres acciones se perdía siempre.
+ */
+const HUD_SETTLE_READINGS = 3;
+const HUD_SETTLE_MAX_FRAMES = 30;
+
+/**
+ * Llama a `run` cuando el hueco libre del HUD (`[data-hud-safe]`) tiene ancho y alto y no cambia en `HUD_SETTLE_READINGS` cuadros
+ * seguidos (o tras `HUD_SETTLE_MAX_FRAMES`, para no esperar para siempre). En móvil el hueco no se pinta (0 × 0): eso ya es estable.
+ * `isCurrent` deja de valer si llega otra orden antes (otro destino, el mapa desmontado): entonces no hace nada.
+ */
+function whenHudSettled(run: () => void, isCurrent: () => boolean): void {
+  let last = '';
+  let same = 0;
+  let frames = 0;
+  const step = () => {
+    if (!isCurrent()) return;
+    const box = document.querySelector('[data-hud-safe]')?.getBoundingClientRect();
+    // Ancho sin alto (o al revés): el dock aún se está recolocando y el hueco no existe todavía
+    const degenerate = box !== undefined && box.width > 0 !== box.height > 0;
+    const key = box
+      ? [box.left, box.top, box.width, box.height].map((v) => Math.round(v)).join(',')
+      : 'none';
+    same = !degenerate && key === last ? same + 1 : degenerate ? 0 : 1;
+    last = key;
+    frames += 1;
+    if (same >= HUD_SETTLE_READINGS || frames >= HUD_SETTLE_MAX_FRAMES) run();
+    else requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/** Zoom al que «Ver en el mapa» acerca un lugar cercano: se ven la calle y los vecinos, no solo el punto. */
+const PLACE_ZOOM = 16;
+
+/** Lo que el estilo pinta de los lugares cercanos (o nada). Sin puntos no hay fuente ni capas. */
+function placesOverlayOf(
+  view: PlacesSnapshot['view'],
+  highlight: string | null,
+): PlacesOverlay | null {
+  if (!view || view.points.length === 0) return null;
+  return { points: view.points, highlight };
+}
 
 /** Respiro (px) entre lo encuadrado y el borde del hueco libre de HUD. */
 const FRAME_MARGIN_PX = 40;
@@ -510,6 +560,16 @@ export function MapStage({
   const selectedAreaId = state.area ?? null;
   const { frameRequest } = useAreaStore();
   const { frameRequest: destinationFrame, pitchRequest, tourRequest, tour } = useHudStore();
+  // Lugares cercanos sin verificar (ADR-0027 A2): los del grupo que la lista tiene abierto, y el resaltado.
+  const {
+    view: placesView,
+    highlight: placeHighlight,
+    showRequest: placeRequest,
+  } = usePlacesStore();
+  const placesOverlay = placesOverlayOf(placesView, placeHighlight);
+  const placesKey = placesOverlay
+    ? `${placesOverlay.points.map((p) => p.id).join(',')}|${placesOverlay.highlight ?? ''}`
+    : '';
   // Filtro por tipo y búsqueda (estado local, no en la URL): los marcadores muestran solo lo que coincide, y el destino
   // SELECCIONADO nunca se retira (sin marcador, la ficha quedaría suelta).
   const filter = useExploreFilter();
@@ -523,6 +583,9 @@ export function MapStage({
   const handledFrameRef = useRef(0);
   const handledPitchRef = useRef(0);
   const handledTourRef = useRef(0);
+  const handledPlaceRef = useRef(0);
+  /** Encuadre de destino pendiente de que el HUD se asiente: cada orden nueva invalida la anterior. */
+  const pendingFrameRef = useRef(0);
   /** Detiene el recorrido en curso (si lo hay). Toda orden que mueva la cámara lo llama antes de moverla. */
   const stopTourRef = useRef<(reason: Exclude<TourEnd, 'done'>) => void>(() => undefined);
   const stopTour = (): void => {
@@ -541,7 +604,14 @@ export function MapStage({
   const selectedRef = useRef(state.destination);
   const shownRef = useRef<ReadonlySet<string>>(new Set(shownKeys));
   const reclusterRef = useRef<() => void>(() => undefined);
-  const styleInputsRef = useRef({ language, layers, selectedAreaId, locale });
+  const styleInputsRef = useRef({
+    language,
+    layers,
+    selectedAreaId,
+    locale,
+    placesOverlay,
+    placesKey,
+  });
   const markerStoreRef = useRef(new Map<string, { marker: MapLibreMarker; host: HTMLElement }>());
   const syncCoverageRef = useRef<() => void>(() => undefined);
   // El estilo aplicado por última vez (capas + idioma + tema) y la función que lo aplica: ver `applyStyle`.
@@ -571,7 +641,7 @@ export function MapStage({
     const map = mapRef.current;
     if (!map) return;
     const wanted = currentUrlLayers(terrainAllowed);
-    const signature = `${wanted.join(',')}|${language}|${String(paletteVersion)}`;
+    const signature = `${wanted.join(',')}|${language}|${String(paletteVersion)}|${styleInputsRef.current.placesKey}`;
     if (signature === appliedStyleRef.current) return;
     appliedStyleRef.current = signature;
     try {
@@ -581,6 +651,7 @@ export function MapStage({
           layers: wanted,
           // La selección también va aquí: al cambiar idioma, tema o capas el resalte no se pierde.
           selectedAreaId: styleInputsRef.current.selectedAreaId,
+          places: styleInputsRef.current.placesOverlay,
           palette: readPalette(),
           basemapUrl: new URL(publicEnv.basemapUrl, window.location.href).href,
           glyphsUrl: new URL(GLYPHS_URL_PATH, window.location.href).href
@@ -601,7 +672,7 @@ export function MapStage({
     destinationsRef.current = destinations;
     selectedRef.current = state.destination;
     shownRef.current = new Set(shownKey === '' ? [] : shownKey.split(','));
-    styleInputsRef.current = { language, layers, selectedAreaId, locale };
+    styleInputsRef.current = { language, layers, selectedAreaId, locale, placesOverlay, placesKey };
     applyStyleRef.current = applyStyle;
   });
 
@@ -683,6 +754,7 @@ export function MapStage({
             language: styleInputsRef.current.language,
             layers: styleInputsRef.current.layers,
             selectedAreaId: styleInputsRef.current.selectedAreaId,
+            places: styleInputsRef.current.placesOverlay,
             palette: readPalette(),
             basemapUrl: archiveUrl,
             glyphsUrl: new URL(GLYPHS_URL_PATH, window.location.href).href
@@ -998,6 +1070,7 @@ export function MapStage({
     if (state.camera && cameraText !== null && cameraText !== lastWrittenRef.current) {
       leaveOverview();
       stopTour();
+      pendingFrameRef.current += 1; // la cámara explícita manda: un encuadre de destino pendiente ya no vale
       lastWrittenRef.current = cameraText;
       appliedDestinationRef.current = state.destination;
       const view = toMapView(state.camera, container.clientHeight || 600);
@@ -1013,10 +1086,18 @@ export function MapStage({
     if (state.destination !== appliedDestinationRef.current) {
       appliedDestinationRef.current = state.destination;
       const destination = destinationsRef.current.find((d) => d.key === state.destination);
+      const token = ++pendingFrameRef.current;
       if (destination) {
         leaveOverview();
         stopTour();
-        frame(map, container, destination, shownDestinations());
+        // La ficha del destino acaba de aparecer (o de cambiar) en el dock: se encuadra cuando el hueco libre ya mide lo que
+        // va a medir (ver `whenHudSettled`), no a mitad de su recolocación.
+        whenHudSettled(
+          () => {
+            frame(map, container, destination, shownDestinations());
+          },
+          () => pendingFrameRef.current === token && mapRef.current === map,
+        );
       }
     }
   }, [cameraText, state.camera, state.destination, status]);
@@ -1028,6 +1109,42 @@ export function MapStage({
     // Solo DISPARAN el efecto (`applyStyle` lee la URL y las entradas por sí misma): `layers` se identifica por `layersKey`
     // (un array nuevo en cada render no debe reaplicar el estilo).
   }, [layersKey, language, paletteVersion, status]);
+
+  // Lugares cercanos (ADR-0027 A2): los puntos del grupo abierto y el resaltado van en el estilo (por diferencias: una fuente
+  // GeoJSON y dos capas que existen solo mientras la lista está abierta). Lo que se pinta queda a la vista de las pruebas.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.dataset.placesShown = String(placesOverlay?.points.length ?? 0);
+      container.dataset.placeHighlight = placesOverlay?.highlight ?? '';
+    }
+    if (status === 'ready') applyStyleRef.current();
+    // `placesOverlay` cambia de identidad en cada render: lo que dispara es `placesKey`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placesKey, status]);
+
+  // «Ver en el mapa» de un lugar: se encuadra en el hueco libre del HUD. Lo pide SOLO la persona (la cámara no se mueve sola);
+  // una vez por `nonce`.
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!placeRequest) {
+      handledPlaceRef.current = 0;
+      return;
+    }
+    if (!map || !container || status !== 'ready') return;
+    if (placeRequest.nonce <= handledPlaceRef.current) return;
+    handledPlaceRef.current = placeRequest.nonce;
+    leaveOverview();
+    stopTour();
+    const { lon, lat } = placeRequest;
+    frameBox(map, container, [lon, lat, lon, lat], {
+      margin: FRAME_MARGIN_PX,
+      maxZoom: PLACE_ZOOM,
+      duration: prefersReducedMotion() ? 0 : FLY_DURATION_MS,
+      must: [{ lon, lat }],
+    });
+  }, [placeRequest, status]);
 
   // Si el mapa no se puede mostrar, la lista de áreas lo dice (no se queda «esperando» para siempre).
   useEffect(() => {
