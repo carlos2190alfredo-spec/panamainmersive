@@ -1901,3 +1901,32 @@ python3 -I pipelines/basemap/build_basemap.py --verify-only   # verifica el bina
 **Cómo se sabrá si funciona.** El CI tiene que dar **0** «setting up "context"» en varias ejecuciones seguidas. Con ≈ 4 por ejecución hasta ahora, una sola ejecución limpia por azar tiene ≈ 1,8 % de probabilidad. Si el retraso vivía en el navegador, ahora tiene que verse en el cierre de las aisladas (anotación `isolated-browser`). Si vuelve a aparecer un retraso tras una prueba aislada, el estado no era del navegador. Si aparece tras una no aislada, hay otra desencadenante.
 
 **Fusión y producción (2026-11-16).** El PR #12 se fusionó con commit de fusión (`92b29c5`, 19:55 UTC, `--match-head-commit e9c8053`) tras el «sí» de la persona propietaria a la recomendación de fusionarlo antes que el PR #13 (el CI de `e9c8053` salió verde, 8 de 8). Vercel desplegó producción como `dpl_DGPmKCX4iA78re2EJJPd8hVaLRt5` (`READY`; `curl -I` sin credenciales a `/es` devuelve 302, es decir, el SSO sigue activo) y deja como punto de vuelta `dpl_FzF2sCU6p8HNdV2GbNvFMqQjKWZs` (`75379b2`). Una ejecución verde NO prueba que el retraso haya desaparecido (ver arriba: ≈ 1,8 % por azar): la evidencia son las ejecuciones siguientes, empezando por la del PR #13 sobre `86149d9` (su rama ya lleva el navegador propio).
+
+**Fusión del PR #13 y producción (2026-11-16).** El PR #13 (lugares cercanos sin verificar, A2) se fusionó con commit de fusión (`d1c3c72`, 20:34 UTC, `--match-head-commit 2ecc46b`) tras el «Sí, al estar verde» de la persona propietaria: su CI salió verde sobre `2ecc46b` (523 E2E, 0 intermitentes, 0 «setting up "context"»; una sola ejecución, no prueba que E-108 esté resuelto). Producción es `dpl_6Kj99e9XvYY36amPuTrfb6MKwi1g` (`READY`; `curl -I` sin credenciales a `/es` devuelve 302, el SSO sigue activo) y el punto de vuelta es `dpl_DGPmKCX4iA78re2EJJPd8hVaLRt5` (`92b29c5`, PR #12). `data/places/nearby-places.json` (390 lugares, sin contactos) ya es público en el repositorio.
+
+## Ficha del destino y altura del dock entre 56 y 80rem (F5-11, 2026-11-16, rama `fix/aviso-recorrido-ficha`)
+
+**Qué pasaba.** Entre 56rem y 80rem la ficha del destino elegido tomaba el 42 % de la fila del dock. A 1024 px eso son 391 px: el nombre se partía, las notas (procedencia y aviso previo del recorrido) y los botones también, y la ficha llegaba a 349 px de alto frente a los 254 del carrusel. El dock mide lo que el más alto de los dos, así que el hueco del mapa perdía ≈ 95 px (backlog F5-11; el aviso del recorrido ponía +38 px y el tercer botón de A2 otros +18).
+
+**Lo que se midió** (guion de Playwright sobre el build de producción local de `main` en `d1c3c72`; un navegador por idioma, nueve destinos × cinco idiomas × seis anchos, 700 px de alto, el mapa sin cargar para que el aviso del recorrido se vea; el guion no está versionado). Ficha más alta de las nueve / carrusel / hueco mínimo del mapa, en px:
+
+| Ancho | Antes (42 %)                | Con `min(34rem, 56%)`       |
+| ----- | --------------------------- | --------------------------- |
+| 896   | 376–427 / 254–287 / 61–112  | 283–327 / 254–287 / 161–205 |
+| 960   | 341–396 / 254–287 / 92–147  | 244–285 / 254–287 / 201–234 |
+| 1024  | 331–349 / 254–287 / 139–157 | 244–262 / 254–287 / 201–234 |
+| 1279  | 244–270 / 198–231 / 218–244 | 244–262 / 254–287 / 201–234 |
+
+(Cada rango son los cinco idiomas; alemán es el más alto.) De 1024 a 1279 px la ficha ya no pasa del carrusel en ningún destino ni idioma, y el hueco mínimo a 1024×700 sube de 139 a 201–234 px.
+
+**Por qué no la opción del backlog** (el aviso en la columna derecha, bajo «Recorrido 3D»): esa columna mide 168 px y el aviso, en ella, ocupa cuatro o cinco líneas (≈ 80 px) donde sobran ≈ 30 px; se habría movido el problema. La causa era el ancho, no el sitio del aviso.
+
+**Qué cambió.** Un solo ancho de la ficha en todo el escritorio, `min(34rem, 56%)` (`src/app/[locale]/explore/page.module.css`): el 56 % ya era el de desde 80rem, así que se quitó la excepción y el dock se comporta igual a cualquier ancho. `hud-css.test.ts` fija el valor y que no se redefine desde 80rem (mutación: con el 42 % la prueba falla). `e2e/explore-dock.spec.ts` (6 pruebas): para cada idioma, la ficha de los nueve destinos no pasa del carrusel más 12 px (holgura por las fuentes de macOS y Linux; el defecto medía 80–95) a 1024, 1200 y 1279 px, con el aviso del recorrido visible; y el hueco a 1024×700 no baja de 180 px. Lleva un control que inyecta el 42 % de antes y exige el defecto (ficha > carrusel + 40 px y hueco ≥ 40 px menor).
+
+**Alternativas medidas y descartadas.** 50 %: la ficha queda peor (344 px a 896, 328–329 a 960). 62 % (498 px a 896): la ficha cabe en el carrusel, pero el carrusel mide 290 px y su cabecera parte «Destinos» letra a letra («DES / TINO / S»).
+
+**Precio.** El carrusel es más estrecho: a 1024 px, de ≈ 525 a ≈ 394 px (desde 80rem ya lo era: 384 px a 1280). Su cabecera («Destinations (9 destinations)») ya se partía en dos líneas en francés a 1280 px; ahora también a 960 px en francés y, a 896 px, en dos líneas en inglés y alemán y en tres en francés. La altura del carrusel no cambia.
+
+**Pruebas ejecutadas** (local, macOS, Chromium 156; la máquina iba con carga 16–30 por otras aplicaciones). `hud-css.test.ts` 69/69 (con el 42 % de antes falla: mutación muerta). `explore-dock.spec.ts` 6/6; **el control de esa prueba es su mutación** (con el 42 % inyectado la ficha pasa del carrusel en más de 40 px y el hueco baja más de 40 px), no se reconstruyó el build con el 42 % para repetirla. Unitarias, tipos, lint y formato: ver el commit; solo fallan las dos conocidas de macOS. Regresión de escritorio sobre el build nuevo (`CI=true`, 3 trabajadores): Explorar, accesibilidad de Explorar y de las siete páginas, mapa, áreas y barrido de la portada, **312 de 314**. Los 2 fallos (`explore-interactions.spec.ts:494` y `:601`) son de espera: no llegaron las islas del HUD (`[data-hud-island]`, 0 de 4) en 5 s con la máquina cargada; solas y con un trabajador pasan **6 de 6** (tres veces cada una). No se corrió la suite de móvil: el cambio es de `@media (min-width: 56rem)` y el móvil (393 px) no lo toca.
+
+**Queda abierto.** Por debajo de 1024 px (896–960 px) la ficha con nombres de dos líneas sigue siendo más alta que el carrusel (283–327 px a 896 px, antes 393–427) y la cabecera del carrusel se parte, según lo anterior. No se midió en Linux (el CI es su primera ejecución con otras fuentes; de ahí la holgura de 12 px), en Safari ni Firefox, ni con texto agrandado.
