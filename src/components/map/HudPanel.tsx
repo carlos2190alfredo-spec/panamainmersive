@@ -1,7 +1,17 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Suspense, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  Suspense,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import styles from './HudPanel.module.css';
 import { revealInSheet } from './sheet-store';
 import { useHydrated, useMapUrlState } from './use-map-url-state';
@@ -19,6 +29,14 @@ function AreaWatcher({ onArea }: { onArea: () => void }) {
   }, [area, onArea]);
   return null;
 }
+
+/**
+ * Lo que vive dentro del panel puede pedir que se abra y que la persona llegue hasta ello (en móvil, abre la hoja y desplaza su
+ * cuerpo): lo usa la lista de lugares cercanos cuando se pide desde la ficha del destino. Fuera del panel no hace nada.
+ */
+type RevealPanel = (find?: () => Element | null) => void;
+const RevealPanelContext = createContext<RevealPanel>(() => undefined);
+export const useRevealPanel = (): RevealPanel => useContext(RevealPanelContext);
 
 /**
  * Panel derecho del HUD de Explorar (el ÚNICO `<aside>` de la página): ficha del área elegida, áreas en la vista,
@@ -47,10 +65,11 @@ export function HudPanel({
   const bodyId = useId();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
-  const openPanel = useCallback(() => {
+  const openPanel = useCallback((find?: () => Element | null) => {
     setOpen(true);
-    // En móvil el panel vive dentro de la hoja inferior: se abre y se desplaza hasta la ficha del área elegida.
-    revealInSheet(() => panelRef.current);
+    // En móvil el panel vive dentro de la hoja inferior: se abre y se desplaza hasta la ficha del área elegida (o hasta lo
+    // que pida quien lo abre).
+    revealInSheet(find ?? (() => panelRef.current));
   }, []);
   const state = !hydrated ? 'pending' : open ? 'open' : 'closed';
 
@@ -68,6 +87,8 @@ export function HudPanel({
           <button
             type="button"
             className={styles.toggle}
+            // El botón del PANEL (dentro hay otros desplegables, como el de los lugares cercanos): las pruebas lo buscan por esto.
+            data-panel-toggle
             aria-expanded={open}
             aria-controls={bodyId}
             // Plegado, el botón lleva su propio rótulo visible (el nombre accesible ES ese texto, WCAG 2.5.3); abierto,
@@ -83,7 +104,7 @@ export function HudPanel({
         ) : null}
       </div>
       <div id={bodyId} className={styles.body}>
-        {children}
+        <RevealPanelContext value={openPanel}>{children}</RevealPanelContext>
       </div>
       <Suspense fallback={null}>
         <AreaWatcher onArea={openPanel} />

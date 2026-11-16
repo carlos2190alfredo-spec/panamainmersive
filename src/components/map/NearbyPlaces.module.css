@@ -1,0 +1,157 @@
+/*
+ * Lugares cercanos sin verificar (ADR-0027 A2), dentro del panel del HUD. Sin vidrio propio (el panel ya es una superficie: el
+ * tope es de tres con `backdrop-filter`), sin degradados y sin transiciones de color en lo que cambia fondo y texto a la vez
+ * (axe mide a mitad de camino). Todo el texto puede crecer (1.4.12): nada recorta (`overflow: hidden`).
+ */
+.section {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-line-soft);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--text-m);
+  overflow-wrap: anywhere;
+}
+
+.notice,
+.status,
+.hint,
+.summary {
+  margin: 0;
+  font-size: var(--text-s);
+}
+
+.notice,
+.hint {
+  color: var(--color-ink-muted);
+}
+
+/* «Sin verificar»: texto (no solo color) con borde, para que se lea igual en los tres temas. */
+.tag {
+  display: inline-block;
+  padding-inline: var(--space-1);
+  color: var(--color-ink);
+  font-size: var(--text-s);
+  font-weight: 700;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-s);
+}
+
+.toggle,
+.show {
+  min-block-size: var(--target-min);
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle {
+  justify-self: start;
+  font-weight: 700;
+}
+
+.toggle:hover,
+.show:hover:not(:disabled) {
+  background: var(--color-sunken);
+}
+
+.show:disabled {
+  color: var(--color-ink-muted);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Las tres pestañas en una fila que se parte si no caben (texto agrandado, alemán): nunca se recortan. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tab {
+  flex: 1 1 auto;
+  min-block-size: var(--target-min);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-size: var(--text-s);
+  cursor: pointer;
+}
+
+/* La pestaña elegida se distingue por el borde grueso y el peso, no solo por el color. */
+.tab[aria-selected='true'] {
+  font-weight: 700;
+  border-width: 2px;
+  border-color: var(--color-accent);
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-m);
+}
+
+/* El que se está viendo en el mapa: borde grueso (no solo color). */
+.place[data-highlighted] {
+  border-width: 2px;
+  border-color: var(--color-accent);
+}
+
+.name {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--text-s);
+}
+
+.source {
+  display: grid;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-s);
+  overflow-wrap: anywhere;
+}
+
+.show {
+  justify-self: start;
+  font-size: var(--text-s);
+}

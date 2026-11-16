@@ -4,7 +4,7 @@
 - Fecha: 2026-11-11
 - Completa a: ADR-0004 (sus tres condiciones para activar Cesium **no cambian**), ADR-0007 (derechos y cobertura), ADR-0014 (relieve opt-in), ADR-0024 (Experience Resolver); PROMPT-MAESTRO §3, §8–10 y §22 (Fases 5–7)
 - Numeración: el 0026 queda para la Travesía (rama `feat/travesia`, citado en `src/domains/tourism/travesia.ts`)
-- Evidencia: E-102 a E-105 y E-107 (`docs/research/evidence-log.md`; la E-106 es la corrección del ancla de Santa Catalina, PR #10) y `docs/research/places-probe-2026-11-11.json`
+- Evidencia: E-102 a E-105, E-107 y E-109 (`docs/research/evidence-log.md`; la E-106 es la corrección del ancla de Santa Catalina, PR #10) y `docs/research/places-probe-2026-11-11.json`
 
 ## Contexto
 
@@ -41,9 +41,20 @@ Petición de la persona propietaria (2026-11-11): que la plataforma sea un mapa 
 2. **Sin teléfonos, correos ni redes sociales** hasta la revisión de privacidad (L-04). **Sin horarios ni «abierto ahora»**: la fuente casi nunca dice si el negocio sigue funcionando (E-102).
 3. **Por clave estable** (`id` de Overture) y una proximidad **declarada** al ancla del destino, **nunca por nombre** (hay homónimos: E-103).
 4. **Filtro mínimo** (propuesta, sin validar): categorías de una **lista cerrada** (la del sondeo, `pipelines/spikes/places_probe.py`) y una confianza mínima por decidir mirando una muestra a mano. `historic_site` (1 216 en Panamá) no entra sin revisión.
-5. **Sin datos, se dice**: en Coiba, Santa Catalina (hasta corregir su ancla, E-103) o la cumbre del Barú la pestaña dice que no hay datos; no se rellena.
+5. **Sin datos, se dice**: en Coiba o la cumbre del Barú la pestaña dice que no hay datos; no se rellena. (Santa Catalina ya tiene datos desde la corrección de su ancla, E-106.)
 6. **Datos estáticos** como el mapa base: el pipeline genera la capa (PMTiles, ADR-0005/0014) con una puerta de verificación. Las tablas `businesses` y `activities` (Fases 6–7) siguen siendo para lo **verificado**: Overture es la semilla, no el catálogo.
 7. **Producción bloqueada** mientras la política de Overture Places sea `provisional` (L-01).
+
+#### A2 tal como se construyó (2026-11-12, E-109)
+
+Lo que cambia respecto al texto de arriba, con su motivo:
+
+- **Una API estática, no PMTiles.** Son ≤ 75 lugares por destino (25 por grupo): `pnpm data:places` genera y verifica `data/places/nearby-places.json` y `GET /api/places/{destino}` lo sirve destino a destino (generado en el build, un 404 para cualquier otra clave). La misma respuesta alimenta la lista y los puntos del mapa, y la API aplica **derechos antes que datos** (como la espacial, ADR-0016): en producción, 403 sin datos. El navegador la valida otra vez (validador escrito a mano: E-51).
+- **Los puntos no son una capa del registro (ADR-0017).** No se eligen en «Capas» ni van en `l`: existen solo mientras la lista está abierta y pintan la pestaña abierta (la lista es su alternativa accesible). Usan los tokens de las etiquetas (texto y halo), así que no hay colores nuevos que medir.
+- **Se piden.** Nada se descarga ni se pinta hasta pulsar «Lugares cercanos» (en la ficha) o «Ver lugares cercanos» (en el panel). «Ver en el mapa» de cada lugar lo resalta y lo encuadra en el hueco libre del HUD; en móvil pliega la hoja.
+- **Sin webs** (además de sin teléfonos, correos y redes): muchas son perfiles de redes sociales y un enlace a un tercero pide su propia revisión (F5-13).
+- **En producción no se ofrece** (ni el botón ni la sección), en lugar de enseñarse desactivado con su motivo como el recorrido: allí el mapa tampoco existe.
+- **Decisiones declaradas** en `pipelines/places/places.config.json` (revisables, F5-12): radio por destino (0,75–10 km), confianza ≥ 0,6, tope de 25 por grupo, lista cerrada de 94 categorías más las que acaban en `_restaurant` (65 en Panamá), en 18 tipos y exclusión de viviendas particulares (`holiday_rental_home`, `cabin`, `cottage`, `service_apartment`) y de lugares con dirección en otro país.
 
 ### A3 — Actividades comerciales (afiliados)
 
@@ -67,7 +78,7 @@ Un solo visor pesado a la vez; en móvil, nunca Cesium y MapLibre completos junt
 1. Sondeo de Overture Places (**hecho**, E-102).
 2. Sondeo de Google 3D (bloqueado por la clave).
 3. A1, el recorrido sobre el relieve (**hecho en local**, 2026-11-11: ver `docs/progress.md`; sin dispositivo real ni CI todavía).
-4. A2, los lugares sin verificar.
+4. A2, los lugares sin verificar (**hecho en local**, 2026-11-12: ver arriba y `docs/progress.md`).
 5. A3, los afiliados (bloqueado por la cuenta).
 6. B en los destinos verificados.
 

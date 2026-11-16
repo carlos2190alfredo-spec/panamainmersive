@@ -151,6 +151,15 @@ export function isthmusRights(policies: readonly RightsPolicy[], env: SiteEnv): 
   return evaluateAll(policies, 'overture', ['display', 'transform', 'redistribute'], env);
 }
 
+/**
+ * Lugares cercanos sin verificar (ADR-0027 A2): datos de Overture Places transformados (filtrados, recortados) y servidos por la
+ * API propia. Su política es la de ESA fuente (`overture-places`), distinta de la del mapa base: con `provisional`, en
+ * producción no se sirven ni se ofrecen (L-01).
+ */
+export function placesRights(policies: readonly RightsPolicy[], env: SiteEnv): RightsDecision {
+  return evaluateAll(policies, 'overture-places', ['display', 'transform', 'redistribute'], env);
+}
+
 /** Coherencia: toda fuente en uso tiene política y su estado coincide con el del registro de fuentes. */
 export function policiesMatchSources(policies: readonly RightsPolicy[]): string[] {
   const problems: string[] = [];

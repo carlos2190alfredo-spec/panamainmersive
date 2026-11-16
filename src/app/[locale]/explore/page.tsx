@@ -19,6 +19,7 @@ import {
   SearchBoxLazy,
 } from '@/components/map/HudIslandsLazy';
 import { MapStageLazy } from '@/components/map/MapStageLazy';
+import { NearbyPlacesSection } from '@/components/map/NearbyPlacesSection';
 import { SelectedAreaCard } from '@/components/map/SelectedAreaCard';
 import { SelectedDestinationCard } from '@/components/map/SelectedDestinationCard';
 import { ShowOnMapButton } from '@/components/map/ShowOnMapButton';
@@ -26,7 +27,7 @@ import { LAYERS_GROUP_ID, LEGEND_GROUP_ID } from '@/components/map/hud-ids';
 import type { MapDestination, SelectedItem } from '@/components/map/map-data';
 import { getEnv } from '@/config/env';
 import { SITE } from '@/config/site';
-import { resolveMapExperience } from '@/domains/geography/rights';
+import { placesRights, resolveMapExperience } from '@/domains/geography/rights';
 import { COVERAGE, effectiveStatus } from '@/domains/tourism/coverage-evidence';
 import { DESTINATIONS, destinationName, destinationSlug } from '@/domains/tourism/destinations';
 import { kindOptions } from '@/domains/tourism/explore-filter';
@@ -107,6 +108,8 @@ export default async function ExplorePage({ params }: LocaleParams) {
   const experience = resolveMapExperience(getEnv().SITE_ENV, RIGHTS_POLICIES);
   const blocked = !experience.basemap.allowed;
   const terrainAllowed = experience.terrain.allowed;
+  // Lugares cercanos sin verificar (ADR-0027 A2): política propia (Overture Places), `provisional` ⇒ no en producción.
+  const placesAllowed = placesRights(RIGHTS_POLICIES, getEnv().SITE_ENV).allowed;
 
   const mapDestinations: MapDestination[] = DESTINATIONS.map((d) => {
     const anchor = anchors[d.key];
@@ -147,6 +150,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
   }));
   // El resumen de la hoja móvil cerrada solo necesita nombre y tipo (sin la insignia ni el enlace: no se repiten en el HTML).
   const sheetItems = selectedItems.map(({ key, name, kindLabel }) => ({ key, name, kindLabel }));
+  const placesItems = selectedItems.map(({ key, name }) => ({ key, name }));
 
   // Solo los textos del mapa viajan al cliente, y solo en esta página.
   return (
@@ -220,6 +224,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
                 items={selectedItems}
                 className={styles.featured}
                 terrainAllowed={terrainAllowed}
+                placesAllowed={placesAllowed}
               />
               <HudCarousel
                 className={styles.carousel}
@@ -250,6 +255,7 @@ export default async function ExplorePage({ params }: LocaleParams) {
             </div>
             <HudPanel className={styles.panel} label={t('panelLabel')} title={t('panelLabel')}>
               <SelectedAreaCard />
+              <NearbyPlacesSection items={placesItems} allowed={placesAllowed} />
               <AreasInView />
               {/* Los créditos conservan su idioma original (`lang="en"`, WCAG 3.1.2); el resto del párrafo es el de la interfaz. */}
               <p className={styles.attribution}>

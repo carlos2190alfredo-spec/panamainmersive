@@ -31,6 +31,7 @@ Inventario de fuentes con su estado real. «Accesible» = alcanzable desde el en
 ## Fase 2: qué se usa de cada fuente
 
 - **Overture** → `pipelines/basemap/` (capas de la tabla de `docs/gis.md` §9) y `pipelines/anchors/` (anclas por ID). **No** se usan `places`, `buildings`, `transportation` ni `bathymetry` (carreteras y relieve submarino: ver backlog).
+- **Overture Places (ADR-0027 A2)** → `pipelines/places/`: lugares cercanos **sin verificar** de cada destino (actividades, comida, alojamiento) por distancia declarada al ancla, sin contactos ni webs; `data/places/nearby-places.json` (390 lugares, E-109) servido por `GET /api/places/{destino}`. Política `overture-places` `provisional`: no en producción (L-01).
 - **Overture (Fase 3)** → `pipelines/ingest/`: áreas protegidas (`base/land_use`, `subtype=protected`) y entidades de referencia de los destinos (**por ID**) a **PostGIS**, con cuarentena y manifiesto con hash (ADR-0015). Resultado del 2026-10-20: 137 áreas + 11 referencias válidas y 2 en cuarentena (E-49). Todo `osm_derived`, **no oficial** y **no público** (L-01).
 - **Terreno AWS** → el navegador, solo si se activa una capa de relieve; se muestra su atribución.
 - **Glifos de Noto Sans** (`openmaptiles/fonts` v2.0, `noto-sans.zip`, sha256 en `public/map-assets/glyphs/SOURCE.json`) → etiquetas del mapa; licencia OFL 1.1 junto a los ficheros.

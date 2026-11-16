@@ -90,6 +90,7 @@ describe('Experience Resolver v1 (mapa)', () => {
       'aws-terrain',
       'noto-sans-glyphs',
       'overture',
+      'overture-places',
     ]);
   });
 

@@ -43,7 +43,7 @@ const NINE = [
 
 const toggleCarousel = (page: Page) =>
   page.getByRole('button', { name: /^(Ocultar|Mostrar) los destinos$/ });
-const panelToggle = (page: Page) => page.locator('aside button[aria-expanded]');
+const panelToggle = (page: Page) => page.locator('aside [data-panel-toggle]');
 
 /**
  * Espera a que el HUD esté hidratado (los botones «Ver en el mapa» solo existen con JavaScript) y a que lleguen sus cuatro

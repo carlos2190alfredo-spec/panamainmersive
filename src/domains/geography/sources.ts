@@ -9,7 +9,14 @@
 export type RightsStatus = 'verified' | 'provisional';
 
 export type SourceUseKey =
-  'overture' | 'awsTerrain' | 'glyphs' | 'anati' | 'miambiente' | 'atp' | 'unesco';
+  | 'overture'
+  | 'overturePlaces'
+  | 'awsTerrain'
+  | 'glyphs'
+  | 'anati'
+  | 'miambiente'
+  | 'atp'
+  | 'unesco';
 
 export interface UsedSource {
   readonly id: string;
@@ -31,9 +38,18 @@ export const USED_SOURCES: readonly UsedSource[] = [
     id: 'overture',
     name: 'Overture Maps Foundation, release 2026-09-23.1',
     useKey: 'overture',
-    license: 'ODbL (data derived from OpenStreetMap); Places: CDLA-Permissive-2.0',
+    license: 'ODbL (data derived from OpenStreetMap)',
     rights: 'provisional',
     attribution: '© OpenStreetMap contributors, Overture Maps Foundation',
+  },
+  {
+    id: 'overture-places',
+    name: 'Overture Maps Foundation, Places theme, release 2026-09-23.1',
+    useKey: 'overturePlaces',
+    license: 'CDLA-Permissive-2.0 (per record; some records also Apache-2.0 or CC0-1.0)',
+    rights: 'provisional',
+    attribution:
+      '© Overture Maps Foundation (Places: Meta, Microsoft, Foursquare, All the Places, PinMeTo)',
   },
   {
     id: 'aws-terrain',

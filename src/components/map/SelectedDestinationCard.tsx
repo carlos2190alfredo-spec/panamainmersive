@@ -5,6 +5,7 @@ import { Suspense, useId } from 'react';
 import { DEFAULT_MAP_LAYERS, allowedLayers } from '@/domains/geography/map-url-state';
 import { Link } from '@/i18n/navigation';
 import { requestFrameDestination, requestStopTour, requestTour, useHudStore } from './hud-store';
+import { openNearbyPlaces } from './places-store';
 import { enableRelief, reliefInUse } from './relief';
 import { isMobileLayout, isSheetOpen, setSheetOpen } from './sheet-store';
 import styles from './SelectedDestinationCard.module.css';
@@ -15,10 +16,12 @@ function Card({
   items,
   className,
   terrainAllowed,
+  placesAllowed,
 }: {
   items: readonly SelectedItem[];
   className: string | undefined;
   terrainAllowed: boolean;
+  placesAllowed: boolean;
 }) {
   const t = useTranslations('Map');
   const { state } = useMapUrlState();
@@ -107,6 +110,20 @@ function Card({
             ) : null}
           </div>
           <div className={styles.actions}>
+            {/* Lugares cercanos sin verificar (ADR-0027 A2): abre la lista del panel y lleva el foco hasta ella. No depende del
+                mapa (la lista es su alternativa); sin derechos no se ofrece. */}
+            {placesAllowed ? (
+              <button
+                type="button"
+                className={styles.secondary}
+                data-places-button
+                onClick={() => {
+                  openNearbyPlaces(true);
+                }}
+              >
+                {t('places.open')}
+              </button>
+            ) : null}
             {/* Vuelve a encuadrar el destino: la cámara explícita (`c`) gana a `d`, así que elegirlo otra vez no basta.
                 Depende del mapa: hasta que está listo (o si no habrá mapa) no se ofrece, y se dice por qué. */}
             <button
@@ -143,15 +160,23 @@ export function SelectedDestinationCard({
   items,
   className,
   terrainAllowed,
+  placesAllowed,
 }: {
   items: readonly SelectedItem[];
   className?: string | undefined;
   /** ¿Permiten los derechos el relieve de terceros? Sin él no hay recorrido 3D (se dice por qué). */
   terrainAllowed: boolean;
+  /** ¿Permiten los derechos de Overture Places mostrar los lugares cercanos? Sin ellos el botón no se ofrece. */
+  placesAllowed: boolean;
 }) {
   return (
     <Suspense fallback={null}>
-      <Card items={items} className={className} terrainAllowed={terrainAllowed} />
+      <Card
+        items={items}
+        className={className}
+        terrainAllowed={terrainAllowed}
+        placesAllowed={placesAllowed}
+      />
     </Suspense>
   );
 }

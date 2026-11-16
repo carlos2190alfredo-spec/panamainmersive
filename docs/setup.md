@@ -69,6 +69,18 @@ pnpm data:build      # extrae, tesela y VERIFICA; publica public/data/panama-bas
 - **Hosting de producción** [pendiente; ver `docs/deploy.md`]: cualquier almacén estático con **HTTP Range** y CORS si es de otro origen; configurar `NEXT_PUBLIC_TILES_BASE_URL` (su origen entra solo en `connect-src`). Hoy el mapa de producción está **desactivado** por L-01.
 - Relieve: `NEXT_PUBLIC_TERRAIN_TILES_URL` (por defecto AWS Terrarium); se valida la plantilla `{z}/{x}/{y}` y, en producción, https.
 
+### 6.1 Lugares cercanos sin verificar (ADR-0027 A2)
+
+```bash
+pnpm data:places extract   # red (≈ 10 min): Overture Places → data/build/places/places_pa.jsonl (NO se versiona)
+pnpm data:places build     # sin red: selecciona, verifica y escribe data/places/nearby-places.json (se versiona)
+pnpm data:places verify    # sin red: comprueba el archivo versionado contra pipelines/places/places.config.json
+```
+
+- `extract` necesita el `.venv` (pyarrow); `build` y `verify`, solo Python. Del extracto **no** se piden teléfonos, correos, redes ni webs; de las direcciones solo el país.
+- Todo lo que se decide (radio por destino, confianza mínima, categorías, tope) está en `pipelines/places/places.config.json`; el script solo calcula y **verifica** (si no pasa, no escribe). Determinista: repetir `build` no cambia nada.
+- Overture publica una release al mes y los lugares **no caducan solos**: al cambiar `RELEASE` en `pipelines/lib/overture.py` hay que repetir `extract` y `build` y revisar el `git diff`.
+
 ## 7. Ingesta de áreas a la base de datos (Fase 3)
 
 Necesita el entorno de §6 (`.venv` activado; `pip install -r pipelines/requirements.txt -r pipelines/requirements-dev.txt` para tener también `pytest`), una base PostgreSQL+PostGIS migrada (`DATABASE_URL`, `pnpm db:migrate`) y red hacia el S3 de Overture.
