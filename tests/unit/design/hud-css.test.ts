@@ -273,7 +273,7 @@ describe('maquetación del HUD (móvil: hoja inferior · escritorio ≥ 56rem: r
     expect(decl('.featured:empty', 'flex-basis', DESKTOP)).toBe('0');
   });
 
-  it('desde 80rem el carril baja hasta la franja inferior y el dock empieza a su derecha (F2-11: el filtro de ocho filas cabe entero a 1280×800); por debajo, el carril se queda en la fila del hueco', () => {
+  it('desde 80rem el carril baja hasta la franja inferior y el dock empieza a su derecha (F2-11: el filtro de ocho filas cabe entero a 1280×800); por debajo, el carril se queda en la fila del hueco; el ancho de la ficha no cambia', () => {
     const WIDE = 'min-width: 80rem';
     // Entre 56rem y 80rem: la rejilla de siempre (el carril solo en la fila del hueco, el dock a todo el ancho)
     expect(decl('.rail', 'grid-row', DESKTOP)).toBe('2');
@@ -285,8 +285,12 @@ describe('maquetación del HUD (móvil: hoja inferior · escritorio ≥ 56rem: r
     // …sin dejar de desplazar por dentro si aun así no cabe (portátiles bajos): nunca recorta
     expect(decl('.rail', 'overflow-y', DESKTOP)).toBe('auto');
     expect(decl('.rail', 'max-block-size', DESKTOP)).toBe('100%');
-    // La ficha toma más ancho para que su nombre no se parta, y vacía sigue sin ocupar nada (gana por especificidad)
-    expect(decl('.featured', 'flex-basis', WIDE)).toBe('min(34rem, 56%)');
+    // El ancho de la ficha es UNO en todo el escritorio (F5-11): 34rem o el 56 % de la fila. Con el 42 % de antes por debajo de
+    // 80rem, a 1024 px la ficha medía 349 px de alto y el carrusel 254: la fila crecía 95 px a costa del hueco del mapa.
+    expect(decl('.featured', 'flex', DESKTOP)).toBe('0 0 min(34rem, 56%)');
+    // …y NO se redefine desde 80rem (dos anchos distintos era justo el defecto); vacía sigue sin ocupar nada (gana por especificidad)
+    expect(decl('.featured', 'flex-basis', WIDE)).toBeUndefined();
+    expect(decl('.featured', 'flex', WIDE)).toBeUndefined();
     expect(decl('.featured:empty', 'flex-basis', DESKTOP)).toBe('0');
   });
 

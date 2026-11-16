@@ -302,8 +302,13 @@
     margin-block-start: var(--hud-gap);
   }
 
+  /* 34rem, o el 56 % de la fila si no cabe, en TODO el escritorio (F5-11). Antes era el 42 % por debajo de 80rem: a 1024 px la
+     ficha medía 391 px, el nombre se partía en dos o tres líneas y, con el aviso previo del recorrido y el tercer botón, llegaba a
+     349 px de alto (el carrusel, 254): la fila crecía 95 px a costa del hueco del mapa. Al 56 % la ficha de 1024 a 1279 px no pasa
+     del carrusel (medido, nueve destinos × cinco idiomas). El precio es un carrusel más estrecho (de ≈ 525 a ≈ 394 px a 1024 px),
+     que es el que ya hay desde 80rem. */
   .featured {
-    flex: 0 0 min(34rem, 42%);
+    flex: 0 0 min(34rem, 56%);
     min-inline-size: 0;
   }
 
@@ -362,8 +367,8 @@
  * El filtro lleva ocho filas de 44 px y, limitado a la fila del hueco (sobre el dock), a 1280×800 dejaba fuera la última
  * y los dos grupos plegados (backlog F2-11): ahora cabe entero. Un elemento que cruza una fila flexible no cuenta para el
  * alto de las filas automáticas, así que el carril no engorda el dock y, si aun así no cabe (portátiles bajos), desplaza
- * por dentro (`overflow-y: auto`), nunca recorta. La ficha toma más ancho (34rem) para que el nombre no se parta en dos y
- * su alto siga siendo el del carrusel; con selección el carrusel queda más estrecho (una tarjeta y media, con flechas).
+ * por dentro (`overflow-y: auto`), nunca recorta. Con selección el carrusel queda más estrecho (una tarjeta y media, con
+ * flechas). El ancho de la ficha (34rem o el 56 % de la fila) es el mismo en todo el escritorio: ver `.featured`.
  * Por debajo de 80rem el dock empieza en el borde izquierdo (bajo el carril) y el carril se queda en la fila del hueco: ahí la
  * ficha no cabría. En los dos casos el dock termina en la columna del panel: la de las herramientas es solo de ellas.
  */
@@ -378,10 +383,6 @@
 
   .dock {
     grid-column: 2 / 4;
-  }
-
-  .featured {
-    flex-basis: min(34rem, 56%);
   }
 }
 
