@@ -72,6 +72,21 @@ test.describe('lugares cercanos sin verificar (escritorio)', () => {
     page.on('request', (r) => {
       if (r.url().includes('/api/places/')) placeRequests.push(r.url());
     });
+    // La lista es un trozo DIFERIDO (`NearbyPlacesBody`) y su petición sale cuando el trozo ya cargó: el foco y el panel pueden estar
+    // listos antes (el runner de Linux del CI lo hizo y la prueba, que contaba las peticiones de inmediato, falló en `c5d20c9`).
+    // Para que esa carrera no dependa de la velocidad de la máquina, el trozo (el único que contiene la ruta de la API) se RETIENE
+    // hasta que la prueba lo libera, no un tiempo fijo; las aserciones de abajo tienen que esperarlo.
+    let releaseChunk!: () => void;
+    const chunkReleased = new Promise<void>((resolve) => {
+      releaseChunk = resolve;
+    });
+    page.on('close', releaseChunk); // si la prueba falla antes, nada queda colgado
+    await page.route('**/_next/static/chunks/*.js', async (route) => {
+      const response = await route.fetch();
+      const body = await response.text();
+      if (body.includes('/api/places/')) await chunkReleased;
+      await route.fulfill({ response, body });
+    });
     await page.goto(`${EXPLORE}?d=boquete`);
     await expect(placesButton(page)).toBeVisible();
     await page.waitForTimeout(500);
@@ -84,7 +99,13 @@ test.describe('lugares cercanos sin verificar (escritorio)', () => {
       'aria-expanded',
       'true',
     );
-    expect(placeRequests.map((u) => new URL(u).pathname)).toEqual(['/api/places/boquete']);
+    // Control de la retención: con el panel abierto y el foco puesto, el trozo aún no ha llegado y no hay ninguna petición. Sin él,
+    // la espera de abajo podría ser inútil (la petición ya habría salido) y la prueba no vería la carrera que arregla.
+    expect(placeRequests, 'el trozo diferido sigue retenido').toEqual([]);
+    releaseChunk();
+    await expect
+      .poll(() => placeRequests.map((u) => new URL(u).pathname), SETTLE)
+      .toEqual(['/api/places/boquete']);
 
     for (const [label, group] of [
       ['Qué hacer', 'activities'],
