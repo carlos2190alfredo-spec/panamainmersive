@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { applyCss, hiddenFocus } from './a11y-probes';
 import { LOCALES, PATHS, type Locale } from './helpers';
+import { isolatedTest } from './isolated-browser';
 
 /**
  * Revisión independiente de 5j · X3 (cáscara y páginas): texto agrandado, foco bajo los desplegables, portada en móvil, tablas,
@@ -137,26 +138,27 @@ test.describe('cabecera con el texto agrandado (r2:F7, WCAG 1.4.4)', () => {
     }
   }
 
-  test('barrido: del móvil al escritorio, de 100 a 200 %: nada sale de la cabecera ni se solapa y el rótulo nunca se parte', async ({
-    page,
-  }) => {
-    test.setTimeout(120_000); // 40 combinaciones de ancho × tamaño de letra sobre una misma carga
-    await page.goto(PATHS.home.de);
-    const failures: string[] = [];
-    let checked = 0;
-    for (const width of [360, 390, 480, 600, 768, 1024, 1280, 1440]) {
-      await page.setViewportSize({ width, height: 900 });
-      for (const percent of [100, 125, 150, 175, 200]) {
-        await zoom(page, percent);
-        checked += 1;
-        for (const problem of await headerProblems(page, percent)) {
-          failures.push(`${String(width)} px × ${String(percent)} %: ${problem}`);
+  isolatedTest(
+    'barrido: del móvil al escritorio, de 100 a 200 %: nada sale de la cabecera ni se solapa y el rótulo nunca se parte',
+    async ({ page }) => {
+      test.setTimeout(120_000); // 40 combinaciones de ancho × tamaño de letra sobre una misma carga
+      await page.goto(PATHS.home.de);
+      const failures: string[] = [];
+      let checked = 0;
+      for (const width of [360, 390, 480, 600, 768, 1024, 1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const percent of [100, 125, 150, 175, 200]) {
+          await zoom(page, percent);
+          checked += 1;
+          for (const problem of await headerProblems(page, percent)) {
+            failures.push(`${String(width)} px × ${String(percent)} %: ${problem}`);
+          }
         }
       }
-    }
-    expect(checked).toBe(40);
-    expect(failures).toEqual([]);
-  });
+      expect(checked).toBe(40);
+      expect(failures).toEqual([]);
+    },
+  );
 
   test('la consulta es de CONTENEDOR: a 768 px y 200 % el selector de idioma ya es solo un globo y no sale la llamada (con @media seguirían a 768 px)', async ({
     page,
